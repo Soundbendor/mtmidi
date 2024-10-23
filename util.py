@@ -31,17 +31,20 @@ def notedur_to_ticks(dur, subdiv = 1, ticks_per_beat = 1000, sustain=1.0):
 def get_inst_program_number(cur_inst):
     return inst[cur_inst]['number']
 
-def save_midi(midifile, midiname, save_dir = "save"):
+def save_midi(midifile, midiname, save_dir = "midi"):
     if os.path.exists(save_dir) == False:
         os.makedirs(save_dir)
     fullpath = os.path.join(save_dir, midiname)
     midifile.save(fullpath)
 
-def write_to_wav(midifilepath, sr = 44100):
+def write_to_wav(midifilepath, sr = 44100, save_dir = "wav"):
     fs = FluidSynth(sample_rate=sr, sound_font = 'TimGM6mb.sf2')
-    mfpsplit = midifilepath.split('.')
-    outfilepath = '.'.join(mfpsplit[:-1]) + '.wav'
+    mfpsplit = os.path.basename(midifilepath).split('.')
+    if os.path.exists(save_dir) == False:
+        os.makedirs(save_dir)
+    outfilepath = os.path.join('wav', '.'.join(mfpsplit[:-1]) + '.wav')
+    #print(outfilepath)
     fs.midi_to_audio(midifilepath, outfilepath)
 
 def get_saved_midi():
-    return [os.path.join('save', x)  for x in os.listdir('save') if '.mid' in x]
+    return [os.path.join('midi', x)  for x in os.listdir('midi') if '.mid' in x]
