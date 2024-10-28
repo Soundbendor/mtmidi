@@ -5,10 +5,10 @@ import csv
 import random
 import os
 
-harder_split = True
+harder_split = False
 out_csv = "polyrhy_split1.csv"
 out_dir = "csv"
-inst_pairs_train = 16
+inst_pairs_train = 15
 
 if harder_split == True:
     out_csv = "polyrhy_split2.csv"
