@@ -3,7 +3,13 @@ import csv
 import os
 from midi2audio import FluidSynth
 
+import random
+
+seed = 5
 inst = {}
+
+random.seed(5)
+
 with open('inst_list.csv', 'r') as f:
     csvr = csv.reader(f, delimiter=',')
     for i,row in enumerate(csvr):
@@ -12,6 +18,16 @@ with open('inst_list.csv', 'r') as f:
             inst_name = row[1]
             inst_cat = row[2]
             inst[inst_name] = {'number': inst_num, 'category': inst_cat}
+
+def shuffle_list(cur_list):
+    random.shuffle(cur_list)
+
+def coinflip_label(chance= 0.5, label1 = 'val', label2='test'):
+    cur_rand = random.random()
+    ret = label1
+    if cur_rand >= chance:
+        ret = label2
+    return ret
 
 def notedur_to_ticks(dur, subdiv = 1, ticks_per_beat = 1000, sustain=1.0):
     on_dur = ticks_per_beat
