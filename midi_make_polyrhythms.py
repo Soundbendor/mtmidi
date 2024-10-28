@@ -17,11 +17,11 @@ subdiv = 1
 num_trks = 2
 beg_padding = 0
 num_bars = 4
-do_reverse = False
+do_reverse = True
 
-#instruments = ['Tinkle Bell','Agogo','Steel Drums','Woodblock','Taiko Drum','Melodic Tom','Synth Drum']
+instruments = ['Tinkle Bell','Agogo','Steel Drums','Woodblock','Taiko Drum','Melodic Tom','Synth Drum']
 
-instruments = ['Agogo','Woodblock']
+#instruments = ['Agogo','Woodblock']
 inst_combos = [x for x in combinations(instruments, 2)]
 
 
