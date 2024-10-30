@@ -52,13 +52,13 @@ with open(opath, 'w') as csvf:
         ch_nums = [um.get_inst_program_number(x) for x in cur_pair]
         short_names = [''.join(x.split(' ')) for x in cur_pair]
         #print([x for x in zip(ch_nums, short_names)])
-        cur_set = 'train'
         
         for pnums in poly_pairs:
             # iterate over polyrhythm pairs
 
             for run in range(runs):
-
+                
+                cur_set = 'train'
                 # run 1 = flip instruments
                 inst_order = [0,1] # instrument indices
                 if run == 1:

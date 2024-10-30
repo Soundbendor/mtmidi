@@ -1,15 +1,5 @@
 from torcheval import metrics as TM
-import neptune
-
-nep_tok = None
-with open('nep_api.txt', 'r') as f:
-    nep_tok = f.read().strip()
-
-run = neptune.init_run(
-    project="Soundbendor/SynTheoryPlus",
-    api_token=nep_tok,
-)  # your credentials
-
+"""
 not_printable = ["confmat", "multilabel"]
 ignorekeys = ["multilabel"]
 metric_keys_mc = ["acc1_micro", "acc1_macro","acc3_micro", "acc3_macro", "confmat", "avgprec", "f1_micro", "f1_macro", "prec_micro", "prec_macro", "recall_micro", "auroc"]
@@ -31,3 +21,5 @@ def metric_creator(num_classes=10, device='cpu'):
     mdict["recall_micro"] = TM.MulticlassRecall(num_classes=num_classes, average="micro", device = device)
     #mdict["macro_recall"] = TM.MulticlassRecall(num_classes=num_classes, average="macro")
     mdict["auroc"] = TM.MulticlassAUROC(num_classes=num_classes, device=device)
+"""
+

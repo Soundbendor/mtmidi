@@ -1,6 +1,6 @@
 import jukemirlib as jml
 import os
-import numpy as np
+import torch
 
 out_dir = 'jukebox_acts'
 load_dir = 'wav_trim'
@@ -16,7 +16,7 @@ for fidx,f in enumerate(os.listdir(load_dir)):
     #if fidx > 0: break
 
     fsplit = '.'.join(f.split('.')[:-1])
-    outname = f'{fsplit}.npy'
+    outname = f'{fsplit}.pt'
     outpath = os.path.join(out_dir, outname)
 
     fpath = os.path.join(load_dir, f)
@@ -30,10 +30,10 @@ for fidx,f in enumerate(os.listdir(load_dir)):
             reps = jml.extract(audio, layers=[layer_act], downsample_target_rate=dsamp_rate, meanpool = True)
             if first_layer_done == False:
                 first_layer_done = True
-                means = reps[layer_act]
+                means = torch.from_numpy(reps[layer_act])
             else:
-                means = np.vstack((means, reps[layer_act]))
-        np.save(outpath, means, allow_pickle=True)
+                means = torch.vstack((means, torch.from_numpy(reps[layer_act])))
+        torch.save(means, outpath)
         #print(means, file=wf)
         #print(means.shape,file=wf)
 
