@@ -44,7 +44,7 @@ if os.path.exists(out_dir) == False:
         os.makedirs(out_dir)
 
 with open(opath, 'w') as csvf:
-    fieldnames = ['file','inst1', 'inst2', 'poly', 'poly1', 'poly2', 'set']
+    fieldnames = ['name','inst1', 'inst2', 'poly', 'poly1', 'poly2', 'set']
     csvw = csv.DictWriter(csvf,fieldnames=fieldnames)
     csvw.writeheader()
     for pair_idx,cur_pair in enumerate(inst_combos):
@@ -75,7 +75,7 @@ with open(opath, 'w') as csvf:
                 pstr = f"{pnums[0]}a{pnums[1]}"
                 outname = f"{inst1}_{inst2}-{pstr}"
                 cur_row = {'inst1': inst1, 'inst2': inst2, 'poly': pstr, 'set': cur_set,
-                           'poly1': pnums[0], 'poly2': pnums[1], 'file': outname}
+                           'poly1': pnums[0], 'poly2': pnums[1], 'name': outname}
                 csvw.writerow(cur_row)
                 #print(outname)
                 # number of bars to do polyrhthm (polyrhythm isolated for one bar)

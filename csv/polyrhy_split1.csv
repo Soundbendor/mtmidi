@@ -1,4 +1,4 @@
-file,inst1,inst2,poly,poly1,poly2,set
+name,inst1,inst2,poly,poly1,poly2,set
 MelodicTom_SynthDrum-2a3,MelodicTom,SynthDrum,2a3,2,3,train
 SynthDrum_MelodicTom-2a3,SynthDrum,MelodicTom,2a3,2,3,train
 MelodicTom_SynthDrum-3a4,MelodicTom,SynthDrum,3a4,3,4,train
