@@ -9,21 +9,30 @@ import os
 import matplotlib.pyplot as plt
 import time
 
+torch.manual_seed(3)
 classdict = {'2a3': 0, '3a4': 1, '3a5': 2, '4a5': 3, '5a6': 4, '5a7': 5, '6a7': 6, '7a8': 7}
 rev_classdict = {i:x for (x,i) in classdict.items()}
 class_arr = [k for (k,v) in classdict.items()]
 num_classes = len(classdict)
 
+to_nep = True
+split = 2
+classification = False
+bs = 256
+lr = 1e-3
+num_epochs = 200
+if classification == False:
+    num_epochs = 100
+    lr = 1e-6
+dropout = 0.5
+hidden_layers = [512]
+
+
 res_dir = "res"
 user_folder = os.path.expanduser("~" + os.getenv("USER")) 
 data_folder = os.path.join(user_folder, "ds", "jukebox_acts_36")
-params = {'batch_size': 64, 'num_epochs': 200, 'lr': 1e-3, 'dropout': 0.5, 'use_cuda': True, 'split': 1}
-bs = params['batch_size']
+params = {'batch_size': bs, 'num_epochs': num_epochs, 'lr': lr, 'dropout': dropout, 'use_cuda': True, 'split': split, 'classification': classification}
 device ='cpu'
-lr = params['lr']
-num_epochs = params['num_epochs']
-dropout = params['dropout']
-hidden_layers = [512]
 
 csvfile = os.path.join('csv', 'polyrhy_split1.csv')
 if params['split'] != 1:
@@ -36,13 +45,18 @@ if torch.cuda.is_available() == True and params["use_cuda"] == True:
     torch.set_default_device(device)
 
 
-train_data = STPActivationsData(csvfile = csvfile, device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='train')
-valid_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='val')
-test_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='test')
+train_data = STPActivationsData(csvfile = csvfile, device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='train', classification = classification)
+valid_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='val', classification = classification)
+test_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='test', classification = classification)
 
-model = LinearProbe(num_classes=num_classes,hidden_layers = hidden_layers, dropout = dropout).to(device)
-
-loss_fn = torch.nn.CrossEntropyLoss()
+model = None
+loss_fn = None
+if classification == True:
+    model = LinearProbe(num_classes=num_classes,hidden_layers = hidden_layers, dropout = dropout).to(device)
+    loss_fn = torch.nn.CrossEntropyLoss()
+else:
+    model = LinearProbe(num_classes=1,hidden_layers = hidden_layers, dropout = dropout).double().to(device)
+    loss_fn = torch.nn.MSELoss()
 optim = torch.optim.Adam(model.parameters(), lr=lr)
 
 def train_epoch(_model, _tdl, _lossfn, _optimfn):
@@ -51,8 +65,13 @@ def train_epoch(_model, _tdl, _lossfn, _optimfn):
     for didx, data in enumerate(_tdl):
         ipt, ground_truth = data
         _optimfn.zero_grad()
-        pred = _model(ipt)
-        _loss = _lossfn(pred, ground_truth)
+        _loss = None
+        if classification == True:
+            pred = _model(ipt)
+            _loss = _lossfn(pred, ground_truth)
+        else:
+            pred = _model(ipt.double())
+            _loss = _lossfn(pred.flatten(), ground_truth)
         _loss.backward()
         _optimfn.step()
         tot_loss += _loss.item()
@@ -65,8 +84,13 @@ def valid_epoch(_model, _vdl, _lossfn):
     with torch.no_grad():
         for didx, data in enumerate(_vdl):
             ipt, ground_truth = data
-            pred = _model(ipt)
-            _loss = _lossfn(pred, ground_truth)
+            if classification == True:
+                pred = _model(ipt)
+                _loss = _lossfn(pred, ground_truth)
+            else:
+                pred = _model(ipt.double())
+                _loss = _lossfn(pred.flatten(), ground_truth)
+
             tot_loss += _loss.item()
     return tot_loss
 
@@ -90,7 +114,35 @@ def train_valid(_model, _traindata, _validdata, _lossfn, _optimfn, batch_size=16
             _nep['valid/loss'].append(valid_loss)
     return train_losses, valid_losses
 
-def test(_model, _testdata, batch_size = 16, _nep=None):
+
+
+def test_regression(_model, _testdata, batch_size = 16, _nep=None):
+    _tdl = torch.utils.data.DataLoader(_testdata, batch_size = batch_size, shuffle=True, generator=torch.Generator(device=device))
+    to_nep = _nep != None
+    _model.eval()
+    tot_loss = 0.
+    preds = None
+    truths = None
+    with torch.no_grad():
+        for didx, data in enumerate(_tdl):
+            ipt, ground_truth = data
+            pred = _model(ipt.double())
+
+            if didx == 0:
+                preds = pred.cpu().numpy()
+                truths = ground_truth.cpu().numpy()
+            else:
+                preds = np.hstack((preds, pred.cpu().numpy()))
+                truths = np.hstack((truths, ground_truth.cpu().numpy()))
+
+    mse = SKM.mean_squared_error(truths, preds)
+    print(f'mse: {mse}')
+    if to_nep == True:
+        _nep['test/mse'] = mse
+
+
+
+def test_classification(_model, _testdata, batch_size = 16, _nep=None):
     _tdl = torch.utils.data.DataLoader(_testdata, batch_size = batch_size, shuffle=True, generator=torch.Generator(device=device))
     to_nep = _nep != None
     _model.eval()
@@ -141,8 +193,15 @@ def test(_model, _testdata, batch_size = 16, _nep=None):
     #print(truths)
 
 
-nep = TN.init(params)
+#nep = TN.init(params)
+nep = None
+if to_nep == True:
+    nep = TN.init(params)
 train_valid(model, train_data, valid_data, loss_fn, optim, batch_size=bs, epochs=num_epochs, _nep=nep)
 
-test(model, test_data, batch_size = bs, _nep = nep)
-nep.stop()
+if classification == True:
+    test_classification(model, test_data, batch_size = bs, _nep = nep)
+else:
+    test_regression(model, test_data, batch_size = bs, _nep = nep)
+if nep != None:
+    nep.stop()

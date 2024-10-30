@@ -5,7 +5,7 @@ import csv
 import random
 import os
 
-harder_split = False
+harder_split = True
 out_csv = "polyrhy_split1.csv"
 out_dir = "csv"
 inst_pairs_train = 15
@@ -44,7 +44,7 @@ if os.path.exists(out_dir) == False:
         os.makedirs(out_dir)
 
 with open(opath, 'w') as csvf:
-    fieldnames = ['name','inst1', 'inst2', 'poly', 'poly1', 'poly2', 'set']
+    fieldnames = ['name','inst1', 'inst2', 'poly', 'ratio', 'poly1', 'poly2', 'set']
     csvw = csv.DictWriter(csvf,fieldnames=fieldnames)
     csvw.writeheader()
     for pair_idx,cur_pair in enumerate(inst_combos):
@@ -71,11 +71,11 @@ with open(opath, 'w') as csvf:
 
                 if harder_split == True and pnums in valtest_poly:
                     cur_set = um.coinflip_label(chance=0.5, label1='val', label2='test')
-
+                ratio = pnums[0]/pnums[1]
                 pstr = f"{pnums[0]}a{pnums[1]}"
                 outname = f"{inst1}_{inst2}-{pstr}"
                 cur_row = {'inst1': inst1, 'inst2': inst2, 'poly': pstr, 'set': cur_set,
-                           'poly1': pnums[0], 'poly2': pnums[1], 'name': outname}
+                           'poly1': pnums[0], 'poly2': pnums[1], 'name': outname, 'ratio': ratio}
                 csvw.writerow(cur_row)
                 #print(outname)
                 # number of bars to do polyrhthm (polyrhythm isolated for one bar)
