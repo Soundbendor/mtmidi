@@ -58,7 +58,7 @@ def write_to_wav(midifilepath, sr = 44100, save_dir = "wav"):
     mfpsplit = os.path.basename(midifilepath).split('.')
     if os.path.exists(save_dir) == False:
         os.makedirs(save_dir)
-    outfilepath = os.path.join('wav', '.'.join(mfpsplit[:-1]) + '.wav')
+    outfilepath = os.path.join(save_dir, '.'.join(mfpsplit[:-1]) + '.wav')
     #print(outfilepath)
     fs.midi_to_audio(midifilepath, outfilepath)
 
