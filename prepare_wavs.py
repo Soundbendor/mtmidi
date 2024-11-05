@@ -10,8 +10,10 @@ import soundfile as sf
 # codify using jukebox jq-vae
 # audio into languagemodel
 
-wav_dir = "wav"
-wav2_dir = "wav_trim"
+wav_dir = '/media/dxk/TOSHIBA EXT/wav'
+#wav_dir = "wav"
+wav2_dir = '/media/dxk/TOSHIBA EXT/wav_trim'
+#wav2_dir = "wav_trim"
 
 sr = 44100
 want_sec = 4

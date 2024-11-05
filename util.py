@@ -2,9 +2,13 @@ import mido
 import csv
 import os
 from midi2audio import FluidSynth
-
+#import fluidsynth as fl
+import numpy as np
 import random
-
+import librosa
+import soundfile as sf
+#import pyaudio
+#import scipy.io.wavfile as siw
 seed = 5
 inst = {}
 
@@ -53,6 +57,28 @@ def save_midi(midifile, midiname, save_dir = "midi"):
     fullpath = os.path.join(save_dir, midiname)
     midifile.save(fullpath)
 
+def write_to_wav_pyfl(midifilepath, save_dir = 'wav', sr = 44100, gain=0.2, channels=16, sec=4):
+    syn = fl.Synth(gain=gain, samplerate=sr, channels=channels)
+    mfpsplit = os.path.basename(midifilepath).split('.')
+    if os.path.exists(save_dir) == False:
+        os.makedirs(save_dir)
+    outfilepath = os.path.join(save_dir, '.'.join(mfpsplit[:-1]) + '.wav')
+    # snippet from https://github.com/nwhitehead/pyfluidsynth/blob/21e30cc9e245b4a28b7d39a60932dcf5be582461/test/test6.py
+    sfid = syn.sfload(os.path.join(os.path.dirname(__file__), 'TimGM6mb.sf2'))
+    syn.program_select(0, sfid, 0, 0)
+    syn.custom_router_callback = None
+    syn.play_midi_file(midifilepath)
+    s = []
+    for _ in range(sec):
+        s = np.append(s, syn.get_samples(sr))
+        if fl.fluid_player_get_status(syn.player) != fl.FLUID_PLAYER_PLAYING:
+            break
+    syn.delete()
+    siw.write(outfilepath, sr, s)
+
+    
+
+
 def write_to_wav(midifilepath, sr = 44100, save_dir = "wav"):
     fs = FluidSynth(sample_rate=sr, sound_font = 'TimGM6mb.sf2')
     mfpsplit = os.path.basename(midifilepath).split('.')
@@ -61,6 +87,17 @@ def write_to_wav(midifilepath, sr = 44100, save_dir = "wav"):
     outfilepath = os.path.join(save_dir, '.'.join(mfpsplit[:-1]) + '.wav')
     #print(outfilepath)
     fs.midi_to_audio(midifilepath, outfilepath)
+
+def clean_wav(wavpath, out_dir,sr=44100):
+    if os.path.exists(out_dir) == False:
+        os.makedirs(out_dir)
+    wavpath = os.path.join(wav_dir, x)
+    snd, load_sr = librosa.load(wavpath, mono = True, sr=sr)
+    snd_trim = snd[:want_samp]
+    wsplit = x.split('.')
+    wjoin = '.'.join(wsplit[:-1]) + '-trim.wav'
+    opath = os.path.join(our_dir, wjoin)
+    sf.write(opath, snd_trim, sr)
 
 def get_saved_midi():
     return [os.path.join('midi', x)  for x in os.listdir('midi') if '.mid' in x]
