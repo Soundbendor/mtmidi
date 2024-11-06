@@ -4,15 +4,22 @@ from itertools import combinations
 import csv
 import random
 import os
+import polars as pl
 
+data_profile = True
+data_csv = True
+data_png = True
 harder_split = True
-out_csv = "polyrhy_split1.csv"
-out_dir = "csv"
-inst_pairs_train = 15
+out_name = 'polyrhy_split1'
 
 if harder_split == True:
-    out_csv = "polyrhy_split2.csv"
+    out_name = "polyrhy_split2"
 
+
+out_csv = f'{out_name}.csv'
+out_dir = "csv"
+dp_dir = 'dataprof'
+inst_pairs_train = 15
 opath = os.path.join(out_dir, out_csv)
 seed = 5
 midinote = 60 # midi note to use
@@ -40,10 +47,12 @@ valtest_poly = set([(2,3), (7,8), (5,7)])
 bpm_bars = [(120, 2), (180, 3)]
 runs = 2 if do_reverse == True else 1
 if os.path.exists(out_dir) == False:
-        os.makedirs(out_dir)
+    os.makedirs(out_dir)
 
+fieldnames = ['name','inst1', 'inst2', 'bpm', 'num_bars', 'poly', 'pair', 'ratio', 'poly1', 'poly2', 'set']
+
+bar_charts = ['bpm', 'poly', 'pair', 'set']
 with open(opath, 'w') as csvf:
-    fieldnames = ['name','inst1', 'inst2', 'bpm', 'num_bars', 'poly', 'ratio', 'poly1', 'poly2', 'set']
     csvw = csv.DictWriter(csvf,fieldnames=fieldnames)
     csvw.writeheader()
     for (cur_bpm, num_bars) in bpm_bars:
@@ -65,6 +74,9 @@ with open(opath, 'w') as csvf:
                     # midi naming
                     inst1 = short_names[inst_order[0]]
                     inst2 = short_names[inst_order[1]]
+                    short_pair = [inst1,inst2]
+                    short_pair.sort()
+                    pstr2 = '_'.join(short_pair)
                     if pair_idx >= inst_pairs_train and harder_split == False:
                         cur_set = um.coinflip_label(chance=0.5, label1='val', label2='test')
 
@@ -73,7 +85,7 @@ with open(opath, 'w') as csvf:
                     ratio = pnums[0]/pnums[1]
                     pstr = f"{pnums[0]}a{pnums[1]}"
                     outname = f"{inst1}_{inst2}-{cur_bpm}_{pstr}"
-                    cur_row = {'inst1': inst1, 'inst2': inst2, 'poly': pstr, 'set': cur_set, 'bpm': cur_bpm, 'num_bars': num_bars,
+                    cur_row = {'inst1': inst1, 'inst2': inst2, 'poly': pstr, 'pair': pstr2, 'set': cur_set, 'bpm': cur_bpm, 'num_bars': num_bars,
                                'poly1': pnums[0], 'poly2': pnums[1], 'name': outname, 'ratio': ratio}
                     csvw.writerow(cur_row)
                     #print(outname)
@@ -82,6 +94,18 @@ with open(opath, 'w') as csvf:
 
 
 
+if data_profile == True:
 
+    data = pl.scan_csv(opath).collect()
+    for cat in bar_charts:
+        um.profile_category(data, cat, ds=out_name, profile_type='overall')
+    set_types = data['set'].value_counts()['set']
+    for set_type in set_types:
+        curset =  data.filter(pl.col('set') == set_type)
+        for cat in bar_charts:
+            if cat != 'set':
+                um.profile_category(curset, cat, ds=out_name, profile_type=set_type, save_csv=data_csv, save_png = data_png)
+                
+        
 
 

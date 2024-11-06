@@ -101,3 +101,37 @@ def clean_wav(wavpath, out_dir,sr=44100):
 
 def get_saved_midi():
     return [os.path.join('midi', x)  for x in os.listdir('midi') if '.mid' in x]
+
+def series_plot_save(pl_series, cat, fname='chart.png', ds='polyrhy_split1'):
+    title = f'{ds} {cat} counts'
+    ch = pl_series.plot.bar(x=cat, y='count', text='count')
+    ch.title = title
+    ax = ch.mark_bar() + ch.mark_text(dy=-6)
+    ax.save(fname)
+
+def profile_category(df, cat, ds='polyrhy_split1', profile_dir = 'dataprof', profile_type='overall', save_csv = True, save_png = True):
+    if os.path.exists(profile_dir) == False:
+        os.makedirs(profile_dir)
+    dp_projdir = os.path.join(profile_dir, ds)
+
+    if os.path.exists(dp_projdir) == False:
+        os.makedirs(dp_projdir)
+    dp_png_dir = os.path.join(dp_projdir, 'png')
+    dp_csv_dir = os.path.join(dp_projdir, 'csv')
+    out_name2 = f'{profile_type}_{cat}'
+    ser = df[cat].value_counts()
+    if save_png == True:
+        if os.path.exists(dp_png_dir) == False:
+            os.makedirs(dp_png_dir)
+
+        opng = os.path.join(dp_png_dir, f'{out_name2}.png' )
+        series_plot_save(ser, cat, fname=opng, ds=ds)
+
+    if save_csv == True:
+        if os.path.exists(dp_csv_dir) == False:
+            os.makedirs(dp_csv_dir) 
+        ocsv = os.path.join(dp_csv_dir, f'{out_name2}.csv')
+        ser.write_csv(ocsv)
+
+
+

@@ -8,6 +8,7 @@ import sklearn.metrics as SKM
 import os
 import matplotlib.pyplot as plt
 import time
+import sys
 
 torch.manual_seed(3)
 classdict = {'2a3': 0, '3a4': 1, '3a5': 2, '4a5': 3, '5a6': 4, '5a7': 5, '6a7': 6, '7a8': 7}
@@ -15,15 +16,16 @@ rev_classdict = {i:x for (x,i) in classdict.items()}
 class_arr = [k for (k,v) in classdict.items()]
 num_classes = len(classdict)
 
+data_debug = True
 to_nep = True
 split = 2
 classification = False
 bs = 256
 lr = 1e-3
-num_epochs = 200
+num_epochs = 300
 if classification == False:
-    num_epochs = 100
-    lr = 1e-6
+    num_epochs = 50
+    lr = 1e-4
 dropout = 0.5
 hidden_layers = [512]
 
@@ -49,6 +51,12 @@ train_data = STPActivationsData(csvfile = csvfile, device=device, data_folder = 
 valid_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='val', classification = classification)
 test_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='test', classification = classification)
 
+if data_debug == True:
+    num_train = len(train_data)
+    num_valid = len(valid_data)
+    num_test = len(test_data)
+    print(f"num_train: {num_train}, num_valid: {num_valid}, num_test: {num_test}")
+    sys.exit()
 model = None
 loss_fn = None
 if classification == True:
