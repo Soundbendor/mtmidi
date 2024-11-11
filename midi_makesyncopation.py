@@ -27,9 +27,9 @@ reg_dyn = 'mp'
 acc_num = dyn[accent_dyn]
 reg_num = dyn[reg_dyn]
 
-#instruments = ['Tinkle Bell','Agogo','Steel Drums','Woodblock','Taiko Drum','Melodic Tom','Synth Drum']
+instruments = ['Tinkle Bell','Agogo','Steel Drums','Woodblock','Taiko Drum','Melodic Tom','Synth Drum']
 
-instruments = ['Agogo','Woodblock']
+#instruments = ['Agogo','Woodblock']
 
 # 1-bar patterns repeated over num_bars
 

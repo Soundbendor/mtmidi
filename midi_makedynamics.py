@@ -62,13 +62,13 @@ sustain = 1.0
 beg_padding = 0
 num_bars = 2
 
-#instruments = ['Tinkle Bell','Agogo','Steel Drums','Woodblock','Taiko Drum','Melodic Tom','Synth Drum']
+instruments = ['Tinkle Bell','Agogo','Steel Drums','Woodblock','Taiko Drum','Melodic Tom','Synth Drum']
 
-instruments = ['Agogo','Woodblock']
+#instruments = ['Agogo','Woodblock']
 
 # always goes from soft to loud
 #dyn_to_use = dyn_ltr
-dyn_to_use = ["pp", "ff"]
+dyn_to_use = ["p", "ff"]
 dyn_pair = [x for x in combinations(dyn_to_use, 2)]
 # total number of notes = dur * subdiv * num_bars
 dur_subdiv = [(4,2),(4,3)]
