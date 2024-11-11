@@ -14,7 +14,15 @@ inst = {}
 
 random.seed(5)
 
-with open('inst_list.csv', 'r') as f:
+def by_projpath(subpath=None,make_dir = False):
+    cur_path = os.path.dirname(os.path.realpath(__file__))
+    if subpath != None:
+        cur_path = os.path.join(cur_path, subpath)
+        if os.path.exists(cur_path) == False and make_dir == True:
+            os.makedirs(cur_path)
+    return cur_path
+
+with open(by_projpath('inst_list.csv'), 'r') as f:
     csvr = csv.reader(f, delimiter=',')
     for i,row in enumerate(csvr):
         if i > 0:
@@ -22,6 +30,7 @@ with open('inst_list.csv', 'r') as f:
             inst_name = row[1]
             inst_cat = row[2]
             inst[inst_name] = {'number': inst_num, 'category': inst_cat}
+
 
 def shuffle_list(cur_list):
     random.shuffle(cur_list)

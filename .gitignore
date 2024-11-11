@@ -1,3 +1,6 @@
 nep_api.txt
 res/*
 midi/*
+acts/*
+log/*
+*.swp

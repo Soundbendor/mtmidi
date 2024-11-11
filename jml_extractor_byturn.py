@@ -2,27 +2,24 @@ import jukemirlib as jml
 import os
 import torch
 
-out_dir = 'jukebox_acts'
-load_dir = 'wav_trim'
-log = 'jml.log'
-dsamp_rate = 22050
-#layer_acts = [36,72]
+out_dir = um.by_projpath(os.path.join('acts', 'jukebox_acts'), make_dir = True)
+load_dir = um.by_projpath('wav')
+log = um.by_projpath(os.path.join('log', 'jml_bt.log'))
+#dsamp_rate = 22050
+dsamp_rate = 15
 layer_acts = [x for x in range(1,73)]
 num_layers = len(layer_acts)
-num_per = 3
+num_per = 4
 if os.path.isfile(log):
     os.remove(log)
-if os.path.exists(out_dir) == False:
-    os.makedirs(out_dir)
 for fidx,f in enumerate(os.listdir(load_dir)):
     #if fidx > 0: break
-
+   
     fsplit = '.'.join(f.split('.')[:-1])
     outname = f'{fsplit}.pt'
     outpath = os.path.join(out_dir, outname)
 
     fpath = os.path.join(load_dir, f)
-    audio = jml.load_audio(fpath)
     first_layer_done = False
     means = None
     with open(log, 'a') as wf:
@@ -32,7 +29,7 @@ for fidx,f in enumerate(os.listdir(load_dir)):
             print(cur_layers, "-----")
             #if first_layer_done == True:break
             print(f'getting reps for layers {cur_layers}', file=wf)
-            reps = jml.extract(audio, layers=cur_layers, downsample_target_rate=dsamp_rate, meanpool = True)
+            reps = jml.extract(fpath = fpath, layers=cur_layers, duration= dur, downsample_method=None, downsample_target_rate=dsamp_rate, meanpool = True)
             for layer_idx in cur_layers:
                 #print(layer_idx)
                 if first_layer_done == False:
@@ -41,6 +38,9 @@ for fidx,f in enumerate(os.listdir(load_dir)):
                 else:
                     #pass
                     means = torch.vstack((means, torch.from_numpy(reps[layer_idx])))
+            jml.lib.empty_cache()
         torch.save(means, outpath)
         print(means, file=wf)
         print(means.shape,file=wf)
+
+             

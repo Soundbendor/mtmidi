@@ -14,7 +14,7 @@ if os.path.exists(out_dir) == False:
     os.makedirs(out_dir)
 for fidx,f in enumerate(os.listdir(load_dir)):
     if fidx > 0: break
-
+    
     fsplit = '.'.join(f.split('.')[:-1])
     outname = f'{fsplit}.npy'
     outpath = os.path.join(out_dir, outname)
@@ -38,3 +38,4 @@ for fidx,f in enumerate(os.listdir(load_dir)):
         print(means, file=wf)
         print(means.shape, file=wf)
 
+                
