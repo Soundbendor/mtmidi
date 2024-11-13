@@ -26,7 +26,7 @@ class STPActivationsData(torch.utils.data.Dataset):
             cur_truth = self.classdict[cur_label]
         else:
             cur_truth = self.data['ratio'][idx]
-        fpath = os.path.join(self.data_folder, f'{cur_name}-trim.pt')
+        fpath = os.path.join(self.data_folder, f'{cur_name}.pt')
         cur_arr = None
         if self.layer < 0:
             cur_arr = torch.load(fpath, map_location=torch.device(self.device))

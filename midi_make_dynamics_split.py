@@ -1,7 +1,11 @@
 import util as um
-import mido
 import musicnoteconv as mnc
 from itertools import combinations
+import csv
+import random
+import os
+import polars as pl
+
 
 dyn_ltr = ["pp", "p", "mp", "mf", "f", "ff"]
 # (127 - 22)/(num - 1)
@@ -75,6 +79,55 @@ dur_subdiv = [(4,2),(4,3)]
 
 dyn_type = ["flat", "hairpin", "revhairpin", "cresc", "decresc", "subf", "subp"]
 
+
+data_profile = True
+data_csv = True
+data_png = True
+out_name = 'dyn_split'
+
+
+
+out_csv = f'{out_name}.csv'
+out_dir = "csv"
+dp_dir = 'dataprof'
+inst_pairs_train = 15
+opath = os.path.join(out_dir, out_csv)
+seed = 5
+midinote = 60 # midi note to use
+ticks_per_beat = 1000
+velocity = 127
+end_padding = 10
+sustain = 1.0
+dur = 1
+subdiv = 1
+num_trks = 2
+beg_padding = 0
+do_reverse = True
+
+instruments = ['Tinkle Bell','Agogo','Steel Drums','Woodblock','Taiko Drum','Melodic Tom','Synth Drum']
+
+#instruments = ['Agogo','Woodblock']
+inst_combos = [x for x in combinations(instruments, 2)]
+
+um.shuffle_list(inst_combos)
+
+poly_pairs = [(2,3),(3,4),(4,5),(5,6),(6,7),(7,8),(3,5),(5,7)]
+train_poly = set([(3,5), (3,4), (4,5), (5,6), (6,7)])
+valtest_poly = set([(2,3), (7,8), (5,7)])
+
+bpm_bars = [(120, 2), (180, 3)]
+runs = 2 if do_reverse == True else 1
+if os.path.exists(out_dir) == False:
+    os.makedirs(out_dir)
+
+fieldnames = ['name','inst', 'num_bars', 'dyntype', 'set']
+
+bar_charts = ['bpm', 'poly', 'pair', 'set']
+with open(opath, 'w') as csvf:
+    csvw = csv.DictWriter(csvf,fieldnames=fieldnames)
+    csvw.writeheader()
+
+
 for _ds in dur_subdiv:
     dur = _ds[0]
     subdiv = _ds[1]
@@ -134,4 +187,21 @@ for _ds in dur_subdiv:
 
 
 
+ 
+
+
+if data_profile == True:
+
+    data = pl.scan_csv(opath).collect()
+    for cat in bar_charts:
+        um.profile_category(data, cat, ds=out_name, profile_type='overall')
+    set_types = data['set'].value_counts()['set']
+    for set_type in set_types:
+        curset =  data.filter(pl.col('set') == set_type)
+        for cat in bar_charts:
+            if cat != 'set':
+                um.profile_category(curset, cat, ds=out_name, profile_type=set_type, save_csv=data_csv, save_png = data_png)
                 
+        
+
+
