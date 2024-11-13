@@ -84,7 +84,7 @@ with open(opath, 'w') as csvf:
                         cur_set = um.coinflip_label(chance=0.5, label1='val', label2='test')
                     ratio = pnums[0]/pnums[1]
                     pstr = f"{pnums[0]}a{pnums[1]}"
-                    outname = f"{inst1}_{inst2}-{cur_bpm}_{pstr}"
+                    outname = f"polyrhy-{inst1}_{inst2}-{cur_bpm}_{pstr}"
                     cur_row = {'inst1': inst1, 'inst2': inst2, 'poly': pstr, 'pair': pstr2, 'set': cur_set, 'bpm': cur_bpm, 'num_bars': num_bars,
                                'poly1': pnums[0], 'poly2': pnums[1], 'name': outname, 'ratio': ratio}
                     csvw.writerow(cur_row)

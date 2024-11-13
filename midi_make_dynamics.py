@@ -114,7 +114,7 @@ for _ds in dur_subdiv:
                     d_on, d_off = um.notedur_to_ticks(dur, subdiv = subdiv, ticks_per_beat = ticks_per_beat, sustain = sustain)
                     dynstr = f"{_dt}-{dyn1}_{dyn2}"
                     durstr = f"{dur}_{subdiv}"
-                    outname = f"{short_name}-{dynstr}-{durstr}.mid"
+                    outname = f"dyn-{short_name}-{dynstr}-{durstr}.mid"
                     #print(outname)
                     # keep track of ticks left from last bar
                     last_ticks_left = 0

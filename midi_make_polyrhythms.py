@@ -51,7 +51,7 @@ for (cur_bpm, num_bars) in bpm_bars:
                 inst1 = short_names[inst_order[0]]
                 inst2 = short_names[inst_order[1]]
                 pstr = f"{pnums[0]}a{pnums[1]}"
-                outname = f"{inst1}_{inst2}-{cur_bpm}_{pstr}.mid"
+                outname = f"polyrhy-{inst1}_{inst2}-{cur_bpm}_{pstr}.mid"
                 #print(outname)
                 # number of bars to do polyrhthm (polyrhythm isolated for one bar)
                 # do one instrument at a time
