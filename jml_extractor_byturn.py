@@ -11,6 +11,7 @@ dsamp_rate = 15
 layer_acts = [x for x in range(1,73)]
 num_layers = len(layer_acts)
 num_per = 4
+dur = 4.0
 if os.path.isfile(log):
     os.remove(log)
 for fidx,f in enumerate(os.listdir(load_dir)):
