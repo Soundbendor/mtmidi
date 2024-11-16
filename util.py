@@ -13,6 +13,7 @@ seed = 5
 inst = {}
 
 random.seed(5)
+bpms = (1./60000.) # (1 min/60 sec) x (1 sec/1000 ms)
 
 def by_projpath(subpath=None,make_dir = False):
     cur_path = os.path.dirname(os.path.realpath(__file__))
@@ -31,6 +32,8 @@ with open(by_projpath('inst_list.csv'), 'r') as f:
             inst_cat = row[2]
             inst[inst_name] = {'number': inst_num, 'category': inst_cat}
 
+def get_random_list(lo, hi, num):
+    return [random.uniform(lo,hi) for _ in range(num)]
 
 def shuffle_list(cur_list):
     random.shuffle(cur_list)
@@ -86,6 +89,14 @@ def write_to_wav_pyfl(midifilepath, save_dir = 'wav', sr = 44100, gain=0.2, chan
     siw.write(outfilepath, sr, s)
 
     
+def ms_to_ticks(ms, ticks_per_beat = 1000, bpm = 120):
+    # ticks/beat x beats/min x min/sec x sec/ms = ticks/ms
+    # ticks/beat x beats/ms = ticks/ms
+    # ticks/ms x ms = ticks
+    ticks = (ticks_per_beat * bpm) * bpms
+    return ticks
+
+
 
 
 def write_to_wav(midifilepath, sr = 44100, save_dir = "wav"):
