@@ -4,7 +4,8 @@ import musicnoteconv as mnc
 from itertools import combinations
 import numpy as np
 
-max_num = 12
+#max_num = 12
+max_num=11
 midinote = 60 # midi note to use
 ticks_per_beat = 1000
 cur_bpm = 120
@@ -15,8 +16,8 @@ dur = 1
 subdiv = 1
 num_trks = 2
 beg_padding = 0
-num_offsets = 4 # not including no offset
-random_offsets = True
+#num_offsets = 4 # not including no offset
+#random_offsets = True
 max_offset_ms = 250 # 16th note at 60 bpm
 do_reverse = True
 
@@ -31,11 +32,13 @@ poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,max_num
 bpm_bars = [(60, 1),(120, 2), (180, 3)]
 runs = 2 if do_reverse == True else 1
 
-offset_ms_arr = [0.] + [((i+1.) * max_offset_ms)/num_offsets for i in range(num_offsets)]
-if random_offsets == True:
-    #offset_ms = [0] + [int(x) for x in um.get_random_list(1., float(max_offset_ms), num_offsets)]
-    # hand curated using [random.randint(1,251) for _ in range(4)]
-    offset_ms_arr = [0, 67, 105, 170, 249]
+#offset_ms_arr = [0.] + [((i+1.) * max_offset_ms)/num_offsets for i in range(num_offsets)]
+#if random_offsets == True:
+#offset_ms = [0] + [int(x) for x in um.get_random_list(1., float(max_offset_ms), num_offsets)]
+# hand curated using [random.randint(1,251) for _ in range(4)]
+#offset_ms_arr = [0, 67, 105, 170, 249]
+# another hand curated random randint
+offset_ms_arr = [0, 120, 204]
 
 
 for (cur_bpm, num_bars) in bpm_bars:
