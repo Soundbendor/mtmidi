@@ -7,11 +7,12 @@ import random
 import os
 import polars as pl
 from operator import itemgetter
+import polyrhythms as PL
 
 data_profile = True
 data_csv = True
 data_png = True
-harder_split = False
+harder_split = True
 out_name = 'polyrhy_split1'
 
 if harder_split == True:
@@ -35,33 +36,18 @@ num_trks = 2
 beg_padding = 0
 do_reverse = True
 
-instruments = ['Tinkle Bell','Agogo','Steel Drums','Woodblock','Taiko Drum','Melodic Tom','Synth Drum']
 
 #instruments = ['Agogo','Woodblock']
-inst_combos = [x for x in combinations(instruments, 2)]
 
-um.shuffle_list(inst_combos)
 
 #poly_pairs = [(2,3),(3,4),(4,5),(5,6),(6,7),(7,8),(3,5),(5,7)]
 #train_poly = set([(3,5), (3,4), (4,5), (5,6), (6,7)])
 #valtest_poly = set([(2,3), (7,8), (5,7)])
 
-max_num=11
-reverb_lvl = {0:0, 1: 63, 2:127}
-offset_ms_arr = [0, 120, 204]
-poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,max_num+1) if (np.gcd(i,j) == 1 and i < j)}
-poly_tups = [((i,j),x) for (i,j),x in poly_pairs.items()]
-ptsort = sorted(poly_tups, key=itemgetter(1))
-smallest_ratio = ptsort[0][1]
-biggest_ratio = ptsort[-1][1]
-ratio_gap = biggest_ratio - smallest_ratio
-normalize_ratio = lambda x: (x - smallest_ratio)/ratio_gap # set ratios to be between 0 and 1
-
-num_poly = len(ptsort)
-validtest_prop = int(.15 * num_poly) # .15 for test, .15 for valid
-first_prop = [x for (x,y) in ptsort[:validtest_prop]] # first .15
-last_prop = [x for (x,y) in ptsort[-validtest_prop:]] # last .15
-middle_prop = [x for (x,y) in ptsort[validtest_prop:-validtest_prop]] # middle 0.7
+validtest_prop = int(.15 * PL.num_poly) # .15 for test, .15 for valid
+first_prop = [x for (x,y) in PL.ptsort[:validtest_prop]] # first .15
+last_prop = [x for (x,y) in PL.ptsort[-validtest_prop:]] # last .15
+middle_prop = [x for (x,y) in PL.ptsort[validtest_prop:-validtest_prop]] # middle 0.7
 
 train_poly = set(middle_prop)
 valtest_poly = set(first_prop + last_prop) # combine first and last .15
@@ -69,7 +55,6 @@ valtest_poly = set(first_prop + last_prop) # combine first and last .15
 #val_poly = set(firstlast_prop[:validtest_prop]) # validation gets first half of shuffled
 #test_poly = set(firstlast_prop[validtest_prop:]) # testing gets second half of shuffled
 
-bpm_bars = [(60, 1),(120, 2), (180, 3)]
 
 #bpm_bars = [(120, 2), (180, 3)]
 runs = 2 if do_reverse == True else 1
@@ -82,19 +67,19 @@ bar_charts = ['bpm', 'poly', 'pair', 'set']
 with open(opath, 'w') as csvf:
     csvw = csv.DictWriter(csvf,fieldnames=fieldnames)
     csvw.writeheader()
-    for (cur_bpm, num_bars) in bpm_bars:
+    for (cur_bpm, num_bars) in PL.bpm_bars:
         #tempo_microsec = mido.bpm2tempo(cur_bpm)
-        tick_offsets = {x:int(um.ms_to_ticks(x,ticks_per_beat = ticks_per_beat, bpm = cur_bpm)) for x in offset_ms_arr}
+        tick_offsets = {x:int(um.ms_to_ticks(x,ticks_per_beat = ticks_per_beat, bpm = cur_bpm)) for x in PL.offset_ms_arr}
 
         for offset_ms, offset_ticks in tick_offsets.items():
-            for rvb_lvl, rvb_val in reverb_lvl.items():
-                for pair_idx,cur_pair in enumerate(inst_combos):
+            for rvb_lvl, rvb_val in PL.reverb_lvl.items():
+                for pair_idx,cur_pair in enumerate(PL.inst_combos):
                     # iterate over instruments
                     ch_nums = [um.get_inst_program_number(x) for x in cur_pair]
                     short_names = [''.join(x.split(' ')) for x in cur_pair]
                     #print([x for x in zip(ch_nums, short_names)])
                     
-                    for pnums in poly_pairs:
+                    for pnums in PL.poly_pairs:
                         # iterate over polyrhythm pairs
 
                         for run in range(runs):
@@ -114,10 +99,10 @@ with open(opath, 'w') as csvf:
 
                             if harder_split == True and pnums in valtest_poly:
                                 cur_set = um.coinflip_label(chance=0.5, label1='val', label2='test')
-                            ratio = pnums[0]/pnums[1]
-                            norm_ratio = normalize_ratio(ratio)
-                            pstr = f"{pnums[0]}a{pnums[1]}"
-                            outname = f"polyrhy-{inst1}_{inst2}-bpm_{cur_bpm}-rvb_{rvb_lvl}-offms_{offset_ms}-{pstr}.mid"
+                            ratio = PL.get_ratio(pnums)
+                            norm_ratio = PL.normalize_ratio(ratio)
+                            pstr = PL.get_pstr(pnums)
+                            outname = PL.get_outname(inst1, inst2, cur_bpm, rvb_lvl, offset_ms, pstr)
                             #outname = f"polyrhy-{inst1}_{inst2}-{cur_bpm}_{pstr}"
                             cur_row = {'inst1': inst1, 'inst2': inst2, 'poly': pstr, 'pair': pstr2, 'set': cur_set, 'bpm': cur_bpm, 'num_bars': num_bars,
                                        'rvb_lvl': rvb_lvl, 'rvb_val': rvb_val, 'offset_ms': offset_ms, 'offset_ticks': offset_ticks,

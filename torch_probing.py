@@ -12,6 +12,10 @@ import sys
 
 torch.manual_seed(3)
 poly_pair_arr = [(i,j) for i in range(2,max_num+1) for j in range(2,max_num+1) if (np.gcd(i,j) == 1 and i < j)]
+poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,max_num+1) if (np.gcd(i,j) == 1 and i < j)}
+poly_tups = [((i,j),x) for (i,j),x in poly_pairs.items()]
+ptsort = sorted(poly_tups, key=itemgetter(1))
+
 #polydict = {'2a3': 0, '3a4': 1, '3a5': 2, '4a5': 3, '5a6': 4, '5a7': 5, '6a7': 6, '7a8': 7}
 polydict = {f"{n1}a{n2}": i for i,(n1,n2) in enumerate(poly_pair_arr)} 
 rev_polydict = {i:x for (x,i) in polydict.items()}
@@ -148,9 +152,11 @@ def test_regression(_model, _testdata, batch_size = 16, _nep=None):
                 truths = np.hstack((truths, ground_truth.cpu().numpy()))
 
     mse = SKM.mean_squared_error(truths, preds)
+    r2 = SKM.r2_score(truths, preds)
     print(f'mse: {mse}')
     if to_nep == True:
         _nep['test/mse'] = mse
+        _nep['test/r2'] = r2
 
 
 

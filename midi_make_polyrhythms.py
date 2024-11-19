@@ -1,8 +1,8 @@
 import util as um
 import mido
 import musicnoteconv as mnc
-from itertools import combinations
 import numpy as np
+import polyrhythms as PL
 
 #max_num = 12
 max_num=11
@@ -21,15 +21,10 @@ beg_padding = 0
 max_offset_ms = 250 # 16th note at 60 bpm
 do_reverse = True
 
-instruments = ['Tinkle Bell','Agogo','Steel Drums','Woodblock','Taiko Drum','Melodic Tom','Synth Drum']
 
 #instruments = ['Agogo','Woodblock']
-inst_combos = [x for x in combinations(instruments, 2)]
 
 # https://github.com/brown-palm/syntheory/blob/4f222359e750ec55425c12809c1a0358b74fce49/dataset/music/midi.py#L21
-reverb_lvl = {0:0, 1: 63, 2:127}
-poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,max_num+1) if (np.gcd(i,j) == 1 and i < j)}
-bpm_bars = [(60, 1),(120, 2), (180, 3)]
 runs = 2 if do_reverse == True else 1
 
 #offset_ms_arr = [0.] + [((i+1.) * max_offset_ms)/num_offsets for i in range(num_offsets)]
@@ -38,21 +33,20 @@ runs = 2 if do_reverse == True else 1
 # hand curated using [random.randint(1,251) for _ in range(4)]
 #offset_ms_arr = [0, 67, 105, 170, 249]
 # another hand curated random randint
-offset_ms_arr = [0, 120, 204]
 
 
-for (cur_bpm, num_bars) in bpm_bars:
+for (cur_bpm, num_bars) in PL.bpm_bars:
     tempo_microsec = mido.bpm2tempo(cur_bpm)
-    tick_offsets = {x:int(um.ms_to_ticks(x,ticks_per_beat = ticks_per_beat, bpm = cur_bpm)) for x in offset_ms_arr}
+    tick_offsets = {x:int(um.ms_to_ticks(x,ticks_per_beat = ticks_per_beat, bpm = cur_bpm)) for x in PL.offset_ms_arr}
     for offset_ms, offset_ticks in tick_offsets.items():
-        for rvb_lvl, rvb_val in reverb_lvl.items():
+        for rvb_lvl, rvb_val in PL.reverb_lvl.items():
 
-            for cur_pair in inst_combos:
+            for cur_pair in PL.inst_combos:
                 # iterate over instruments
                 ch_nums = [um.get_inst_program_number(x) for x in cur_pair]
                 short_names = [''.join(x.split(' ')) for x in cur_pair]
                 print([x for x in zip(ch_nums, short_names)])
-                for pnums in poly_pairs.keys():
+                for pnums in PL.poly_pairs.keys():
                     # iterate over polyrhythm pairs
                     r1on, r1off = um.notedur_to_ticks(dur, subdiv = pnums[0], ticks_per_beat = ticks_per_beat, sustain = sustain)
                     r2on, r2off = um.notedur_to_ticks(dur, subdiv = pnums[1], ticks_per_beat = ticks_per_beat, sustain = sustain)
@@ -68,8 +62,9 @@ for (cur_bpm, num_bars) in bpm_bars:
                         # midi naming
                         inst1 = short_names[inst_order[0]]
                         inst2 = short_names[inst_order[1]]
-                        pstr = f"{pnums[0]}a{pnums[1]}"
-                        outname = f"polyrhy-{inst1}_{inst2}-bpm_{cur_bpm}-rvb_{rvb_lvl}-offms_{offset_ms}-{pstr}.mid"
+                        pstr = PL.get_pstr(pnums)
+                        #outname = f"polyrhy-{inst1}_{inst2}-bpm_{cur_bpm}-rvb_{rvb_lvl}-offms_{offset_ms}-{pstr}.mid"
+                        outname = PL.get_outname(inst1, inst2, cur_bpm, rvb_lvl, offset_ms, pstr)
                         #print(outname)
                         # number of bars to do polyrhthm (polyrhythm isolated for one bar)
                         # do one instrument at a time
