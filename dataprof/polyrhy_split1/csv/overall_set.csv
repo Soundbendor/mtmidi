@@ -1,4 +1,4 @@
 set,count
-val,92
-train,480
-test,100
+val,5013
+test,5031
+train,25110

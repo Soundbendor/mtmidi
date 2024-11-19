@@ -1,3 +1,5 @@
+# delegating all random stuff here since I'm setting the seed here
+
 import mido
 import csv
 import os
@@ -14,6 +16,9 @@ inst = {}
 
 random.seed(5)
 bpms = (1./60000.) # (1 min/60 sec) x (1 sec/1000 ms)
+
+def shuf_arr(arr):
+    random.shuffle(arr)
 
 def by_projpath(subpath=None,make_dir = False):
     cur_path = os.path.dirname(os.path.realpath(__file__))
