@@ -85,6 +85,8 @@ def get_ratio(pnums):
     ratio = pnums[0]/pnums[1]
     return ratio
 
-def get_outname(inst1, inst2, cur_bpm, rvb_lvl, offset_ms, pstr):
-    outname = f"polyrhy-{inst1}_{inst2}-bpm_{cur_bpm}-rvb_{rvb_lvl}-offms_{offset_ms}-{pstr}.mid"
+def get_outname(inst1, inst2, cur_bpm, rvb_lvl, offset_ms, pstr, with_ext= True):
+    outname = f"polyrhy-{inst1}_{inst2}-bpm_{cur_bpm}-rvb_{rvb_lvl}-offms_{offset_ms}-{pstr}"
+    if with_ext == True:
+        outname = f"{outname}.mid"
     return outname

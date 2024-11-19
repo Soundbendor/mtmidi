@@ -12,7 +12,7 @@ import polyrhythms as PL
 data_profile = True
 data_csv = True
 data_png = True
-harder_split = True
+harder_split = False
 out_name = 'polyrhy_split1'
 
 if harder_split == True:
@@ -102,7 +102,7 @@ with open(opath, 'w') as csvf:
                             ratio = PL.get_ratio(pnums)
                             norm_ratio = PL.normalize_ratio(ratio)
                             pstr = PL.get_pstr(pnums)
-                            outname = PL.get_outname(inst1, inst2, cur_bpm, rvb_lvl, offset_ms, pstr)
+                            outname = PL.get_outname(inst1, inst2, cur_bpm, rvb_lvl, offset_ms, pstr,with_ext=False)
                             #outname = f"polyrhy-{inst1}_{inst2}-{cur_bpm}_{pstr}"
                             cur_row = {'inst1': inst1, 'inst2': inst2, 'poly': pstr, 'pair': pstr2, 'set': cur_set, 'bpm': cur_bpm, 'num_bars': num_bars,
                                        'rvb_lvl': rvb_lvl, 'rvb_val': rvb_val, 'offset_ms': offset_ms, 'offset_ticks': offset_ticks,
