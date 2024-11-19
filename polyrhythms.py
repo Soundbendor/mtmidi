@@ -10,6 +10,9 @@ polydict = {f"{n1}a{n2}": i for i,(n1,n2) in enumerate(poly_pairs.keys())}
 poly_tups = [((i,j),x) for (i,j),x in poly_pairs.items()]
 ptsort = sorted(poly_tups, key=itemgetter(1))
 
+rev_polydict = {i:x for (x,i) in polydict.items()}
+class_arr = [k for (k,v) in polydict.items()]
+
 smallest_ratio = ptsort[0][1]
 biggest_ratio = ptsort[-1][1]
 ratio_gap = biggest_ratio - smallest_ratio

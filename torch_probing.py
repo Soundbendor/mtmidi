@@ -9,6 +9,7 @@ import os
 import matplotlib.pyplot as plt
 import time
 import sys
+import polyrhythms as PL
 
 torch.manual_seed(3)
 poly_pair_arr = [(i,j) for i in range(2,max_num+1) for j in range(2,max_num+1) if (np.gcd(i,j) == 1 and i < j)]
@@ -16,11 +17,6 @@ poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,max_num
 poly_tups = [((i,j),x) for (i,j),x in poly_pairs.items()]
 ptsort = sorted(poly_tups, key=itemgetter(1))
 
-#polydict = {'2a3': 0, '3a4': 1, '3a5': 2, '4a5': 3, '5a6': 4, '5a7': 5, '6a7': 6, '7a8': 7}
-polydict = {f"{n1}a{n2}": i for i,(n1,n2) in enumerate(poly_pair_arr)} 
-rev_polydict = {i:x for (x,i) in polydict.items()}
-class_arr = [k for (k,v) in polydict.items()]
-num_classes = len(polydict)
 
 data_debug = False
 to_nep = True
@@ -55,9 +51,9 @@ if torch.cuda.is_available() == True and params["use_cuda"] == True:
     torch.set_default_device(device)
 
 
-train_data = STPActivationsData(csvfile = csvfile, device=device, data_folder = data_folder, polydict = polydict, num_classes = num_classes, set_type='train', classification = classification)
-valid_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, polydict = polydict, num_classes = num_classes, set_type='val', classification = classification)
-test_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, polydict = polydict, num_classes = num_classes, set_type='test', classification = classification)
+train_data = STPActivationsData(csvfile = csvfile, device=device, data_folder = data_folder, polydict = PL.polydict, num_classes = PL.num_classes, set_type='train', classification = classification)
+valid_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, polydict = PL.polydict, PL.num_classes = num_classes, set_type='val', classification = classification)
+test_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, polydict = PL.polydict, num_classes = PL.num_classes, set_type='test', classification = classification)
 
 if data_debug == True:
     num_train = len(train_data)
@@ -68,7 +64,7 @@ if data_debug == True:
 model = None
 loss_fn = None
 if classification == True:
-    model = LinearProbe(num_classes=num_classes,hidden_layers = hidden_layers, dropout = dropout).to(device)
+    model = LinearProbe(num_classes=PL.num_classes,hidden_layers = hidden_layers, dropout = dropout).to(device)
     loss_fn = torch.nn.CrossEntropyLoss()
 else:
     model = LinearProbe(num_classes=1,hidden_layers = hidden_layers, dropout = dropout).double().to(device)
@@ -183,8 +179,8 @@ def test_classification(_model, _testdata, batch_size = 16, _nep=None):
     _acc = SKM.accuracy_score(truths, preds)
     _f1macro = SKM.f1_score(truths, preds, average='macro')
     _f1micro = SKM.f1_score(truths, preds, average='micro')
-    class_truths = [rev_polydict[x] for x in truths]
-    class_preds = [rev_polydict[x] for x in preds]
+    class_truths = [PL.rev_polydict[x] for x in truths]
+    class_preds = [PL.rev_polydict[x] for x in preds]
     print(f'accuracy: {_acc}, f1macro: {_f1macro}, f1micro: {_f1micro}')
     _cm = SKM.confusion_matrix(class_truths, class_preds)
     _cmd = None
