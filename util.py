@@ -1,5 +1,6 @@
 # delegating all random stuff here since I'm setting the seed here
 
+import sys
 import mido
 import csv
 import os
@@ -17,6 +18,8 @@ inst = {}
 random.seed(5)
 bpms = (1./60000.) # (1 min/60 sec) x (1 sec/1000 ms)
 
+# https://stackoverflow.com/questions/4934806/how-can-i-find-scripts-directory
+script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 def shuf_arr(arr):
     random.shuffle(arr)
 

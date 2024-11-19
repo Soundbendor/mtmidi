@@ -11,9 +11,8 @@ class STPActivationsData(torch.utils.data.Dataset):
         self.data =  cur_data.filter(pl.col('set') == set_type)
         self.classification = classification
         self.norm_labels = norm_labels
-        if classification == True:
-            self.classdict = classdict
-            self.num_classes = num_classes
+        self.classdict = classdict
+        self.num_classes = num_classes
         self.data_folder = data_folder
         self.layer = layer 
     def __len__(self):
