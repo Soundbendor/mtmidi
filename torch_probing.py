@@ -51,9 +51,9 @@ if torch.cuda.is_available() == True and params["use_cuda"] == True:
     torch.set_default_device(device)
 
 
-train_data = STPActivationsData(csvfile = csvfile, device=device, data_folder = data_folder, polydict = PL.polydict, num_classes = PL.num_classes, set_type='train', classification = classification)
-valid_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, polydict = PL.polydict, PL.num_classes = num_classes, set_type='val', classification = classification)
-test_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, polydict = PL.polydict, num_classes = PL.num_classes, set_type='test', classification = classification)
+train_data = STPActivationsData(csvfile = csvfile, device=device, data_folder = data_folder, polystr_to_idx = PL.polystr_to_idx, num_classes = PL.num_classes, set_type='train', classification = classification)
+valid_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, polystr_to_idx = PL.polystr_to_idx, PL.num_classes = num_classes, set_type='val', classification = classification)
+test_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, polystr_to_idx = PL.polystr_to_idx, num_classes = PL.num_classes, set_type='test', classification = classification)
 
 if data_debug == True:
     num_train = len(train_data)
@@ -179,8 +179,8 @@ def test_classification(_model, _testdata, batch_size = 16, _nep=None):
     _acc = SKM.accuracy_score(truths, preds)
     _f1macro = SKM.f1_score(truths, preds, average='macro')
     _f1micro = SKM.f1_score(truths, preds, average='micro')
-    class_truths = [PL.rev_polydict[x] for x in truths]
-    class_preds = [PL.rev_polydict[x] for x in preds]
+    class_truths = [PL.rev_polystr_to_idx[x] for x in truths]
+    class_preds = [PL.rev_polystr_to_idx[x] for x in preds]
     print(f'accuracy: {_acc}, f1macro: {_f1macro}, f1micro: {_f1micro}')
     _cm = SKM.confusion_matrix(class_truths, class_preds)
     _cmd = None
