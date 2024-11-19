@@ -5,11 +5,12 @@ from sklearn import preprocessing as SKP
 import torch.nn.functional as NF
 
 class STPActivationsData(torch.utils.data.Dataset):
-    def __init__(self, csvfile=os.path.join('csv', 'polyrhy_split1.csv'), data_folder='jukebox_acts', set_type='train', device='cpu', num_classes = 8, classdict = None, classification = True, layer=-1):
+    def __init__(self, csvfile=os.path.join('csv', 'polyrhy_split1.csv'), data_folder='jukebox_acts', set_type='train', device='cpu', num_classes = 8, classdict = None, classification = True, norm_labels = True, layer=-1):
         self.device = device
         cur_data = pl.scan_csv(csvfile).collect()
         self.data =  cur_data.filter(pl.col('set') == set_type)
         self.classification = classification
+        self.norm_labels = norm_labels
         if classification == True:
             self.classdict = classdict
             self.num_classes = num_classes
@@ -25,7 +26,10 @@ class STPActivationsData(torch.utils.data.Dataset):
             cur_label = self.data['poly'][idx]
             cur_truth = self.classdict[cur_label]
         else:
-            cur_truth = self.data['ratio'][idx]
+            if self.norm_labels == True:
+                cur_truth = self.data['norm_ratio'][idx]
+            slse:
+                cur_truth = self.data['ratio'][idx]
         fpath = os.path.join(self.data_folder, f'{cur_name}.pt')
         cur_arr = None
         if self.layer < 0:
