@@ -22,14 +22,14 @@ class STPActivationsData(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         cur_truth = None
         cur_name = self.data['name'][idx]
-        if self.classification == True:
-            cur_label = self.data['poly'][idx]
-            cur_truth = self.classdict[cur_label]
-        else:
+        cur_reg = None
+        cur_label = self.data['poly'][idx]
+        cur_truth = self.classdict[cur_label]
+        if self.classification == False:
             if self.norm_labels == True:
-                cur_truth = self.data['norm_ratio'][idx]
-            slse:
-                cur_truth = self.data['ratio'][idx]
+                cur_reg = self.data['norm_ratio'][idx]
+            else:
+                cur_reg = self.data['ratio'][idx]
         fpath = os.path.join(self.data_folder, f'{cur_name}.pt')
         cur_arr = None
         if self.layer < 0:
@@ -38,7 +38,10 @@ class STPActivationsData(torch.utils.data.Dataset):
             cur_arr = torch.load(fpath, map_location=torch.device(self.device))[layer]
 
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
-        return cur_arr, cur_truth
+        if self.classification == True:
+            return cur_arr, cur_truth
+        else:
+            return cur_arr, cur_reg, cur_truth
 
 
 

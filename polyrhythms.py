@@ -2,10 +2,15 @@ from itertools import combinations
 from operator import itemgetter
 import numpy as np
 
+def get_pstr(pnums):
+    pstr = f"{pnums[0]}a{pnums[1]}"
+    return pstr
+
 instruments = ['Tinkle Bell','Agogo','Steel Drums','Woodblock','Taiko Drum','Melodic Tom','Synth Drum']
 inst_combos = [x for x in combinations(instruments, 2)]
 max_num = 11
 poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,max_num+1) if (np.gcd(i,j) == 1 and i < j)}
+
 
 
 poly_tups = [((i,j),x) for (i,j),x in poly_pairs.items()]
@@ -23,7 +28,8 @@ poly_tups_norm = [((i,j),normalize_ratio(x)) for (i,j),x in ptsort]
 
 # for classification
 poly_pairs_arr = [x for x in poly_pairs.keys()]
-polystr_to_idx = {f"{n1}a{n2}": i for i,(n1,n2) in enumerate(poly_pairs_arr)} 
+polystr_to_idx = {get_pstr(x): i for i,x in enumerate(poly_pairs_arr)} 
+pair_to_str = {x: get_pstr(x) for x in poly_pairs_arr}
 rev_polystr_to_idx = {i:x for (x,i) in polystr_to_idx.items()}
 class_arr = [k for (k,v) in polystr_to_idx.items()]
 
@@ -31,7 +37,8 @@ class_arr = [k for (k,v) in polystr_to_idx.items()]
 # (0, 0) no match
 default_tup = (0,0)
 reg_poly_pairs_arr = [x for x in poly_pairs.keys()] + [default_tup] 
-reg_polystr_to_idx = {f"{n1}a{n2}": i for i,(n1,n2) in enumerate(reg_poly_pairs_arr)} 
+reg_polystr_to_idx = {get_pstr(x): i for i,x in enumerate(reg_poly_pairs_arr)} 
+reg_pair_to_str = {x: get_pstr(x) for x in reg_poly_pairs_arr}
 reg_rev_polystr_to_idx = {i:x for (x,i) in reg_polystr_to_idx.items()}
 reg_class_arr = [k for (k,v) in reg_polystr_to_idx.items()]
 
@@ -42,7 +49,7 @@ offset_ms_arr = [0, 120, 204]
 bpm_bars = [(60, 1),(120, 2), (180, 3)]
 reverb_lvl = {0:0, 1: 63, 2:127}
 
-def get_nearest_poly(normed_pred, thresh=0.001):
+def get_nearest_poly(normed_pred, thresh=0.001, as_str = True):
     _start_idx = 0
     _end_idx = len(poly_tups_norm)
     def _get_nearest(start_idx, end_idx, ipt):
@@ -68,13 +75,11 @@ def get_nearest_poly(normed_pred, thresh=0.001):
                     _ret = _get_nearest(start,end, ipt)
         return _ret
     ret = _get_nearest(_start_idx, _end_idx, normed_pred)
+    if as_str == True:
+        ret = reg_pair_to_str[ret]
     return ret
 
 
-
-def get_pstr(pnums):
-    pstr = f"{pnums[0]}a{pnums[1]}"
-    return pstr
 
 def get_ratio(pnums):
     ratio = pnums[0]/pnums[1]

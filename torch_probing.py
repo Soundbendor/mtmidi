@@ -25,9 +25,13 @@ classification = False
 bs = 256
 lr = 1e-3
 num_epochs = 500
+classdict = PL.polystr_to_idx
+num_classes = PL.num_poly
 if classification == False:
     num_epochs = 100
     lr = 1e-4
+    classdict = PL.reg_polystr_to_idx
+    num_classes += 1 # to account for no label
 dropout = 0.5
 #hidden_layers = [512]
 hidden_layers = []
@@ -51,9 +55,9 @@ if torch.cuda.is_available() == True and params["use_cuda"] == True:
     torch.set_default_device(device)
 
 
-train_data = STPActivationsData(csvfile = csvfile, device=device, data_folder = data_folder, polystr_to_idx = PL.polystr_to_idx, num_classes = PL.num_classes, set_type='train', classification = classification)
-valid_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, polystr_to_idx = PL.polystr_to_idx, PL.num_classes = num_classes, set_type='val', classification = classification)
-test_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, polystr_to_idx = PL.polystr_to_idx, num_classes = PL.num_classes, set_type='test', classification = classification)
+train_data = STPActivationsData(csvfile = csvfile, device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='train', classification = classification)
+valid_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='val', classification = classification)
+test_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='test', classification = classification)
 
 if data_debug == True:
     num_train = len(train_data)
@@ -75,13 +79,14 @@ def train_epoch(_model, _tdl, _lossfn, _optimfn):
     _model.train(True)
     tot_loss = 0.
     for didx, data in enumerate(_tdl):
-        ipt, ground_truth = data
         _optimfn.zero_grad()
         _loss = None
         if classification == True:
+            ipt, ground_truth = data
             pred = _model(ipt)
             _loss = _lossfn(pred, ground_truth)
         else:
+            ipt, ground_truth, ground_label = data
             pred = _model(ipt.double())
             _loss = _lossfn(pred.flatten(), ground_truth)
         _loss.backward()
@@ -95,11 +100,12 @@ def valid_epoch(_model, _vdl, _lossfn):
     tot_loss = 0.
     with torch.no_grad():
         for didx, data in enumerate(_vdl):
-            ipt, ground_truth = data
             if classification == True:
+                ipt, ground_truth = data
                 pred = _model(ipt)
                 _loss = _lossfn(pred, ground_truth)
             else:
+                ipt, ground_truth, ground_label = data
                 pred = _model(ipt.double())
                 _loss = _lossfn(pred.flatten(), ground_truth)
 
@@ -135,26 +141,66 @@ def test_regression(_model, _testdata, batch_size = 16, _nep=None):
     tot_loss = 0.
     preds = None
     truths = None
+    pred_labels = None
+    truth_labels = None
     with torch.no_grad():
         for didx, data in enumerate(_tdl):
-            ipt, ground_truth = data
+            ipt, ground_truth, ground_label = data
             pred = _model(ipt.double())
 
+            pred_np = pred.cpu().numpy()
+            cur_pred_labels = [PL.get_nearest_poly(x, thresh=thresh) for x in pred_np]
+            cur_pred_label_idx = np.array([PL.reg_polystr_to_idx(x) for x in cur_pred_labels])
             if didx == 0:
-                preds = pred.cpu().numpy()
+                preds = pred_np
                 truths = ground_truth.cpu().numpy()
+                truth_labels = ground_label.cpu().numpy()
+                pred_labels = cur_pred_label_idx
             else:
-                preds = np.hstack((preds, pred.cpu().numpy()))
+                preds = np.hstack((preds, pred_np))
                 truths = np.hstack((truths, ground_truth.cpu().numpy()))
+                truth_labels = np.hstack((truth_labels, ground_label.cpu().numpy()))
+                pred_labels = np.hstack((pred_labels, cur_pred_label_idx))
+    _mse = SKM.mean_squared_error(truths, preds)
+    _r2 = SKM.r2_score(truths, preds)
+    _mae = SKM.mean_absolute_error(truths, preds)
 
-    mse = SKM.mean_squared_error(truths, preds)
-    r2 = SKM.r2_score(truths, preds)
-    print(f'mse: {mse}')
+
+    _acc = SKM.accuracy_score(truth_labels, pred_labels)
+    _f1macro = SKM.f1_score(truth_labels, pred_labels, average='macro')
+    _f1micro = SKM.f1_score(truth_labels, pred_labels, average='micro')
+
+    print(f'mse: {_mse}, r2: {_r2}, mae: {_mae}')
+    print(f'accuracy: {_acc}, f1macro: {_f1macro}, f1micro: {_f1micro}')
+    class_truths = [PL.rev_polystr_to_idx[x] for x in truth_labels]
+    class_preds = [PL.rev_polystr_to_idx[x] for x in pred_labels]
+
+    _cm = SKM.confusion_matrix(class_truths, class_preds)
+    _cmd = None
+    if params['split'] != 1:
+        all_labels = set(class_truths).union(set(class_preds))
+        class_arr2 = [x for x in class_arr if x in all_labels]
+        _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=class_arr2)
+    else:
+        _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=class_arr)
+    _cmd.plot()
+    timestamp = int(time.time()*1000)
+    if os.path.exists(res_dir) == False:
+        os.makedirs(res_dir)
+    cm_fname = f'{timestamp}-cm.png' 
+    cm_path = os.path.join(res_dir, cm_fname)
+    plt.savefig(cm_path)
+
     if to_nep == True:
-        _nep['test/mse'] = mse
-        _nep['test/r2'] = r2
+        _nep['test/mse'] = _mse
+        _nep['test/r2'] = _r2
+        _nep['test/mae'] = _mae
+        _nep['test/acc'] = _acc
+        _nep['test/f1macro'] = _f1macro
+        _nep['test/f1micro'] = _f1micro
+        _nep[f'test/cm-{timestamp}'].upload(cm_path)
 
-
+    plt.clf()
 
 def test_classification(_model, _testdata, batch_size = 16, _nep=None):
     _tdl = torch.utils.data.DataLoader(_testdata, batch_size = batch_size, shuffle=True, generator=torch.Generator(device=device))
