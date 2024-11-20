@@ -56,7 +56,7 @@ def get_nearest_poly(normed_pred, thresh=0.001, as_str = True):
         mid_idx = (end_idx+start_idx)//2
         mid_val = poly_tups_norm[mid_idx][1]
         match = np.isclose(ipt, mid_val, atol=thresh)
-        print(f"idx0: {start_idx}, idx1:{end_idx}, ipt:{ipt}, mididx:{mid_idx}, midval:{mid_val}, match:{match}")
+        #print(f"idx0: {start_idx}, idx1:{end_idx}, ipt:{ipt}, mididx:{mid_idx}, midval:{mid_val}, match:{match}")
         _ret = default_tup
         if match == True:
             _ret = poly_tups_norm[mid_idx][0]
@@ -65,13 +65,13 @@ def get_nearest_poly(normed_pred, thresh=0.001, as_str = True):
                 start = start_idx
                 end = mid_idx
                 if end >start:
-                    print(f'recurse left, start:{start}, end:{end}')
+                    #print(f'recurse left, start:{start}, end:{end}')
                     _ret = _get_nearest(start,end, ipt)
             else:
                 start = mid_idx+1
                 end = end_idx
                 if end >start:
-                    print(f'recurse right, start:{start}, end:{end}')
+                    #print(f'recurse right, start:{start}, end:{end}')
                     _ret = _get_nearest(start,end, ipt)
         return _ret
     ret = _get_nearest(_start_idx, _end_idx, normed_pred)

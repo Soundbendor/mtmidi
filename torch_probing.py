@@ -17,32 +17,34 @@ torch.manual_seed(3)
 #poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,max_num+1) if (np.gcd(i,j) == 1 and i < j)}
 #poly_tups = [((i,j),x) for (i,j),x in poly_pairs.items()]
 #ptsort = sorted(poly_tups, key=itemgetter(1))
-
-
+figsize = 15
+thresh = 0.01
 data_debug = False
-to_nep = False
+to_nep = True
 split = 1
 classification = False
-bs = 256
+bs = 2048
 lr = 1e-3
-num_epochs = 500
+#num_epochs = 500
+num_epochs = 100
 classdict = PL.polystr_to_idx
 num_classes = PL.num_poly
 if classification == False:
     num_epochs = 100
-    lr = 1e-4
+    #num_epochs = 5
+    lr = 1e-3
     classdict = PL.reg_polystr_to_idx
     num_classes += 1 # to account for no label
 dropout = 0.5
-#hidden_layers = [512]
-hidden_layers = []
+hidden_layers = [512]
+#hidden_layers = []
 
-
+hidden_layer_str = "["+",".join([str(y) for y in hidden_layers]) + "]"
 res_dir = os.path.join(util.script_dir, "res")
 user_folder = os.path.expanduser("~" + os.getenv("USER")) 
 #data_folder = os.path.join(user_folder, "ds", "jukebox_acts_36")
 data_folder = os.path.join(util.script_dir, "acts", "jukebox_acts_36")
-params = {'batch_size': bs, 'num_epochs': num_epochs, 'lr': lr, 'dropout': dropout, 'use_cuda': True, 'split': split, 'classification': classification}
+params = {'batch_size': bs, 'num_epochs': num_epochs, 'lr': lr, 'dropout': dropout, 'use_cuda': True, 'split': split, 'classification': classification, 'thresh': thresh, 'hidden_layers': hidden_layer_str}
 device ='cpu'
 
 csvfile = os.path.join(util.script_dir, 'csv', 'polyrhy_split1.csv')
@@ -69,7 +71,7 @@ if data_debug == True:
 model = None
 loss_fn = None
 if classification == True:
-    model = LinearProbe(num_classes=PL.num_classes,hidden_layers = hidden_layers, dropout = dropout).to(device)
+    model = LinearProbe(num_classes=PL.num_poly,hidden_layers = hidden_layers, dropout = dropout).to(device)
     loss_fn = torch.nn.CrossEntropyLoss()
 else:
     model = LinearProbe(num_classes=1,hidden_layers = hidden_layers, dropout = dropout).double().to(device)
@@ -149,42 +151,49 @@ def test_regression(_model, _testdata, batch_size = 16, _nep=None):
             ipt, ground_truth, ground_label = data
             pred = _model(ipt.double())
 
-            pred_np = pred.cpu().numpy()
+            pred_np = pred.cpu().numpy().flatten()
             cur_pred_labels = [PL.get_nearest_poly(x, thresh=thresh) for x in pred_np]
-            cur_pred_label_idx = np.array([PL.reg_polystr_to_idx(x) for x in cur_pred_labels])
+            cur_pred_label_idx = np.array([PL.reg_polystr_to_idx[x] for x in cur_pred_labels])
             if didx == 0:
                 preds = pred_np
-                truths = ground_truth.cpu().numpy()
-                truth_labels = ground_label.cpu().numpy()
+                truths = ground_truth.cpu().numpy().flatten()
+                truth_labels = ground_label.cpu().numpy().flatten()
                 pred_labels = cur_pred_label_idx
             else:
                 preds = np.hstack((preds, pred_np))
-                truths = np.hstack((truths, ground_truth.cpu().numpy()))
-                truth_labels = np.hstack((truth_labels, ground_label.cpu().numpy()))
+                truths = np.hstack((truths, ground_truth.cpu().numpy().flatten()))
+                truth_labels = np.hstack((truth_labels, ground_label.cpu().numpy().flatten()))
                 pred_labels = np.hstack((pred_labels, cur_pred_label_idx))
     _mse = SKM.mean_squared_error(truths, preds)
     _r2 = SKM.r2_score(truths, preds)
     _mae = SKM.mean_absolute_error(truths, preds)
-
-
+    _ev = SKM.explained_variance_score(truths, preds)
+    _medae = SKM.median_absolute_error(truths, preds)
+    _maxerr = SKM.max_error(truths, preds)
+    _mape = SKM.mean_absolute_percentage_error(truths, preds)
+    _rmse = SKM.root_mean_squared_error(truths, preds)
+    _d2ae = SKM.d2_absolute_error_score(truths, preds)
     _acc = SKM.accuracy_score(truth_labels, pred_labels)
     _f1macro = SKM.f1_score(truth_labels, pred_labels, average='macro')
     _f1micro = SKM.f1_score(truth_labels, pred_labels, average='micro')
 
-    print(f'mse: {_mse}, r2: {_r2}, mae: {_mae}')
+    print(f'mse: {_mse}, r2: {_r2}, mae: {_mae}, exp_var: {_ev}, median_ae: {_medae}')
+    print(f'max_err: {_maxerr}, mape: {_mape}, rmse:{_rmse}, d2ae: {_d2ae}')
     print(f'accuracy: {_acc}, f1macro: {_f1macro}, f1micro: {_f1micro}')
-    class_truths = [PL.rev_polystr_to_idx[x] for x in truth_labels]
-    class_preds = [PL.rev_polystr_to_idx[x] for x in pred_labels]
+    class_truths = [PL.reg_rev_polystr_to_idx[x] for x in truth_labels]
+    class_preds = [PL.reg_rev_polystr_to_idx[x] for x in pred_labels]
 
     _cm = SKM.confusion_matrix(class_truths, class_preds)
     _cmd = None
     if params['split'] != 1:
         all_labels = set(class_truths).union(set(class_preds))
-        class_arr2 = [x for x in class_arr if x in all_labels]
+        class_arr2 = [x for x in PL.reg_class_arr if x in all_labels]
         _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=class_arr2)
     else:
-        _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=class_arr)
+        _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=PL.reg_class_arr)
     _cmd.plot()
+    fig, ax = plt.subplots(figsize=(figsize,figsize))
+    _cmd.plot(ax=ax)
     timestamp = int(time.time()*1000)
     if os.path.exists(res_dir) == False:
         os.makedirs(res_dir)
@@ -194,8 +203,14 @@ def test_regression(_model, _testdata, batch_size = 16, _nep=None):
 
     if to_nep == True:
         _nep['test/mse'] = _mse
+        _nep['test/rmse'] = _rmse
         _nep['test/r2'] = _r2
         _nep['test/mae'] = _mae
+        _nep['test/med_ae'] = _medae
+        _nep['test/maxerr'] = _maxerr
+        _nep['test/expvar'] = _ev
+        _nep['test/mape'] = _mape
+        _nep['test/d2ae'] = _d2ae
         _nep['test/acc'] = _acc
         _nep['test/f1macro'] = _f1macro
         _nep['test/f1micro'] = _f1micro
@@ -215,8 +230,8 @@ def test_classification(_model, _testdata, batch_size = 16, _nep=None):
             ipt, ground_truth = data
             pred = _model(ipt)
 
-            cur_preds = torch.argmax(pred,axis=1).cpu().numpy()
-            cur_truths = ground_truth.cpu().numpy()
+            cur_preds = torch.argmax(pred,axis=1).cpu().numpy().flatten()
+            cur_truths = ground_truth.cpu().numpy().flatten()
             if didx == 0:
                 preds = cur_preds
                 truths = cur_truths
@@ -233,11 +248,12 @@ def test_classification(_model, _testdata, batch_size = 16, _nep=None):
     _cmd = None
     if params['split'] != 1:
         all_labels = set(class_truths).union(set(class_preds))
-        class_arr2 = [x for x in class_arr if x in all_labels]
+        class_arr2 = [x for x in PL.class_arr if x in all_labels]
         _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=class_arr2)
     else:
-        _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=class_arr)
-    _cmd.plot()
+        _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=PL.class_arr)
+    fig, ax = plt.subplots(figsize=(figsize,figsize))
+    _cmd.plot(ax=ax)
     timestamp = int(time.time()*1000)
     if os.path.exists(res_dir) == False:
         os.makedirs(res_dir)
