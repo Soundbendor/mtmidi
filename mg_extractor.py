@@ -41,7 +41,7 @@ layer_act = 36
 dur = 4.0
 
 proc = AutoProcessor.from_pretrained(model_str)
-model = AutoProcessor.from_pretrained(model_str)
+model = MusicgenForConditionalGeneration.from_pretrained(model_str)
 #layer_acts = [x for x in range(1,73)]
 if os.path.isfile(log):
     os.remove(log)
