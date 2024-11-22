@@ -1,6 +1,7 @@
 # https://github.com/brown-palm/syntheory/blob/main/embeddings/models.py
 # https://huggingface.co/docs/transformers/main/model_doc/musicgen
 # https://huggingface.co/docs/transformers/main/en/model_doc/encodec#transformers.EncodecFeatureExtractor
+# https://github.com/huggingface/transformers/blob/main/src/transformers/models/musicgen/modeling_musicgen.py
 import os
 import torch
 import librosa
