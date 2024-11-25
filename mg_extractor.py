@@ -141,55 +141,112 @@ with open(log, 'a') as lf:
 
         if model_size == 'audio':
             enc = model.get_audio_encoder()
-            encprops = dir(enc)
-            iptprops = dir(procd)
-            print("processed properties", file=lf)
-            print(iptprops, file=lf)
-            
-            print("encoder properties", file=lf)
-            print(encprops, file=lf)
-
-            encprops2 = dir(enc.encoder)
-            print("encoder properties 2", file=lf)
-            print(encprops2, file=lf)
-
-            numlayers = len(enc.encoder.layers)
-            print(f"num layers: {numlayers}", file=lf)
-
-            # the original syntheory way
             out = procd['input_values']
+            
+            # iterating through layers as in original syntheory codebase
+            # https://github.com/brown-palm/syntheory/blob/main/embeddings/models.py
             for layer in enc.encoder.layers:
                 out = layer(out)
 
-            print("iterating through layers", file=lf)
-            print(out.shape, file=lf)
-            
-            procd2 = proc(audio = audio, text = text, sampling_rate = sr, padding=True, return_tensors = 'pt')
-            outputs = model(**procd2)
-            enc_lh = outputs.encoder_last_hidden_state
-            print("last hidden state of encoder", file=lf)
-            print(enc_lh.shape, file=lf)
-
-            print("iteration output", file=lf)
-            print(out, file=lf)
-
-            print("last hidden state output", file=lf)
-            print(enc_lh, file=lf)
+            # output shape, (1, 128, 200), where 200 are the timesteps
+            # so average across timesteps for max pooling
 
 
-            enc_h = outputs.encoder_hidden_states
-            enc_h_sz = len(enc_h)
-            print(f'encoder hidden states: {enc_h_sz}', file=lf)
-            for i in range(enc_h_sz):
-                print(f'----{i}----', file=lf)
-                print(enc_h[i].shape, file=lf)
-                print(enc_h[i].grad_fn, file=lf)
-            
-            print(f'encoder hidden states output: {enc_h_sz}', file=lf)
-            for i in range(enc_h_sz):
-                print(f'----{i}----', file=lf)
-                print(enc_h[i], file=lf)
-            
+            if meanpool == True:
+                # gives shape (128)
+                out_mp = torch.mean(out,axis=2).squeeze()
+                torch.save(out_mp, outpath)
+            else:
+                # still need to squeeze
+                # gives shape (128, 200)
+                out_save = out.squeeze()
+                torch.save(out_save, outpath)
+
+            if debug == True:
+                encprops = dir(enc)
+                iptprops = dir(procd)
+                print("processed properties", file=lf)
+                print(iptprops, file=lf)
+                
+                print("encoder properties", file=lf)
+                print(encprops, file=lf)
+
+                encprops2 = dir(enc.encoder)
+                print("encoder properties 2", file=lf)
+                print(encprops2, file=lf)
+
+                numlayers = len(enc.encoder.layers)
+                print(f"num layers: {numlayers}", file=lf)
+
+                
+                # going from the audio encder
+                out2 = enc.encode(**procd)
+
+                print("iterating through layers", file=lf)
+                print(out.shape, file=lf)
+               
+                print("out2 propeties", file=lf)
+                out2prop = dir(out2)
+                print(out2prop, file=lf)
+
+                print("out2 outputs: audio_scales",file=lf)
+                print(out2.audio_scales,file=lf)
+
+                print("out2 outputs: audio_codes",file=lf)
+                print(out2.audio_codes, file=lf)
+
+                out3 = enc(**procd)
+
+
+                print("out3 propeties", file=lf)
+                out3prop = dir(out3)
+                print(out3prop, file=lf)
+
+                out3av = out3['audio_values']
+                avshape = out3av.shape
+                print(f"out3 output: audio_values ({avshape})", file=lf)
+                print(out3av, file=lf)
+                procd2 = proc(audio = audio, text = text, sampling_rate = sr, padding=True, return_tensors = 'pt')
+                procd2.to(device)
+                outputs = model(**procd2, output_attentions=True, output_hidden_states=True)
+                enc_lh = outputs.encoder_last_hidden_state
+                print("last hidden state of encoder", file=lf)
+                print(enc_lh.shape, file=lf)
+
+                print("iteration output", file=lf)
+                print(out, file=lf)
+
+                print("last hidden state output", file=lf)
+                print(enc_lh, file=lf)
+
+
+                enc_h = outputs.encoder_hidden_states
+                enc_at = outputs.encoder_attentions
+                enc_h_sz = len(enc_h)
+                enc_at_sz = len(enc_at)
+                print(f'encoder hidden states: {enc_h_sz}', file=lf)
+                for i in range(enc_h_sz):
+                    print(f'----{i}----', file=lf)
+                    print(enc_h[i].shape, file=lf)
+                    print(enc_h[i].grad_fn, file=lf)
+                
+                print(f'encoder hidden states output: {enc_h_sz}', file=lf)
+                for i in range(enc_h_sz):
+                    print(f'----{i}----', file=lf)
+                    print(enc_h[i], file=lf)
+                
+
+                print(f'encoder attentions: {enc_at_sz}', file=lf)
+                for i in range(enc_at_sz):
+                    print(f'----{i}----', file=lf)
+                    print(enc_at[i].shape, file=lf)
+                    print(enc_at[i].grad_fn, file=lf)
+                
+                print(f'encoder attentions output: {enc_at_sz}', file=lf)
+                for i in range(enc_at_sz):
+                    print(f'----{i}----', file=lf)
+                    print(enc_at[i], file=lf)
+                
 
 
 
@@ -199,15 +256,19 @@ with open(log, 'a') as lf:
             dat = torch.vstack(outputs.decoder_attentions)
            
             if meanpool == True:
+                # gives shape (24/48, 1024/1536/2048)
                 if save_hidden == True:
                     dhs_mp = torch.mean(dhs,axis=1)
                     torch.save(dhs_mp, outpath)
+                # gives shape (16/24/32)
                 if save_attn == True:
-                    dat_mp = torch.mean(dat,axis=1)
+                    dat_mp = torch.mean(dat,axis=(2,3))
                     torch.save(dat_mp, outpath)
             else:
+                # gives shape (24/48, 200, 1024/1536/2048)
                 if save_hidden == True:
                     torch.save(dhs, outpath)
+                # gives shape (16/24/32, 200, 200)
                 if save_attn == True:
                     torch.save(dat, outpath)
             if debug == True:
