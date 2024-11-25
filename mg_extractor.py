@@ -164,7 +164,8 @@ with open(log, 'a') as lf:
             print("iterating through layers", file=lf)
             print(out.shape, file=lf)
             
-            outputs = model(**procd)
+            procd2 = proc(audio = audio, text = text, sampling_rate = sr, padding=True, return_tensors = 'pt')
+            outputs = model(**procd2)
             enc_lh = outputs.encoder_last_hidden_state
             print("last hidden state of encoder", file=lf)
             print(enc_lh.shape, file=lf)
