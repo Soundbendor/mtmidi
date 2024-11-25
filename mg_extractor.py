@@ -8,7 +8,7 @@ import librosa
 import util as um
 import argparse
 from transformers import AutoProcessor, MusicenForConditionalGeneration
-
+from distutils.util import strtobool
 
 
 
@@ -17,13 +17,15 @@ model_num_layers = {"facebook/musicgen-small": 24, "facebook/musicgen-medium": 4
               "facebook/musicgen-large": 48}
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("-s", "--size", type=str, default="small", help="audio,small, medium, large")
+parser.add_argument("-n", "--normalize", type=strtobool, default=True, help="normalize audio")
 args.parser.parse_args()
 model_size = args.size
+normalize = args.normalize
 
 text = ""
 model_str = "facebook/musicgen-small"
 emb_dir = "mg_small"
-
+log_path = "mg_medium"
 if model_size == "medium":
     model_str = "facebook/musicgen-medium"
     emb_dir = "mg_medium"
@@ -38,6 +40,7 @@ elif model_size == "audio":
 num_layers = model_num_layers[model_str]
 
 device = 'cpu'
+log_path = emb_dir
 
 if torch.cuda.is_available() == True:
     device = 'cuda'
@@ -49,12 +52,10 @@ if model_size == "audio":
     num_layers = -1
 out_dir = um.by_projpath(os.path.join('acts', emb_dir), make_dir = True)
 load_dir = um.by_projpath('wav')
-log = um.by_projpath(os.path.join('log', 'jml.log'))
+log = um.by_projpath(os.path.join('log', f'{log_path}.log'))
 #dsamp_rate = 22050
-dsamp_rate = 15
 layer_act = 36
 dur = 4.0
-
 
 # https://huggingface.co/docs/transformers/v4.31.0/en/model_doc/musicgen
 
@@ -86,12 +87,13 @@ if os.path.isfile(log):
     os.remove(log)
 with open(log, 'a') as lf:
     for fidx,f in enumerate(os.listdir(load_dir)):
-        #if fidx > 0: break
+        if fidx > 0: break
         procd = None
+        audio = um.load_wav(f, dur = dur, normalize = normalize, sr = sr,  load_dir = load_dir)
         if model_size == 'audio':
-            proc(audio = audio, sampling_rate = sr, padding=True, return_tensors = 'pt')
+            procd = proc(audio = audio, sampling_rate = sr, padding=True, return_tensors = 'pt')
         else:
-            proc(audio = audio, text = text, sampling_rate = sr, padding=True, return_tensors = 'pt')
+            procd = proc(audio = audio, text = text, sampling_rate = sr, padding=True, return_tensors = 'pt')
 
         fsplit = '.'.join(f.split('.')[:-1])
         outname = f'{fsplit}.pt'
@@ -99,7 +101,12 @@ with open(log, 'a') as lf:
 
         fpath = os.path.join(load_dir, f)
         print(f'loading {fpath}', file=lf)
-        reps = jml.extract(fpath = fpath, layers=[layer_act], duration= dur, downsample_method=None, downsample_target_rate=dsamp_rate, meanpool = True)
-        torch.save(reps[layer_act], outpath)
-        jml.lib.empty_cache()
+        outputs = model(**procd, output_attentions=True, output_hidden_states=True)
+        dhs = outputs.decoder_hidden_states
+        dat = outputs.decoder_attentions
+        hs_shape = dhs.shape
+        dat_shape = dat.shape
+        print(f'hidden state shape: {hs_shape}, attention shape: {dat_shape}')
+        #torch.save(reps[layer_act], outpath)
+        #jml.lib.empty_cache()
                    

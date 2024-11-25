@@ -104,7 +104,17 @@ def ms_to_ticks(ms, ticks_per_beat = 1000, bpm = 120):
     ticks = (ticks_per_beat * bpm) * bpms
     return ticks
 
-
+# https://github.com/brown-palm/syntheory/blob/main/embeddings/models.py
+# takes mean of stereo channels (doesn't rely on loading as mono)
+# normalizes via numpy (divide by max)
+def load_wav(fname, dur = 4., normalize = False, sr=32000, load_dir='wav'):
+    wavpath = os.path.join(load_dir, fname)
+    snd, load_sr = librosa.load(wavpath, duration = dur, mono = True, sr=sr)
+    if normalize == False:
+        return snd
+    else:
+        return librosa.util.normalize(snd)
+    
 
 
 def write_to_wav(midifilepath, sr = 44100, save_dir = "wav"):
