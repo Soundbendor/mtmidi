@@ -182,7 +182,7 @@ with open(log, 'a') as lf:
             for i in range(enc_h_sz):
                 print(f'----{i}----', file=lf)
                 print(enc_h[i].shape, file=lf)
-                 print(enc_h[i].grad_fn, file=lf)
+                print(enc_h[i].grad_fn, file=lf)
             
             print(f'encoder hidden states output: {enc_h_sz}', file=lf)
             for i in range(enc_h_sz):
