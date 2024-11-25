@@ -5,6 +5,8 @@ import os
 import torch
 import librosa
 import util as um
+
+jml.setup_models(cache_dir='/nfs/guille/eecs_research/soundbendor/kwand/jukemirlib')
 out_dir = um.by_projpath(os.path.join('acts', 'jukebox_acts_36'), make_dir = True)
 load_dir = um.by_projpath('wav')
 log = um.by_projpath(os.path.join('log', 'jml.log'))

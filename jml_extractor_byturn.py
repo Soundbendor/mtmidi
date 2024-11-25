@@ -3,6 +3,7 @@ import jukemirlib as jml
 import os
 import torch
 
+jml.setup_models(cache_dir='/nfs/guille/eecs_research/soundbendor/kwand/jukemirlib')
 out_dir = um.by_projpath(os.path.join('acts', 'jukebox_acts'), make_dir = True)
 load_dir = um.by_projpath('wav')
 log = um.by_projpath(os.path.join('log', 'jml_bt.log'))

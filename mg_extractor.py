@@ -7,10 +7,19 @@ import torch
 import librosa
 import util as um
 import argparse
-from transformers import AutoProcessor, MusicenForConditionalGeneration
+from transformers import AutoProcessor, MusicgenForConditionalGeneration
 from distutils.util import strtobool
 
-
+# outputs of lm are all tuples where each entry is a tensor
+# sizes:
+# decoder.hidden_states
+# --- large: 1, 200, 2048 (49 hidden states, 0-47: AddBackward0, 48: NativeLayerNormBackward0)
+# --- medium: 1, 200, 1536 (49 hidden states, 0-47: AddBackward0, 48: NativeLayerNormBackward0)
+# --- small: 1, 200, 1024 (25 hidden states, 0-47: AddBackward0, 48: NativeLayerNormBackward0)
+# decoder.attention
+# --- large: 1, 32, 200, 200 (48, all ViewBackward0)
+# --- medium: 1, 24, 200, 200 (48, all ViewBackward0)
+# --- medium: 1, 16, 200, 200 (24, all ViewBackward0)
 
 sr = 32000
 model_num_layers = {"facebook/musicgen-small": 24, "facebook/musicgen-medium": 48,
@@ -18,9 +27,18 @@ model_num_layers = {"facebook/musicgen-small": 24, "facebook/musicgen-medium": 4
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("-s", "--size", type=str, default="small", help="audio,small, medium, large")
 parser.add_argument("-n", "--normalize", type=strtobool, default=True, help="normalize audio")
-args.parser.parse_args()
+parser.add_argument("-d", "--debug", type=strtobool, default=False, help="debug")
+parser.add_argument("-m", "--meanpool", type=strtobool, default=True, help="to meanpool")
+parser.add_argument("-hl", "--save_hidden", type=strtobool, default=True, help="save hidden states")
+parser.add_argument("-at", "--save_attn", type=strtobool, default=False, help="save attention")
+
+args = parser.parse_args()
 model_size = args.size
 normalize = args.normalize
+debug = args.debug
+meanpool = args.meanpool
+save_hidden = args.save_hidden
+save_attn = args.save_attn
 
 text = ""
 model_str = "facebook/musicgen-small"
@@ -50,7 +68,12 @@ if torch.cuda.is_available() == True:
 
 if model_size == "audio":
     num_layers = -1
-out_dir = um.by_projpath(os.path.join('acts', emb_dir), make_dir = True)
+out_dir = None
+if meanpool == True:
+    out_dir = um.by_projpath(os.path.join('acts', f'{emb_dir}_mp'), make_dir = True)
+else:
+    out_dir = um.by_projpath(os.path.join('acts', emb_dir), make_dir = True)
+
 load_dir = um.by_projpath('wav')
 log = um.by_projpath(os.path.join('log', f'{log_path}.log'))
 #dsamp_rate = 22050
@@ -79,15 +102,28 @@ dur = 4.0
  # https://github.com/huggingface/transformers/blob/main/src/transformers/models/musicgen/modeling_musicgen.py
  
 # get_audio_encoder returns self.audio_encoder 
+#proc = AutoProcessor.from_pretrained(model_str, device_map = device)
+#model = MusicgenForConditionalGeneration.from_pretrained(model_str, device_map = device)
 proc = AutoProcessor.from_pretrained(model_str)
-model = MusicgenForConditionalGeneration.from_pretrained(model_str)
+#model = MusicgenForConditionalGeneration.from_pretrained(model_str)
+model = MusicgenForConditionalGeneration.from_pretrained(model_str, device_map=device)
+#proc.to(device)
+#model.to(device)
 sr = model.config.audio_encoder.sampling_rate
 #layer_acts = [x for x in range(1,73)]
 if os.path.isfile(log):
     os.remove(log)
 with open(log, 'a') as lf:
     for fidx,f in enumerate(os.listdir(load_dir)):
-        if fidx > 0: break
+        if debug == True:
+            if fidx > 0: break
+        
+        dhs = None
+        dhs_mp = None
+        dat = None
+        dat_mp = None
+        audio = None
+
         procd = None
         audio = um.load_wav(f, dur = dur, normalize = normalize, sr = sr,  load_dir = load_dir)
         if model_size == 'audio':
@@ -95,18 +131,99 @@ with open(log, 'a') as lf:
         else:
             procd = proc(audio = audio, text = text, sampling_rate = sr, padding=True, return_tensors = 'pt')
 
+        procd.to(device)
         fsplit = '.'.join(f.split('.')[:-1])
         outname = f'{fsplit}.pt'
         outpath = os.path.join(out_dir, outname)
 
         fpath = os.path.join(load_dir, f)
         print(f'loading {fpath}', file=lf)
-        outputs = model(**procd, output_attentions=True, output_hidden_states=True)
-        dhs = outputs.decoder_hidden_states
-        dat = outputs.decoder_attentions
-        hs_shape = dhs.shape
-        dat_shape = dat.shape
-        print(f'hidden state shape: {hs_shape}, attention shape: {dat_shape}')
-        #torch.save(reps[layer_act], outpath)
-        #jml.lib.empty_cache()
-                   
+
+        if model_size == 'audio':
+            enc = model.get_audio_encoder()
+            encprops = dir(enc)
+            iptprops = dir(procd)
+            print("processed properties", file=lf)
+            print(iptprops, file=lf)
+            
+            print("encoder properties", file=lf)
+            print(encprops, file=lf)
+
+            encprops2 = dir(enc.encoder)
+            print("encoder properties 2", file=lf)
+            print(encprops2, file=lf)
+
+            numlayers = len(enc.encoder.layers)
+            print(f"num layers: {numlayers}", file=lf)
+
+            # the original syntheory way
+            out = procd['input_values']
+            for layer in enc.encoder.layers:
+                out = layer(out)
+
+            print("iterating through layers", file=lf)
+            print(out.shape, file=lf)
+            
+            outputs = model(**procd)
+            enc_lh = outputs.encoder_last_hidden_state
+            print("last hidden state of encoder", file=lf)
+            print(enc_lh.shape, file=lf)
+
+            print("iteration output", file=lf)
+            print(out, file=lf)
+
+            print("last hidden state output", file=lf)
+            print(enc_lh, file=lf)
+
+
+            enc_h = outputs.encoder_hidden_states
+            enc_h_sz = len(enc_h)
+            print(f'encoder hidden states: {enc_h_sz}', file=lf)
+            for i in range(enc_h_sz):
+                print(f'----{i}----', file=lf)
+                print(enc_h[i].shape, file=lf)
+                 print(enc_h[i].grad_fn, file=lf)
+            
+            print(f'encoder hidden states output: {enc_h_sz}', file=lf)
+            for i in range(enc_h_sz):
+                print(f'----{i}----', file=lf)
+                print(enc_h[i], file=lf)
+            
+
+
+
+        else:
+            outputs = model(**procd, output_attentions=True, output_hidden_states=True)
+            dhs = torch.vstack(outputs.decoder_hidden_states)
+            dat = torch.vstack(outputs.decoder_attentions)
+           
+            if meanpool == True:
+                if save_hidden == True:
+                    dhs_mp = torch.mean(dhs,axis=1)
+                    torch.save(dhs_mp, outpath)
+                if save_attn == True:
+                    dat_mp = torch.mean(dat,axis=1)
+                    torch.save(dat_mp, outpath)
+            else:
+                if save_hidden == True:
+                    torch.save(dhs, outpath)
+                if save_attn == True:
+                    torch.save(dat, outpath)
+            if debug == True:
+                dhs_sz = len(dhs)
+                print(f'hidden states: {dhs_sz}', file=lf)
+                for i in range(dhs_sz):
+                    print(f'----{i}----', file=lf)
+                    print(dhs[i].shape, file=lf)
+                    print(dhs[i].grad_fn, file=lf)
+                
+                dat_sz = len(dat)
+                print(f'attention: {dat_sz}', file=lf)
+                for i in range(dat_sz):
+                    print(f'----{i}----', file=lf)
+                    print(dat[i].shape, file=lf)
+                    print(dat[i].grad_fn, file=lf)
+
+            #torch.save(reps[layer_act], outpath)
+            #jml.lib.empty_cache()
+                       

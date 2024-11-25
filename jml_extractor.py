@@ -2,6 +2,7 @@ import jukemirlib as jml
 import os
 import numpy as np
 
+jml.setup_models(cache_dir='/nfs/guille/eecs_research/soundbendor/kwand/jukemirlib')
 out_dir = 'jukebox_acts'
 load_dir = 'wav_trim'
 log = 'jml.log'

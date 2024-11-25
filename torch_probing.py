@@ -18,7 +18,7 @@ torch.manual_seed(3)
 #poly_tups = [((i,j),x) for (i,j),x in poly_pairs.items()]
 #ptsort = sorted(poly_tups, key=itemgetter(1))
 figsize = 15
-thresh = 0.01
+thresh = 0.05
 data_debug = False
 to_nep = True
 split = 1
@@ -26,18 +26,18 @@ classification = False
 bs = 2048
 lr = 1e-3
 #num_epochs = 500
-num_epochs = 100
+num_epochs = 500
 classdict = PL.polystr_to_idx
 num_classes = PL.num_poly
 if classification == False:
-    num_epochs = 100
+    num_epochs = 500
     #num_epochs = 5
     lr = 1e-3
     classdict = PL.reg_polystr_to_idx
     num_classes += 1 # to account for no label
 dropout = 0.5
-hidden_layers = [512]
-#hidden_layers = []
+#hidden_layers = [512]
+hidden_layers = []
 
 hidden_layer_str = "["+",".join([str(y) for y in hidden_layers]) + "]"
 res_dir = os.path.join(util.script_dir, "res")
