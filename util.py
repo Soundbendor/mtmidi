@@ -18,6 +18,11 @@ inst = {}
 random.seed(5)
 bpms = (1./60000.) # (1 min/60 sec) x (1 sec/1000 ms)
 
+model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 72}
+
+model_layer_dim = {"musicgen-small_hidden": 1024, "musicgen-medium_hidden": 1536, "musicgen-large_hidden": 2048, 
+                   "musicgen-small_attn": 16, "musicgen-medium_attn": 24, "musicgen-large_attn": 32,
+                   "musicgen-encoder": 128, "jukebox": 4800}
 # https://stackoverflow.com/questions/4934806/how-can-i-find-scripts-directory
 script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 def shuf_arr(arr):
