@@ -35,7 +35,7 @@ model_type = {'musicgen-encoder': 'musicgen-large',
               'jukebox36': 'jukebox',
               'jukebox38': 'jukebox'}
 #model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 72}
-act_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 1, "jukebox36": 1, "jukebox38": "jukebox38"} #until we get all jukebox layers
+model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 1, "jukebox36": 1, "jukebox38": "jukebox38"} #until we get all jukebox layers
 
 act_layer_dim = {"musicgen-small_hidden": 1024, "musicgen-medium_hidden": 1536, "musicgen-large_hidden": 2048, 
                    "musicgen-small_attn": 16, "musicgen-medium_attn": 24, "musicgen-large_attn": 32,
@@ -73,7 +73,7 @@ def read_toml(sysargv, toml_dir = os.path.join(script_dir, 'toml')):
             toml_file = tomllib.load(f)
             print(f'read {fpath}')
         return toml_file
-    else:
+    except:
         print(f'error reading {fpath}')
         quit()
 

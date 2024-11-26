@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import time
 import sys
 import polyrhythms as PL
-import util
+import util as um
 import sys
 import tomllib
 from distutils.util import strtobool
@@ -43,28 +43,29 @@ dropout = 0.5
 num_hidden = sett['num_hidden']
 hidden_layers = []
 if num_hidden > 0:
-    hidden_layers = [5i2] * num_hidden
+    hidden_layers = [512] * num_hidden
 
 act_mk = sett['act_kind']
 act_lh = um.act_longhand[act_mk]
 model_type = um.model_type[act_lh]
 in_dim = um.act_layer_dim[act_lh]
 act_folder = um.act_folder[act_lh]
-
+num_layers = um.model_num_layers[model_type]
+layer_idx = min(num_layers - 1, sett['layer_idx'])
 hidden_layer_str = "["+",".join([str(y) for y in hidden_layers]) + "]"
-res_dir = os.path.join(util.script_dir, "res")
+res_dir = os.path.join(um.script_dir, "res")
 user_folder = os.path.expanduser("~" + os.getenv("USER")) 
 #data_folder = os.path.join(user_folder, "ds", "jukebox_acts_36")
-data_folder = os.path.join(util.script_dir, "acts", act_folder)
+data_folder = os.path.join(um.script_dir, "acts", act_folder)
 params = {'batch_size': bs, 'num_epochs': num_epochs, 'lr': lr, 'dropout': dropout, 'use_cuda': True, 'thresh': thresh, 'hidden_layers': hidden_layer_str, 'in_dim': in_dim,
           'act_folder': act_folder, 'model_type': model_type, 'act_lh': act_lh}
 params.update(sett)
 device ='cpu'
 
-csvfile = os.path.join(util.script_dir, 'csv', 'polyrhy_split1.csv')
+csvfile = os.path.join(um.script_dir, 'csv', 'polyrhy_split1.csv')
 if params['split'] != 1:
     print('running split 2')
-    csvfile = os.path.join(util.script_dir, 'csv', 'polyrhy_split2.csv')
+    csvfile = os.path.join(um.script_dir, 'csv', 'polyrhy_split2.csv')
 
 if torch.cuda.is_available() == True and params["use_cuda"] == True:
     device = 'cuda'
@@ -72,9 +73,9 @@ if torch.cuda.is_available() == True and params["use_cuda"] == True:
     torch.set_default_device(device)
 
 
-train_data = STPActivationsData(csvfile = csvfile, device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='train', classification = classification)
-valid_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='val', classification = classification)
-test_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='test', classification = classification)
+train_data = STPActivationsData(csvfile = csvfile, device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='train', layer_idx = layer_idx, classification = classification)
+valid_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='val', layer_idx = layer_idx, classification = classification)
+test_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='test', layer_idx = layer_idx, classification = classification)
 
 if data_debug == True:
     num_train = len(train_data)
