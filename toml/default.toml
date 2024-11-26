@@ -1,0 +1,4 @@
+act_kind = "mg_small"
+split = 1
+cls = true
+num_hidden = 1

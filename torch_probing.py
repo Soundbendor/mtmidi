@@ -11,8 +11,12 @@ import time
 import sys
 import polyrhythms as PL
 import util
+import sys
+import tomllib
+from distutils.util import strtobool
 
 torch.manual_seed(3)
+sett = um.read_toml(sys.argv)
 #poly_pair_arr = [(i,j) for i in range(2,max_num+1) for j in range(2,max_num+1) if (np.gcd(i,j) == 1 and i < j)]
 #poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,max_num+1) if (np.gcd(i,j) == 1 and i < j)}
 #poly_tups = [((i,j),x) for (i,j),x in poly_pairs.items()]
@@ -21,8 +25,8 @@ figsize = 15
 thresh = 0.05
 data_debug = False
 to_nep = True
-split = 1
-classification = False
+split = sett['split']
+classification = sett['cls']
 bs = 2048
 lr = 1e-3
 #num_epochs = 500
@@ -36,15 +40,25 @@ if classification == False:
     classdict = PL.reg_polystr_to_idx
     num_classes += 1 # to account for no label
 dropout = 0.5
-#hidden_layers = [512]
+num_hidden = sett['num_hidden']
 hidden_layers = []
+if num_hidden > 0:
+    hidden_layers = [5i2] * num_hidden
+
+act_mk = sett['act_kind']
+act_lh = um.act_longhand[act_mk]
+model_type = um.model_type[act_lh]
+in_dim = um.act_layer_dim[act_lh]
+act_folder = um.act_folder[act_lh]
 
 hidden_layer_str = "["+",".join([str(y) for y in hidden_layers]) + "]"
 res_dir = os.path.join(util.script_dir, "res")
 user_folder = os.path.expanduser("~" + os.getenv("USER")) 
 #data_folder = os.path.join(user_folder, "ds", "jukebox_acts_36")
-data_folder = os.path.join(util.script_dir, "acts", "jukebox_acts_36")
-params = {'batch_size': bs, 'num_epochs': num_epochs, 'lr': lr, 'dropout': dropout, 'use_cuda': True, 'split': split, 'classification': classification, 'thresh': thresh, 'hidden_layers': hidden_layer_str}
+data_folder = os.path.join(util.script_dir, "acts", act_folder)
+params = {'batch_size': bs, 'num_epochs': num_epochs, 'lr': lr, 'dropout': dropout, 'use_cuda': True, 'thresh': thresh, 'hidden_layers': hidden_layer_str, 'in_dim': in_dim,
+          'act_folder': act_folder, 'model_type': model_type, 'act_lh': act_lh}
+params.update(sett)
 device ='cpu'
 
 csvfile = os.path.join(util.script_dir, 'csv', 'polyrhy_split1.csv')
@@ -71,10 +85,10 @@ if data_debug == True:
 model = None
 loss_fn = None
 if classification == True:
-    model = LinearProbe(num_classes=PL.num_poly,hidden_layers = hidden_layers, dropout = dropout).to(device)
+    model = LinearProbe(in_dim = in_dim, num_classes=PL.num_poly,hidden_layers = hidden_layers, dropout = dropout).to(device)
     loss_fn = torch.nn.CrossEntropyLoss()
 else:
-    model = LinearProbe(num_classes=1,hidden_layers = hidden_layers, dropout = dropout).double().to(device)
+    model = LinearProbe(in_dim = in_dim, num_classes=1,hidden_layers = hidden_layers, dropout = dropout).double().to(device)
     loss_fn = torch.nn.MSELoss()
 optim = torch.optim.Adam(model.parameters(), lr=lr)
 

@@ -10,6 +10,7 @@ import numpy as np
 import random
 import librosa
 import soundfile as sf
+import tomllib
 #import pyaudio
 #import scipy.io.wavfile as siw
 seed = 5
@@ -18,15 +19,63 @@ inst = {}
 random.seed(5)
 bpms = (1./60000.) # (1 min/60 sec) x (1 sec/1000 ms)
 
-model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 72}
+act_longhand = {'mg_audio': 'musicgen-encoder',
+                 'mg_small_h': 'musicgen-small_hidden', 'mg_med_h': 'musicgen-medium_hidden', 'mg_large_h': 'musicgen-large_hidden',
+                 'mg_small_at': 'musicgen-small_attn', 'mg_med_at': 'musicgen-medium_attn', 'mg_large_at': 'musicgen-large_attn',
+                'jukebox36': 'jukebox36', 'jukebox38': 'jukebox38'}
 
-model_layer_dim = {"musicgen-small_hidden": 1024, "musicgen-medium_hidden": 1536, "musicgen-large_hidden": 2048, 
+model_type = {'musicgen-encoder': 'musicgen-large',
+              'musicgen-small_hidden': 'musicgen-small',
+              'musicgen-small_attn': 'musicgen-small',
+              'musicgen-medium_hidden': 'musicgen-medium',
+              'musicgen-medium_attn': 'musicgen-medium',
+              'musicgen-large_hidden': 'musicgen-large',
+              'musicgen-large_attn': 'musicgen-large',
+              'jukebox': 'jukebox',
+              'jukebox36': 'jukebox',
+              'jukebox38': 'jukebox'}
+#model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 72}
+act_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 1, "jukebox36": 1, "jukebox38": "jukebox38"} #until we get all jukebox layers
+
+act_layer_dim = {"musicgen-small_hidden": 1024, "musicgen-medium_hidden": 1536, "musicgen-large_hidden": 2048, 
                    "musicgen-small_attn": 16, "musicgen-medium_attn": 24, "musicgen-large_attn": 32,
-                   "musicgen-encoder": 128, "jukebox": 4800}
+                   "musicgen-encoder": 128,
+                 "jukebox": 4800,
+                 "jukebox36": 4800,
+                 "jukebox38": 4800,
+                 }
+
+act_folder = {'musicgen-encoder': 'mg_audio_mp',
+              'musicgen-small_hidden': 'mg_small_mp',
+              'musicgen-small_attn': 'mg_small_mp',
+              'musicgen-medium_hidden': 'mg_medium_mp',
+              'musicgen-medium_attn': 'mg_medium_mp',
+              'musicgen-large_hidden': 'mg_large_mp',
+              'musicgen-large_attn': 'mg_large_mp',
+              'jukebox': 'jukebox_acts_36',
+              'jukebox36': 'jukebox_acts_36',
+              'jukebox38': 'jukebox_acts_38',
+              }
+
 # https://stackoverflow.com/questions/4934806/how-can-i-find-scripts-directory
 script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 def shuf_arr(arr):
     random.shuffle(arr)
+
+def read_toml(sysargv, toml_dir = os.path.join(script_dir, 'toml')):
+    fname = 'default.toml'
+    if len(sysargv) > 1:
+        fname = sysargv[1]
+    fpath = os.path.join(toml_dir, fname)
+    toml_file = None
+    try:
+        with open(fpath, 'rb') as f:
+            toml_file = tomllib.load(f)
+            print(f'read {fpath}')
+        return toml_file
+    else:
+        print(f'error reading {fpath}')
+        quit()
 
 def by_projpath(subpath=None,make_dir = False):
     cur_path = os.path.dirname(os.path.realpath(__file__))
