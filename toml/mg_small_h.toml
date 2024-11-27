@@ -1,5 +1,7 @@
 act_kind = "mg_small_h"
 split = 1
-cls = true
+cls = false
 num_hidden = 1
 layer_idx = 11
+lr = 0.0001
+num_epochs = 100
