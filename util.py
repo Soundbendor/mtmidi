@@ -77,6 +77,10 @@ def read_toml(sysargv, toml_dir = os.path.join(script_dir, 'toml')):
         print(f'error reading {fpath}')
         quit()
 
+def path_list(subpath=None):
+    cur_path = by_projpath(subpath=subpath, make_dir = False)
+    return os.listdir(cur_path) 
+
 def by_projpath(subpath=None,make_dir = False):
     cur_path = os.path.dirname(os.path.realpath(__file__))
     if subpath != None:

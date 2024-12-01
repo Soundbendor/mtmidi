@@ -1,7 +1,7 @@
 act_kind = "mg_med_h"
 split = 1
-cls = false
+cls = true
 num_hidden = 1
 layer_idx = 23
-lr = 0.0001
-num_epochs = 100
+lr = 0.000001
+num_epochs = 250

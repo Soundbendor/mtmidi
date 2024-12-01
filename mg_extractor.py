@@ -6,6 +6,7 @@ import os
 import torch
 import librosa
 import util as um
+import util_hf as uhf
 import argparse
 from transformers import AutoProcessor, MusicgenForConditionalGeneration
 from distutils.util import strtobool
@@ -21,7 +22,7 @@ from distutils.util import strtobool
 # --- medium: 1, 24, 200, 200 (48, all ViewBackward0)
 # --- medium: 1, 16, 200, 200 (24, all ViewBackward0)
 
-sr = 32000
+model_sr = 32000
 model_num_layers = {"facebook/musicgen-small": 24, "facebook/musicgen-medium": 48,
               "facebook/musicgen-large": 48}
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -31,6 +32,7 @@ parser.add_argument("-d", "--debug", type=strtobool, default=False, help="debug"
 parser.add_argument("-m", "--meanpool", type=strtobool, default=True, help="to meanpool")
 parser.add_argument("-hl", "--save_hidden", type=strtobool, default=True, help="save hidden states")
 parser.add_argument("-at", "--save_attn", type=strtobool, default=False, help="save attention")
+parser.add_argument("-hf", "--hf_dataset", type=str, default="", help="use old hugging face dataset if passed")
 
 args = parser.parse_args()
 model_size = args.size
@@ -39,7 +41,15 @@ debug = args.debug
 meanpool = args.meanpool
 save_hidden = args.save_hidden
 save_attn = args.save_attn
+hfds_str = args.hf_datset
 
+acts_dir = 'acts'
+path_list = um.path_list('wav')
+
+use_hf = len(hfds_str) > 0
+if use_hf == True:
+    path_list = uhf.load_syntheory_train_dataset(hfds_str)
+    acts_dir = 'hf_acts'
 text = ""
 model_str = "facebook/musicgen-small"
 emb_dir = "mg_small"
@@ -70,11 +80,10 @@ if model_size == "audio":
     num_layers = -1
 out_dir = None
 if meanpool == True:
-    out_dir = um.by_projpath(os.path.join('acts', f'{emb_dir}_mp'), make_dir = True)
+    out_dir = um.by_projpath(os.path.join(acts_dir, f'{emb_dir}_mp'), make_dir = True)
 else:
-    out_dir = um.by_projpath(os.path.join('acts', emb_dir), make_dir = True)
+    out_dir = um.by_projpath(os.path.join(acts_dir, emb_dir), make_dir = True)
 
-load_dir = um.by_projpath('wav')
 log = um.by_projpath(os.path.join('log', f'{log_path}.log'))
 #dsamp_rate = 22050
 layer_act = 36
@@ -109,12 +118,15 @@ proc = AutoProcessor.from_pretrained(model_str)
 model = MusicgenForConditionalGeneration.from_pretrained(model_str, device_map=device)
 #proc.to(device)
 #model.to(device)
-sr = model.config.audio_encoder.sampling_rate
+model_sr = model.config.audio_encoder.sampling_rate
 #layer_acts = [x for x in range(1,73)]
+
+
+
 if os.path.isfile(log):
     os.remove(log)
 with open(log, 'a') as lf:
-    for fidx,f in enumerate(os.listdir(load_dir)):
+    for fidx,f in enumerate(path_list):
         if debug == True:
             if fidx > 0: break
         
@@ -125,11 +137,19 @@ with open(log, 'a') as lf:
         audio = None
 
         procd = None
-        audio = um.load_wav(f, dur = dur, normalize = normalize, sr = sr,  load_dir = load_dir)
-        if model_size == 'audio':
-            procd = proc(audio = audio, sampling_rate = sr, padding=True, return_tensors = 'pt')
+        audio = None
+        aud_sr = False
+        if use_hf == False:
+            audio = um.load_wav(f, dur = dur, normalize = normalize, sr = model_sr,  load_dir = load_dir)
         else:
-            procd = proc(audio = audio, text = text, sampling_rate = sr, padding=True, return_tensors = 'pt')
+
+            audio, aud_sr = uhf.get_from_entry_syntheory_audio(cur_entry, mono=True, normalize =normalize, dur = dur)
+            if aud_sr != model_sr:
+                audio = librosa.resample(audio, aud_sr, model_sr)
+        if model_size == 'audio':
+            procd = proc(audio = audio, sampling_rate = model_sr, padding=True, return_tensors = 'pt')
+        else:
+            procd = proc(audio = audio, text = text, sampling_rate = model_sr, padding=True, return_tensors = 'pt')
 
         procd.to(device)
         fsplit = '.'.join(f.split('.')[:-1])
@@ -206,7 +226,7 @@ with open(log, 'a') as lf:
                 avshape = out3av.shape
                 print(f"out3 output: audio_values ({avshape})", file=lf)
                 print(out3av, file=lf)
-                procd2 = proc(audio = audio, text = text, sampling_rate = sr, padding=True, return_tensors = 'pt')
+                procd2 = proc(audio = audio, text = text, sampling_rate = model_sr, padding=True, return_tensors = 'pt')
                 procd2.to(device)
                 outputs = model(**procd2, output_attentions=True, output_hidden_states=True)
                 enc_lh = outputs.encoder_last_hidden_state
