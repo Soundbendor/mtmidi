@@ -1,5 +1,6 @@
 # https://github.com/brown-palm/syntheory/blob/main/embeddings/models.py
 
+import util_hf as uhf
 from distutils.util import strtobool
 import jukemirlib as jml
 import os
