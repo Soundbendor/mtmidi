@@ -7,7 +7,7 @@ from sklearn import preprocessing as SKP
 from sklearn.model_selection import train_test_split
 import torch.nn.functional as NF
 from datasets import load_dataset
-import numpy as np
+#import numpy as np
 
 class STHFTempi(torch.utils.data.Dataset):
     def __init__(self, csvfile=os.path.join('hf_csv', 'tempi.csv'), data_folder='jukebox_acts_38', set_type='train', device='cpu', norm_labels = True, layer_idx=-1):
@@ -19,8 +19,8 @@ class STHFTempi(torch.utils.data.Dataset):
         self.min_bpm = cur_data['bpm'].min()
         self.max_bpm = cur_data['bpm'].max()
         self.bpm_range = self.max_bpm - self.min_bpm
-        self.scalefunc = np.vectorize(lambda x: (x - self.min_bpm)/self.bpm_range)
-        cur_data = cur_data.with_columns(norm_bpm=self.scalefunc(cur_data['bpm']))
+        #self.scalefunc = np.vectorize(lambda x: (x - self.min_bpm)/self.bpm_range)
+        #cur_data = cur_data.with_columns(norm_bpm=self.scalefunc(cur_data['bpm']))
         total_sz = cur_data['path'].count()
         test_valid_prop = 0.15
         train_st_idx = int(total_sz * test_valid_prop)
@@ -52,11 +52,10 @@ class STHFTempi(torch.utils.data.Dataset):
         cur_reg = None
         cur_label = self.data['poly'][idx]
         cur_truth = self.classdict[cur_label]
-        if self.classification == False:
-            if self.norm_labels == True:
-                cur_reg = self.data['norm_bpm'][idx]
-            else:
-                cur_reg = self.data['bpm'][idx]
+        if self.norm_labels == True:
+            cur_reg = self.data['norm_bpm'][idx]
+        else:
+            cur_reg = self.data['bpm'][idx]
         fpath = os.path.join(self.data_folder, f'{cur_name}.pt')
         cur_arr = None
         if self.layer_idx < 0:
@@ -65,10 +64,7 @@ class STHFTempi(torch.utils.data.Dataset):
             cur_arr = torch.load(fpath, map_location=torch.device(self.device))[self.layer_idx]
 
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
-        if self.classification == True:
-            return cur_arr, cur_truth
-        else:
-            return cur_arr, cur_reg, cur_truth
+        return cur_arr, cur_reg, cur_truth
 
 
 
