@@ -1,7 +1,10 @@
 act_kind = "mg_large_h"
 split = 1
-cls = true
+cls = false
 num_hidden = 1
 layer_idx = 23
 lr = 0.000001
 num_epochs = 250
+dataset = 'tempi'
+class_binsize = 10
+thresh = 3

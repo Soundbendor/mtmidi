@@ -9,8 +9,10 @@ import torch.nn.functional as NF
 from datasets import load_dataset
 #import numpy as np
 
-class STHFTempi(torch.utils.data.Dataset):
-    def __init__(self, csvfile=os.path.join('hf_csv', 'tempi.csv'), data_folder='jukebox_acts_38', set_type='train', device='cpu', norm_labels = True, layer_idx=-1):
+
+# class_binsize = bpms within int(bpm/10) go within this bin
+class STHFTempiData(torch.utils.data.Dataset):
+    def __init__(self, csvfile=os.path.join('hf_csv', 'tempi.csv'), data_folder='jukebox_acts_38', set_type='train', device='cpu', norm_labels = True, layer_idx=-1, class_binsize = 10):
         self.seed = 5
         self.set_type = set_type
         self.device = device
@@ -19,6 +21,10 @@ class STHFTempi(torch.utils.data.Dataset):
         self.min_bpm = cur_data['bpm'].min()
         self.max_bpm = cur_data['bpm'].max()
         self.bpm_range = self.max_bpm - self.min_bpm
+        self.num_classes = int(np.round(self.bpm_range)/class_binsize)
+        self.bpm_classmap= lambda x: (x - self.min_bpm)/self.class_binsize
+        cur_data = cur_data.with_columns(bpm_class=self.bpm_classmap(cur_data['bpm'])).cast({'bpm_class': int})
+        # class dict with medians
         #self.scalefunc = np.vectorize(lambda x: (x - self.min_bpm)/self.bpm_range)
         #cur_data = cur_data.with_columns(norm_bpm=self.scalefunc(cur_data['bpm']))
         total_sz = cur_data['path'].count()

@@ -11,6 +11,7 @@ import time
 import sys
 import polyrhythms as PL
 import util as um
+import tempi as TP
 import sys
 import tomllib
 from distutils.util import strtobool
@@ -22,7 +23,7 @@ sett = um.read_toml(sys.argv)
 #poly_tups = [((i,j),x) for (i,j),x in poly_pairs.items()]
 #ptsort = sorted(poly_tups, key=itemgetter(1))
 figsize = 15
-thresh = 0.05
+thresh = sett['thresh']
 data_debug = False
 to_nep = True
 split = sett['split']
@@ -33,16 +34,9 @@ bs = 2048
 num_epochs = sett['num_epochs']
 lr = sett['lr']
 #num_epochs = 500
-classdict = PL.polystr_to_idx
-num_classes = PL.num_poly
-if classification == False:
-    #num_epochs = 500
-    #num_epochs = 5
-    #lr = 1e-3
-    classdict = PL.reg_polystr_to_idx
-    num_classes += 1 # to account for no label
 dropout = 0.5
 num_hidden = sett['num_hidden']
+dataset = sett['dataset']
 hidden_layers = []
 if num_hidden > 0:
     hidden_layers = [512] * num_hidden
@@ -58,26 +52,62 @@ hidden_layer_str = "["+",".join([str(y) for y in hidden_layers]) + "]"
 res_dir = os.path.join(um.script_dir, "res")
 user_folder = os.path.expanduser("~" + os.getenv("USER")) 
 #data_folder = os.path.join(user_folder, "ds", "jukebox_acts_36")
-data_folder = os.path.join(um.script_dir, "acts", act_folder)
-params = {'batch_size': bs, 'num_epochs': num_epochs, 'lr': lr, 'dropout': dropout, 'use_cuda': True, 'thresh': thresh, 'hidden_layers': hidden_layer_str, 'in_dim': in_dim,
-          'act_folder': act_folder, 'model_type': model_type, 'act_lh': act_lh}
-params.update(sett)
+params = {'batch_size': bs, 'num_epochs': num_epochs, 'lr': lr, 'dropout': dropout, 'use_cuda': True,
+          'thresh': thresh, 'hidden_layers': hidden_layer_str, 'in_dim': in_dim,
+          'act_folder': act_folder, 'model_type': model_type, 'act_lh': act_lh,
+          'dataset': dataset}
 device ='cpu'
-
-csvfile = os.path.join(um.script_dir, 'csv', 'polyrhy_split1.csv')
-if params['split'] != 1:
-    print('running split 2')
-    csvfile = os.path.join(um.script_dir, 'csv', 'polyrhy_split2.csv')
 
 if torch.cuda.is_available() == True and params["use_cuda"] == True:
     device = 'cuda'
     torch.cuda.empty_cache()
     torch.set_default_device(device)
 
+classdict = None
+rev_classdict = None
+num_classes = None
+classlist_sorted = None
+if dataset == 'polyrhythms':
+    csvfile = os.path.join(um.script_dir, 'csv', 'polyrhy_split1.csv')
+    if params['split'] != 1:
+        print('running split 2')
+        csvfile = os.path.join(um.script_dir, 'csv', 'polyrhy_split2.csv')
+    data_folder = os.path.join(um.script_dir, "acts", act_folder)
+    classdict = PL.polystr_to_idx
+    num_classes = PL.num_poly
+    if classification == False:
+        #num_epochs = 500
+        #num_epochs = 5
+        #lr = 1e-3
+        classdict = PL.reg_polystr_to_idx
+        num_classes += 1 # to account for no label
 
-train_data = STPActivationsData(csvfile = csvfile, device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='train', layer_idx = layer_idx, classification = classification)
-valid_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='val', layer_idx = layer_idx, classification = classification)
-test_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='test', layer_idx = layer_idx, classification = classification)
+    train_data = STPActivationsData(csvfile = csvfile, device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='train', layer_idx = layer_idx, classification = classification)
+    valid_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='val', layer_idx = layer_idx, classification = classification)
+    test_data = STPActivationsData(csvfile = csvfile,  device=device, data_folder = data_folder, classdict = classdict, num_classes = num_classes, set_type='test', layer_idx = layer_idx, classification = classification)
+
+elif dataset =='tempi':
+    csvfile = os.path.join(um.script_dir, 'hf_csv', 'tempi.csv')
+    data_folder = os.path.join(um.script_dir, "hf_acts", act_folder)
+    class_binsize = sett['class_binsize']
+
+    if classification == False:
+        #num_epochs = 500
+        #num_epochs = 5
+        #lr = 1e-3
+        classdict = PL.reg_polystr_to_idx
+        num_classes += 1 # to account for no label
+
+    train_data = STHFTempiData(csvfile = csvfile, device=device, data_folder = data_folder,  set_type='train', layer_idx = layer_idx, class_binsize = class_binsize)
+    valid_data = STHFTempiData(csvfile = csvfile,  device=device, data_folder = data_folder, set_type='val', layer_idx = layer_idx, class_binsize = class_binsize)
+    test_data = STHFTempiData(csvfile = csvfile,  device=device, data_folder = data_folder, set_type='test', layer_idx = layer_idx, class_binsize = class_binsize)
+    
+    classdict, rev_classdict, classlist_sorted= TP.get_class_medians(class_binsize)
+    # add null class
+    num_classes = len(classlist_sorted) + 1
+
+
+params.update(sett)
 
 if data_debug == True:
     num_train = len(train_data)
@@ -169,8 +199,15 @@ def test_regression(_model, _testdata, batch_size = 16, _nep=None):
             pred = _model(ipt.double())
 
             pred_np = pred.cpu().numpy().flatten()
-            cur_pred_labels = [PL.get_nearest_poly(x, thresh=thresh) for x in pred_np]
-            cur_pred_label_idx = np.array([PL.reg_polystr_to_idx[x] for x in cur_pred_labels])
+            cur_pred_labels = None
+            cur_pred_label_idx = None
+            if dataset == 'polyrhythms':
+                cur_pred_labels = [PL.get_nearest_poly(x, thresh=thresh) for x in pred_np]
+                cur_pred_label_idx = np.array([PL.reg_polystr_to_idx[x] for x in cur_pred_labels])
+            elif dataset == 'tempi':
+                cur_pred_labels = [TP.get_nearest_bpmclass(x, classlist_sorted, thresh=thresh) for x in pred_np]
+                cur_pred_label_idx = np.array([classdict[x] for x in cur_pred_labels])
+
             if didx == 0:
                 preds = pred_np
                 truths = ground_truth.cpu().numpy().flatten()
@@ -197,9 +234,16 @@ def test_regression(_model, _testdata, batch_size = 16, _nep=None):
     print(f'mse: {_mse}, r2: {_r2}, mae: {_mae}, exp_var: {_ev}, median_ae: {_medae}')
     print(f'max_err: {_maxerr}, mape: {_mape}, rmse:{_rmse}, d2ae: {_d2ae}')
     print(f'accuracy: {_acc}, f1macro: {_f1macro}, f1micro: {_f1micro}')
-    class_truths = [PL.reg_rev_polystr_to_idx[x] for x in truth_labels]
-    class_preds = [PL.reg_rev_polystr_to_idx[x] for x in pred_labels]
+    
+    class_truths = None
+    class_preds = None
 
+    if dataset == 'polyrhythms':
+        class_truths = [PL.reg_rev_polystr_to_idx[x] for x in truth_labels]
+        class_preds = [PL.reg_rev_polystr_to_idx[x] for x in pred_labels]
+    elif dataset = 'tempi':
+        class_truths = [rev_classlist[x] for x in truth_labels]
+        class_preds = [rev_classlist[x] for x in pred_labels]
     _cm = SKM.confusion_matrix(class_truths, class_preds)
     _cmd = None
     if params['split'] != 1:
