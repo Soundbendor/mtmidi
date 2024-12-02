@@ -1,5 +1,6 @@
 # https://github.com/brown-palm/syntheory/blob/main/embeddings/models.py
 
+from distutils.util import strtobool
 import jukemirlib as jml
 import os
 import torch
@@ -9,6 +10,7 @@ import argparse
 
 jml.setup_models(cache_dir='/nfs/guille/eecs_research/soundbendor/kwand/jukemirlib')
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("-lp", "--layers_per", type=int, default=4, help="layers per loop if doing all layers")
 parser.add_argument("-l", "--layer_num", type=int, default=-1, help="layer num (all if < 0)")
 parser.add_argument("-n", "--normalize", type=strtobool, default=True, help="normalize audio")
 parser.add_argument("-hf", "--hf_dataset", type=str, default="", help="use old hugging face dataset if passed")
@@ -38,7 +40,7 @@ dur = 4.0
 
 layer_acts = [x for x in range(1,73)]
 num_layers = len(layer_acts)
-num_per = 4
+layers_per = args.layers_per
 
 
 #layer_acts = [x for x in range(1,73)]
@@ -60,8 +62,8 @@ with open(log, 'a') as lf:
         aud_sr = None
         if use_hf == True:
             audio, aud_sr = uhf.get_from_entry_syntheory_audio(f, mono=True, normalize =normalize, dur = dur)
-                if aud_sr != model_sr:
-                    audio = librosa.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
+            if aud_sr != model_sr:
+                audio = librosa.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
         
         if lnum > 0:
             reps = None
@@ -75,8 +77,8 @@ with open(log, 'a') as lf:
             first_layer_done = False
             means = None
 
-            for layer_start in range(0, num_layers, num_per):
-                cur_layers = layer_acts[layer_start:layer_start+num_per]
+            for layer_start in range(0, num_layers, layers_per):
+                cur_layers = layer_acts[layer_start:layer_start+layers_per]
                 print(cur_layers, "-----")
                 #if first_layer_done == True:break
                 print(f'getting reps for layers {cur_layers}', file=wf)
