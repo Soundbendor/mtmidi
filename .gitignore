@@ -3,6 +3,5 @@ res/*
 midi/*
 acts/*
 hf_acts/*
-hf_csv/*
 log/*
 *.swp
