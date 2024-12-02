@@ -176,7 +176,9 @@ def load_wav(fname, dur = 4., normalize = False, sr=32000, load_dir='wav'):
 # replace extension from path
 def ext_replace(old_path, new_ext = 'pt'):
     fsplit = '.'.join(old_path.split('.')[:-1])
-    outname = f'{fsplit}.{new_ext}'
+    outname = fsplit
+    if len(new_ext) > 0:
+        outname = f'{fsplit}.{new_ext}'
     return outname
 
 

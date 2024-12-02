@@ -22,6 +22,12 @@ audio_keys = set(['path', 'array', 'sampling_rate'])
 toplevel_keys = set(['audio', 'bpm', 'click_config_name', 'midi_program_num', 'offset_time'])
 
 use_keys = [x for x in toplevel_keys.union(audio_keys) if x not in ignore_keys]
+use_keys += ['norm_bpm', 'name']
+minbpm = 50
+maxbpm = 210
+bpmrange = maxbpm - minbpm
+bpmscaler = lambda x: float(x - minbpm)/bpmrange
+
 tempi = load_dataset("meganwei/syntheory", "tempos", split='train')
 with open(out_f, 'w') as f:
     csvw = csv.DictWriter(f, fieldnames=use_keys)
@@ -35,6 +41,8 @@ with open(out_f, 'w') as f:
         for k2 in x['audio'].keys():
             if k2 not in ignore_keys:
                 d[k2] = x['audio'][k2]
+        d['norm_bpm'] = bpmscaler(x['bpm'])
+        d['name'] = um.ext_replace(x['audio']['path'], new_ext="")
         csvw.writerow(d)
 
 
