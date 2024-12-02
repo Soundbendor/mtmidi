@@ -22,13 +22,13 @@ def load_syntheory_train_dataset(ds_name):
 def get_from_entry_syntheory_audio(cur_entry, mono=True, normalize =True, dur = 4.0):
     #cur_aud = train_ds[idx]['audio']
     cur_aud = cur_entry['audio']
-    cur_sr = cur_ex['sampling_rate']
+    cur_sr = cur_aud['sampling_rate']
     cur_arr = None
-    want_samp = cur_sr * dur
-    if cur_ex['array'].shape[0] > 1:
-        cur_arr = np.mean(cur_audio['array'], axis=0)
+    want_samp = int(np.round(cur_sr * dur))
+    if cur_aud['array'].shape[0] > 1:
+        cur_arr = np.mean(cur_aud['array'], axis=0)
     else:
-        cur_arr = cur_audio['array'].flatten()
+        cur_arr = cur_aud['array'].flatten()
     if normalize == True:
         cur_arr = cur_arr/np.max(np.abs(cur_arr))
     return cur_arr[:want_samp], cur_sr

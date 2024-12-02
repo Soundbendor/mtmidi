@@ -41,7 +41,7 @@ debug = args.debug
 meanpool = args.meanpool
 save_hidden = args.save_hidden
 save_attn = args.save_attn
-hfds_str = args.hf_datset
+hfds_str = args.hf_dataset
 
 acts_dir = 'acts'
 path_list = um.path_list('wav')
@@ -143,21 +143,24 @@ with open(log, 'a') as lf:
             audio = um.load_wav(f, dur = dur, normalize = normalize, sr = model_sr,  load_dir = load_dir)
         else:
 
-            audio, aud_sr = uhf.get_from_entry_syntheory_audio(cur_entry, mono=True, normalize =normalize, dur = dur)
+            audio, aud_sr = uhf.get_from_entry_syntheory_audio(f, mono=True, normalize =normalize, dur = dur)
             if aud_sr != model_sr:
-                audio = librosa.resample(audio, aud_sr, model_sr)
+                audio = librosa.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
         if model_size == 'audio':
             procd = proc(audio = audio, sampling_rate = model_sr, padding=True, return_tensors = 'pt')
         else:
             procd = proc(audio = audio, text = text, sampling_rate = model_sr, padding=True, return_tensors = 'pt')
 
         procd.to(device)
-        fsplit = '.'.join(f.split('.')[:-1])
-        outname = f'{fsplit}.pt'
+        outname = None
+        if use_hf == False:
+            print(f'loading {f}', file=lf)
+            outname = um.ext_replace(f, new_ext="pt")
+        else:
+            print(f"loading {f['audio']['path']}", file=lf)
+            outname = um.ext_replace(f['audio']['path'], new_ext="pt")
         outpath = os.path.join(out_dir, outname)
 
-        fpath = os.path.join(load_dir, f)
-        print(f'loading {fpath}', file=lf)
 
         if model_size == 'audio':
             enc = model.get_audio_encoder()
