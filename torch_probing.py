@@ -5,6 +5,8 @@ from torch import nn
 from torch_activations_dataset import STPActivationsData 
 from torch_sthf_dataset import STHFTempiData
 from torch_probe_model import LinearProbe
+#from st_probe import LinearProbe
+import torch.nn.functional as NF
 import numpy as np
 import torch_nep as TN
 import sklearn.metrics as SKM
@@ -131,12 +133,14 @@ def train_epoch(_model, _tdl, _lossfn, _optimfn):
         if classification == True:
             ipt, ground_truth = data
             pred = _model(ipt)
-            _loss = _lossfn(pred, ground_truth)
+            #_loss = _lossfn(pred, ground_truth)
+            _loss = NF.cross_entropy(pred, ground_truth)
         else:
             ipt, ground_truth, ground_label = data
             pred = _model(ipt.float())
             #print('train', pred.shape, pred.dtype, ground_truth.shape, ground_truth.dtype) 
-            _loss = _lossfn(pred.flatten().float(), ground_truth.flatten().float())
+            #_loss = _lossfn(pred.flatten().float(), ground_truth.flatten().float())
+            _loss = NF.mse_loss(pred.flatten().float(), ground_truth.flatten().float(), reduction = 'mean')
         _loss.backward()
         _optimfn.step()
         tot_loss += _loss.item()
