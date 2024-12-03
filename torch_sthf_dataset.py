@@ -4,6 +4,7 @@ import torch
 import os
 import polars as pl
 from sklearn import preprocessing as SKP
+import sklearn.utils as SU
 from sklearn.model_selection import train_test_split
 import torch.nn.functional as NF
 from datasets import load_dataset
@@ -32,8 +33,12 @@ class STHFTempiData(torch.utils.data.Dataset):
         test_valid_prop = 0.15
         train_st_idx = int(total_sz * test_valid_prop)
         train_end_idx = int(total_sz * (1. - test_valid_prop))
+        num_train = train_end_idx - train_st_idx
         if set_type == 'train':
-            self.data = cur_data[train_st_idx:train_end_idx]
+            temp_data = cur_data[train_st_idx:train_end_idx]
+            idxs = list(range(num_train))
+            shuf = SU.shuffle(idxs, random_state=self.seed)
+            self.data = temp_data[idxs]
         else:
             test_valid = pl.concat((cur_data[:train_st_idx], cur_data[train_end_idx:]))
             num_tv = test_valid['path'].count()

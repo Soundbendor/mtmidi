@@ -1,3 +1,5 @@
+# https://github.com/brown-palm/syntheory/blob/main/probe/probes.py
+
 import torch
 from torch import nn
 from torch_activations_dataset import STPActivationsData 
@@ -17,8 +19,9 @@ import sys
 import tomllib
 from distutils.util import strtobool
 
-torch.manual_seed(3)
+torch.manual_seed(5)
 sett = um.read_toml(sys.argv)
+shuffle = True
 #poly_pair_arr = [(i,j) for i in range(2,max_num+1) for j in range(2,max_num+1) if (np.gcd(i,j) == 1 and i < j)]
 #poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,max_num+1) if (np.gcd(i,j) == 1 and i < j)}
 #poly_tups = [((i,j),x) for (i,j),x in poly_pairs.items()]
@@ -94,9 +97,9 @@ elif dataset =='tempi':
     class_binsize = sett['class_binsize']
 
     classdict, rev_classdict, classlist_sorted, classset_aug = TP.get_class_medians(class_binsize)
-    train_data = STHFTempiData(csvfile = csvfile, device=device, data_folder = data_folder,  set_type='train', layer_idx = layer_idx, class_binsize = class_binsize)
-    valid_data = STHFTempiData(csvfile = csvfile,  device=device, data_folder = data_folder, set_type='val', layer_idx = layer_idx, class_binsize = class_binsize)
-    test_data = STHFTempiData(csvfile = csvfile,  device=device, data_folder = data_folder, set_type='test', layer_idx = layer_idx, class_binsize = class_binsize)
+    train_data = STHFTempiData(csvfile = csvfile, device=device, data_folder = data_folder,  set_type='train', layer_idx = layer_idx, class_binsize = class_binsize, norm_labels = True)
+    valid_data = STHFTempiData(csvfile = csvfile,  device=device, data_folder = data_folder, set_type='val', layer_idx = layer_idx, class_binsize = class_binsize, norm_labels = True)
+    test_data = STHFTempiData(csvfile = csvfile,  device=device, data_folder = data_folder, set_type='test', layer_idx = layer_idx, class_binsize = class_binsize, norm_labels = True)
     
     # add null class
     num_classes = len(classlist_sorted) + 1
@@ -115,8 +118,8 @@ if classification == True:
     model = LinearProbe(in_dim = in_dim, num_classes=PL.num_poly,hidden_layers = hidden_layers, dropout = dropout).to(device)
     loss_fn = torch.nn.CrossEntropyLoss()
 else:
-    model = LinearProbe(in_dim = in_dim, num_classes=1,hidden_layers = hidden_layers, dropout = dropout).double().to(device)
-    loss_fn = torch.nn.MSELoss()
+    model = LinearProbe(in_dim = in_dim, num_classes=1,hidden_layers = hidden_layers, dropout = dropout).float().to(device)
+    loss_fn = torch.nn.MSELoss(reduction='mean')
 optim = torch.optim.Adam(model.parameters(), lr=lr)
 
 def train_epoch(_model, _tdl, _lossfn, _optimfn):
@@ -131,8 +134,9 @@ def train_epoch(_model, _tdl, _lossfn, _optimfn):
             _loss = _lossfn(pred, ground_truth)
         else:
             ipt, ground_truth, ground_label = data
-            pred = _model(ipt.double())
-            _loss = _lossfn(pred.flatten(), ground_truth)
+            pred = _model(ipt.float())
+            #print('train', pred.shape, pred.dtype, ground_truth.shape, ground_truth.dtype) 
+            _loss = _lossfn(pred.flatten().float(), ground_truth.flatten().float())
         _loss.backward()
         _optimfn.step()
         tot_loss += _loss.item()
@@ -150,8 +154,9 @@ def valid_epoch(_model, _vdl, _lossfn):
                 _loss = _lossfn(pred, ground_truth)
             else:
                 ipt, ground_truth, ground_label = data
-                pred = _model(ipt.double())
-                _loss = _lossfn(pred.flatten(), ground_truth)
+                pred = _model(ipt.float())
+                #print('valid', pred.shape, pred.dtype, ground_truth.shape, ground_truth.dtype) 
+                _loss = _lossfn(pred.flatten().float(), ground_truth.flatten().float())
 
             tot_loss += _loss.item()
     return tot_loss
@@ -164,8 +169,8 @@ def train_valid(_model, _traindata, _validdata, _lossfn, _optimfn, batch_size=16
     print("--- training ---")
     for eidx in range(epochs):
         print(f'Epoch {eidx+1}')
-        train_dl = torch.utils.data.DataLoader(_traindata, batch_size=batch_size, shuffle=True, generator=torch.Generator(device=device))
-        valid_dl = torch.utils.data.DataLoader(_validdata, batch_size = batch_size, shuffle=True, generator=torch.Generator(device=device))
+        train_dl = torch.utils.data.DataLoader(_traindata, batch_size=batch_size, shuffle=shuffle, generator=torch.Generator(device=device))
+        valid_dl = torch.utils.data.DataLoader(_validdata, batch_size = batch_size, shuffle=shuffle, generator=torch.Generator(device=device))
         train_loss = train_epoch(_model, train_dl, _lossfn, _optimfn)
         train_losses.append(train_loss)
         valid_loss = valid_epoch(_model, train_dl, _lossfn)
@@ -179,7 +184,7 @@ def train_valid(_model, _traindata, _validdata, _lossfn, _optimfn, batch_size=16
 
 
 def test_regression(_model, _testdata, batch_size = 16, _nep=None):
-    _tdl = torch.utils.data.DataLoader(_testdata, batch_size = batch_size, shuffle=True, generator=torch.Generator(device=device))
+    _tdl = torch.utils.data.DataLoader(_testdata, batch_size = batch_size, shuffle=shuffle, generator=torch.Generator(device=device))
     to_nep = _nep != None
     _model.eval()
     tot_loss = 0.
@@ -190,7 +195,7 @@ def test_regression(_model, _testdata, batch_size = 16, _nep=None):
     with torch.no_grad():
         for didx, data in enumerate(_tdl):
             ipt, ground_truth, ground_label = data
-            pred = _model(ipt.double())
+            pred = _model(ipt.float())
 
             pred_np = pred.cpu().numpy().flatten()
             cur_pred_labels = None
@@ -200,12 +205,14 @@ def test_regression(_model, _testdata, batch_size = 16, _nep=None):
                 cur_pred_label_idx = np.array([PL.reg_polystr_to_idx[x] for x in cur_pred_labels])
             elif dataset == 'tempi':
                 cur_pred_labels = [TP.get_nearest_bpmclass(x, classlist_sorted, thresh=thresh) for x in pred_np]
+                #print('test2', pred_np.shape, pred_np.dtype, len(cur_pred_labels))
                 cur_pred_label_idx = np.array([classdict[x] for x in cur_pred_labels])
 
             if didx == 0:
                 preds = pred_np
                 truths = ground_truth.cpu().numpy().flatten()
                 truth_labels = ground_label.cpu().numpy().flatten()
+                #print('test', preds.shape, preds.dtype, truths.shape, truths.dtype) 
                 pred_labels = cur_pred_label_idx
             else:
                 preds = np.hstack((preds, pred_np))
@@ -278,7 +285,7 @@ def test_regression(_model, _testdata, batch_size = 16, _nep=None):
     plt.clf()
 
 def test_classification(_model, _testdata, batch_size = 16, _nep=None):
-    _tdl = torch.utils.data.DataLoader(_testdata, batch_size = batch_size, shuffle=True, generator=torch.Generator(device=device))
+    _tdl = torch.utils.data.DataLoader(_testdata, batch_size = batch_size, shuffle=shuffle, generator=torch.Generator(device=device))
     to_nep = _nep != None
     _model.eval()
     tot_loss = 0.

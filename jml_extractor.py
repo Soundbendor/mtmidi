@@ -85,10 +85,10 @@ with open(log, 'a') as lf:
                 print(f'getting reps for layers {cur_layers}', file=lf)
                 reps = None
                 if use_hf == False:
-                    reps = jml.extract(fpath = fpath, layers=[layer_act], duration= dur, downsample_method=None, downsample_target_rate=dsamp_rate, meanpool = True)
+                    reps = jml.extract(fpath = fpath, layers=cur_layers, duration= dur, downsample_method=None, downsample_target_rate=dsamp_rate, meanpool = True)
                 else:
                     
-                    reps = jml.extract(audio=audio, layers=[layer_act], duration= dur, downsample_method=None, downsample_target_rate=dsamp_rate, meanpool = True)
+                    reps = jml.extract(audio=audio, layers=cur_layers, duration= dur, downsample_method=None, downsample_target_rate=dsamp_rate, meanpool = True)
 
                 for layer_idx in cur_layers:
                     #print(layer_idx)
