@@ -8,9 +8,9 @@ def get_class_medians(class_binsize):
     bpmclass_mapper = lambda x: int((x - minbpm)/class_binsize)
     half_binsize = class_binsize//2 
     # medians of bpm bin to index
-    d = { (i + half_binsize): bpmclass_mapper(x) for x in range(minbpm, maxbpm + class_binsize, class_binsize)}
+    d = { (i + half_binsize): bpmclass_mapper(i) for i in range(minbpm, maxbpm + class_binsize, class_binsize)}
         # medians
-    dlist = [(i + half_binsize) for x in range(minbpm, maxbpm + class_binsize, class_binsize)]
+    dlist = [(i + half_binsize) for i in range(minbpm, maxbpm + class_binsize, class_binsize)]
 
     num_classes = len(dlist)
     # add nullclass (don't want in list of classes)

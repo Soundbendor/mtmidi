@@ -7,7 +7,7 @@ from sklearn import preprocessing as SKP
 from sklearn.model_selection import train_test_split
 import torch.nn.functional as NF
 from datasets import load_dataset
-#import numpy as np
+import numpy as np
 
 
 # class_binsize = bpms within int(bpm/10) go within this bin
@@ -16,13 +16,14 @@ class STHFTempiData(torch.utils.data.Dataset):
         self.seed = 5
         self.set_type = set_type
         self.device = device
+        self.class_binsize = class_binsize
         cur_data = pl.scan_csv(csvfile).collect()
         cur_data = cur_data.sort('bpm', descending=False)
         self.min_bpm = cur_data['bpm'].min()
         self.max_bpm = cur_data['bpm'].max()
         self.bpm_range = self.max_bpm - self.min_bpm
         self.num_classes = int(np.round(self.bpm_range)/class_binsize)
-        self.bpm_classmap= lambda x: (x - self.min_bpm)/self.class_binsize
+        self.bpm_classmap= lambda x: (x - self.min_bpm)/class_binsize
         cur_data = cur_data.with_columns(bpm_class=self.bpm_classmap(cur_data['bpm'])).cast({'bpm_class': int})
         # class dict with medians
         #self.scalefunc = np.vectorize(lambda x: (x - self.min_bpm)/self.bpm_range)
@@ -56,8 +57,7 @@ class STHFTempiData(torch.utils.data.Dataset):
         cur_truth = None
         cur_name = self.data['name'][idx]
         cur_reg = None
-        cur_label = self.data['poly'][idx]
-        cur_truth = self.classdict[cur_label]
+        cur_truth = self.data['bpm_class'][idx]
         if self.norm_labels == True:
             cur_reg = self.data['norm_bpm'][idx]
         else:

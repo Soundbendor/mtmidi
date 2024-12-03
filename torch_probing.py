@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch_activations_dataset import STPActivationsData 
+from torch_sthf_dataset import STHFTempiData
 from torch_probe_model import LinearProbe
 import numpy as np
 import torch_nep as TN
@@ -91,18 +92,11 @@ elif dataset =='tempi':
     data_folder = os.path.join(um.script_dir, "hf_acts", act_folder)
     class_binsize = sett['class_binsize']
 
-    if classification == False:
-        #num_epochs = 500
-        #num_epochs = 5
-        #lr = 1e-3
-        classdict = PL.reg_polystr_to_idx
-        num_classes += 1 # to account for no label
-
+    classdict, rev_classdict, classlist_sorted= TP.get_class_medians(class_binsize)
     train_data = STHFTempiData(csvfile = csvfile, device=device, data_folder = data_folder,  set_type='train', layer_idx = layer_idx, class_binsize = class_binsize)
     valid_data = STHFTempiData(csvfile = csvfile,  device=device, data_folder = data_folder, set_type='val', layer_idx = layer_idx, class_binsize = class_binsize)
     test_data = STHFTempiData(csvfile = csvfile,  device=device, data_folder = data_folder, set_type='test', layer_idx = layer_idx, class_binsize = class_binsize)
     
-    classdict, rev_classdict, classlist_sorted= TP.get_class_medians(class_binsize)
     # add null class
     num_classes = len(classlist_sorted) + 1
 
@@ -241,7 +235,7 @@ def test_regression(_model, _testdata, batch_size = 16, _nep=None):
     if dataset == 'polyrhythms':
         class_truths = [PL.reg_rev_polystr_to_idx[x] for x in truth_labels]
         class_preds = [PL.reg_rev_polystr_to_idx[x] for x in pred_labels]
-    elif dataset = 'tempi':
+    elif dataset == 'tempi':
         class_truths = [rev_classlist[x] for x in truth_labels]
         class_preds = [rev_classlist[x] for x in pred_labels]
     _cm = SKM.confusion_matrix(class_truths, class_preds)
