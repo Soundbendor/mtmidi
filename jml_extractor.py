@@ -82,7 +82,7 @@ with open(log, 'a') as lf:
                 cur_layers = layer_acts[layer_start:layer_start+layers_per]
                 print(cur_layers, "-----")
                 #if first_layer_done == True:break
-                print(f'getting reps for layers {cur_layers}', file=wf)
+                print(f'getting reps for layers {cur_layers}', file=lf)
                 reps = None
                 if use_hf == False:
                     reps = jml.extract(fpath = fpath, layers=[layer_act], duration= dur, downsample_method=None, downsample_target_rate=dsamp_rate, meanpool = True)
