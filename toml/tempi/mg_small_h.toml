@@ -1,8 +1,8 @@
-act_kind = "jukebox38"
+act_kind = "mg_small_h"
 split = 1
 cls = false
 num_hidden = 1
-layer_idx = -1
+layer_idx = 11
 lr = 0.000001
 num_epochs = 250
 dataset = 'tempi'
