@@ -4,6 +4,7 @@ import numpy as np
 minbpm = 50
 maxbpm = 210
 bpmrange = maxbpm - minbpm
+default_cls = -1
 def get_class_medians(class_binsize):
     bpmclass_mapper = lambda x: int((x - minbpm)/class_binsize)
     half_binsize = class_binsize//2 
@@ -14,18 +15,18 @@ def get_class_medians(class_binsize):
 
     num_classes = len(dlist)
     # add nullclass (don't want in list of classes)
-    d[-1] = num_classes # maps to the very last clsas
+    d[default_cls] = num_classes # maps to the very last clsas
     # index to bpm bin
     revd = {x:i for (i,x) in d.items()}
 
-     
-    return d, revd, dlist
+    dset_aug = set(dlist + [default_cls])
+    return d, revd, dlist, dset_aug
 
 
 def get_nearest_bpmclass(normed_pred, sorted_bpm_list, thresh=3):
     pred = (normed_pred * bpmrange) + minbpm
     _start_idx = 0
-    _end_idx = len(poly_tups_norm)
+    _end_idx = len(sorted_bpm_list)
     def _get_nearest(start_idx, end_idx, ipt):
         mid_idx = (end_idx+start_idx)//2
         mid_val = sorted_bpm_list[mid_idx]

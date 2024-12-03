@@ -1,4 +1,5 @@
 act_kind = "mg_large_h"
+bs = 2048
 split = 1
 cls = true
 num_hidden = 1

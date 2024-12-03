@@ -4,5 +4,5 @@ cls = true
 num_hidden = 1
 layer_idx = 11
 dataset = 'polyrhythms'
-
+bs = 2048
 thresh = 0.05

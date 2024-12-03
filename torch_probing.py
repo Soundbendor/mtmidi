@@ -29,7 +29,7 @@ data_debug = False
 to_nep = True
 split = sett['split']
 classification = sett['cls']
-bs = 2048
+bs = sett['bs']
 #lr = 1e-3
 #num_epochs = 500
 num_epochs = sett['num_epochs']
@@ -68,6 +68,7 @@ classdict = None
 rev_classdict = None
 num_classes = None
 classlist_sorted = None
+classset_aug = None
 if dataset == 'polyrhythms':
     csvfile = os.path.join(um.script_dir, 'csv', 'polyrhy_split1.csv')
     if params['split'] != 1:
@@ -92,14 +93,13 @@ elif dataset =='tempi':
     data_folder = os.path.join(um.script_dir, "hf_acts", act_folder)
     class_binsize = sett['class_binsize']
 
-    classdict, rev_classdict, classlist_sorted= TP.get_class_medians(class_binsize)
+    classdict, rev_classdict, classlist_sorted, classset_aug = TP.get_class_medians(class_binsize)
     train_data = STHFTempiData(csvfile = csvfile, device=device, data_folder = data_folder,  set_type='train', layer_idx = layer_idx, class_binsize = class_binsize)
     valid_data = STHFTempiData(csvfile = csvfile,  device=device, data_folder = data_folder, set_type='val', layer_idx = layer_idx, class_binsize = class_binsize)
     test_data = STHFTempiData(csvfile = csvfile,  device=device, data_folder = data_folder, set_type='test', layer_idx = layer_idx, class_binsize = class_binsize)
     
     # add null class
     num_classes = len(classlist_sorted) + 1
-
 
 params.update(sett)
 
@@ -236,13 +236,17 @@ def test_regression(_model, _testdata, batch_size = 16, _nep=None):
         class_truths = [PL.reg_rev_polystr_to_idx[x] for x in truth_labels]
         class_preds = [PL.reg_rev_polystr_to_idx[x] for x in pred_labels]
     elif dataset == 'tempi':
-        class_truths = [rev_classlist[x] for x in truth_labels]
-        class_preds = [rev_classlist[x] for x in pred_labels]
+        class_truths = [rev_classdict[x] for x in truth_labels]
+        class_preds = [rev_classdict[x] for x in pred_labels]
     _cm = SKM.confusion_matrix(class_truths, class_preds)
     _cmd = None
-    if params['split'] != 1:
+    if params['split'] != 1 or dataset != 'polyrhythms':
         all_labels = set(class_truths).union(set(class_preds))
-        class_arr2 = [x for x in PL.reg_class_arr if x in all_labels]
+        class_arr2 = None
+        if dataset == 'polyrhythms':
+            class_arr2 = [x for x in PL.reg_class_arr if x in all_labels]
+        else:
+            class_arr2 = [x for x in classset_aug if x in all_labels]
         _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=class_arr2)
     else:
         _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=PL.reg_class_arr)

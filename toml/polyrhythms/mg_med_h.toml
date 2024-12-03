@@ -1,5 +1,6 @@
 act_kind = "mg_med_h"
 split = 1
+bs = 2048
 cls = true
 num_hidden = 1
 layer_idx = 23
