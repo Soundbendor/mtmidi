@@ -23,7 +23,7 @@ with open('midi_inst_list.txt', 'r') as f:
         
 with open('inst_list.csv', 'w') as f:
     csvw = csv.writer(f, delimiter=',')
-    csvw.writerow(['number','instrument','category'])
+    csvw.writerow(['program_number','instrument_name','category'])
     for inst_cat, cat_dict in d.items():
         for inst_num,inst_name in cat_dict.items():
             cur = [inst_num, inst_name, inst_cat]

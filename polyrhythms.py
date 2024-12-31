@@ -6,10 +6,16 @@ def get_pstr(pnums):
     pstr = f"{pnums[0]}a{pnums[1]}"
     return pstr
 
+# let's prefix drumkit channel inst with P_
+
+# channel 9, pitch 31 is Sticks
+# channel 9, pitch 38 is Snare Drum
+# channel 9, pitch 37 is Side Stick
 instruments = ['Tinkle Bell','Agogo','Steel Drums','Woodblock','Taiko Drum','Melodic Tom','Synth Drum']
 inst_combos = [x for x in combinations(instruments, 2)]
 max_num = 11
-poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,max_num+1) if (np.gcd(i,j) == 1 and i < j)}
+max_range = 6
+poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,min(i + max_range, max_num+1)) if (np.gcd(i,j) == 1 and i < j)}
 
 
 

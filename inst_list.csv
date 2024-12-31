@@ -1,4 +1,4 @@
-number,instrument,category
+program_number,instrument_name,category
 0,Acoustic Grand Piano,Piano
 1,Bright Acoustic Piano,Piano
 2,Electric Grand Piano,Piano

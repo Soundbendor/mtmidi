@@ -57,8 +57,21 @@ act_folder = {'musicgen-encoder': 'mg_audio_mp',
               'jukebox38': 'jukebox_acts_38',
               }
 
+
+with open(by_projpath('inst_list.csv'), 'r') as f:
+    csvr = csv.reader(f, delimiter=',')
+    for i,row in enumerate(csvr):
+        if i > 0:
+            inst_num = int(row[0])
+            inst_name = row[1]
+            inst_cat = row[2]
+            inst[inst_name] = {'program_number': inst_num, 'category': inst_cat}
+
+
+
 # https://stackoverflow.com/questions/4934806/how-can-i-find-scripts-directory
 script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+
 def shuf_arr(arr):
     random.shuffle(arr)
 
@@ -89,15 +102,6 @@ def by_projpath(subpath=None,make_dir = False):
             os.makedirs(cur_path)
     return cur_path
 
-with open(by_projpath('inst_list.csv'), 'r') as f:
-    csvr = csv.reader(f, delimiter=',')
-    for i,row in enumerate(csvr):
-        if i > 0:
-            inst_num = int(row[0])
-            inst_name = row[1]
-            inst_cat = row[2]
-            inst[inst_name] = {'number': inst_num, 'category': inst_cat}
-
 def get_random_list(lo, hi, num):
     return [random.uniform(lo,hi) for _ in range(num)]
 
@@ -127,7 +131,7 @@ def notedur_to_ticks(dur, subdiv = 1, ticks_per_beat = 1000, sustain=1.0):
     return (on_dur, off_dur)
 
 def get_inst_program_number(cur_inst):
-    return inst[cur_inst]['number']
+    return inst[cur_inst]['program_number']
 
 def save_midi(midifile, midiname, save_dir = "midi"):
     if os.path.exists(save_dir) == False:
