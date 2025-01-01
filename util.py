@@ -15,9 +15,15 @@ import tomllib
 #import scipy.io.wavfile as siw
 seed = 5
 inst = {}
+drum = {}
 
 random.seed(5)
 bpms = (1./60000.) # (1 min/60 sec) x (1 sec/1000 ms)
+
+drum_pfix = "D:"
+drum_pgm = 0
+drum_chnum = 9
+default_midinote = 60
 
 act_longhand = {'mg_audio': 'musicgen-encoder',
                  'mg_small_h': 'musicgen-small_hidden', 'mg_med_h': 'musicgen-medium_hidden', 'mg_large_h': 'musicgen-large_hidden',
@@ -58,6 +64,17 @@ act_folder = {'musicgen-encoder': 'mg_audio_mp',
               }
 
 
+# https://stackoverflow.com/questions/4934806/how-can-i-find-scripts-directory
+script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+
+def by_projpath(subpath=None,make_dir = False):
+    cur_path = os.path.dirname(os.path.realpath(__file__))
+    if subpath != None:
+        cur_path = os.path.join(cur_path, subpath)
+        if os.path.exists(cur_path) == False and make_dir == True:
+            os.makedirs(cur_path)
+    return cur_path
+
 with open(by_projpath('inst_list.csv'), 'r') as f:
     csvr = csv.reader(f, delimiter=',')
     for i,row in enumerate(csvr):
@@ -67,10 +84,16 @@ with open(by_projpath('inst_list.csv'), 'r') as f:
             inst_cat = row[2]
             inst[inst_name] = {'program_number': inst_num, 'category': inst_cat}
 
+with open(by_projpath('drum_list.csv'), 'r')as f:
+    csvr = csv.reader(f, delimiter=",")
+    for i,row in enumerate(csvr):
+        if i > 0:
+            prg_num = int(row[0])
+            note_num = int(row[1])
+            inst_name = row[2].strip()
+            gm2 = True if int(row[3])== 1 else 0
+            drum[inst_name] = {'program_number': prg_num, 'midinote': note_num, 'gm2': gm2}
 
-
-# https://stackoverflow.com/questions/4934806/how-can-i-find-scripts-directory
-script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 
 def shuf_arr(arr):
     random.shuffle(arr)
@@ -93,14 +116,6 @@ def read_toml(sysargv, toml_dir = os.path.join(script_dir, 'toml')):
 def path_list(subpath=None):
     cur_path = by_projpath(subpath=subpath, make_dir = False)
     return os.listdir(cur_path) 
-
-def by_projpath(subpath=None,make_dir = False):
-    cur_path = os.path.dirname(os.path.realpath(__file__))
-    if subpath != None:
-        cur_path = os.path.join(cur_path, subpath)
-        if os.path.exists(cur_path) == False and make_dir == True:
-            os.makedirs(cur_path)
-    return cur_path
 
 def get_random_list(lo, hi, num):
     return [random.uniform(lo,hi) for _ in range(num)]
@@ -130,8 +145,33 @@ def notedur_to_ticks(dur, subdiv = 1, ticks_per_beat = 1000, sustain=1.0):
         on_dur = int(on_dur)
     return (on_dur, off_dur)
 
+
+def get_drum_name(cur_inst):
+    dsplit = cur_inst.strip().split(drum_pfix[-1])
+    return dsplit[-1]
+
+def is_inst_drum(cur_inst):
+    if drum_pfix in cur_inst:
+        return True
+    else:
+        return False
+
 def get_inst_program_number(cur_inst):
-    return inst[cur_inst]['program_number']
+    if drum_pfix in cur_inst:
+        return drum_pgm
+    else:
+        return inst[cur_inst]['program_number']
+
+def get_inst_midinote(cur_inst, default=default_midinote):
+    ret = default
+    if drum_pfix in cur_inst:
+        try:
+            drum_name = get_drum_name(cur_inst)
+            ret = drum[drum_name]['midinote']
+        except:
+            ret = default
+    return ret
+
 
 def save_midi(midifile, midiname, save_dir = "midi"):
     if os.path.exists(save_dir) == False:

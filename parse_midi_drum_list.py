@@ -13,7 +13,7 @@ with open('midi_drum_list.txt', 'r') as f:
         note_num = int(psplit2[0])
         inst_name = ' '.join(psplit2[1:])
         d[note_num] = {}
-        d[note_num]['note_num'] = note_num
+        d[note_num]['note_num'] = note_num -1
         d[note_num]['inst_name'] = inst_name
         d[note_num]['is_gm2'] = 1 if is_gm2 == True else 0
 

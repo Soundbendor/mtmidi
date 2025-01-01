@@ -1,7 +1,4 @@
 pair,count
-MelodicTom_Woodblock,685
-SynthDrum_TaikoDrum,693
-MelodicTom_SynthDrum,678
-TaikoDrum_Woodblock,664
-MelodicTom_TaikoDrum,649
-SynthDrum_Woodblock,687
+D:SnareDrum1_TaikoDrum,698
+D:SnareDrum1_MelodicTom,677
+MelodicTom_TaikoDrum,661

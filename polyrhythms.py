@@ -11,8 +11,11 @@ def get_pstr(pnums):
 # channel 9, pitch 31 is Sticks
 # channel 9, pitch 38 is Snare Drum
 # channel 9, pitch 37 is Side Stick
-instruments = ['Tinkle Bell','Agogo','Steel Drums','Woodblock','Taiko Drum','Melodic Tom','Synth Drum']
+train_prop = 0.7
+instruments = ['Agogo','Woodblock','Taiko Drum','Melodic Tom','D:Snare Drum 1']
 inst_combos = [x for x in combinations(instruments, 2)]
+num_inst_combos = len(inst_combos)
+inst_pairs_train = int(train_prop * num_inst_combos)
 max_num = 11
 max_range = 6
 poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,min(i + max_range, max_num+1)) if (np.gcd(i,j) == 1 and i < j)}
