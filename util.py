@@ -25,6 +25,13 @@ drum_pgm = 0
 drum_chnum = 9
 default_midinote = 60
 
+# datasets in the original dataset (for debugging)
+hf_datasets = set(['tempos', 'time_signatures', 'chords', 'notes', 'scales', 'intervals', 'chord_progressions']) 
+
+# datasets this project is introducing
+new_datasets = set(['polyrhythms'])
+
+all_datasets = hf_datasets.union(new_datasets)
 model_longhand = {'mg_audio': 'musicgen-encoder',
                  'mg_small_h': 'musicgen-small_hidden', 'mg_med_h': 'musicgen-medium_hidden', 'mg_large_h': 'musicgen-large_hidden',
                  'mg_small_at': 'musicgen-small_attn', 'mg_med_at': 'musicgen-medium_attn', 'mg_large_at': 'musicgen-large_attn',
@@ -40,6 +47,11 @@ model_type = {'musicgen-encoder': 'musicgen-large',
               'jukebox': 'jukebox',
               'jukebox36': 'jukebox',
               'jukebox38': 'jukebox'}
+
+model_sr = {'jukebox': 44100, 'musicgen-encoder': 32000,
+            'musicgen-small': 32000, 'musicgen-medium': 32000,
+            'musicgen-large': 32000}
+
 model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 72}
 #model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 1, "jukebox36": 1, "jukebox38": "jukebox38"} #until we get all jukebox layers
 
@@ -63,7 +75,6 @@ act_folder = {'musicgen-encoder': 'mg_audio_mp',
               'jukebox38': 'jukebox_acts_38',
               }
 
-
 # https://stackoverflow.com/questions/4934806/how-can-i-find-scripts-directory
 script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 
@@ -74,6 +85,9 @@ def by_projpath(subpath=None,make_dir = False):
         if os.path.exists(cur_path) == False and make_dir == True:
             os.makedirs(cur_path)
     return cur_path
+
+def get_model_type(shorthand):
+    return model_type[model_longhand[shorthand]]
 
 def get_activations_shape(shorthand):
     longhand = model_longhand[shorthand]
@@ -206,7 +220,7 @@ def save_midi(midifile, midiname, save_dir = "midi", dataset='polyrhythms'):
     sub_dir = os.path.join(by_projpath(save_dir), dataset)
     if os.path.exists(save_dir) == False:
         os.makedirs(save_dir)
-    is os.path.exists(sub_dir) == False:
+    if os.path.exists(sub_dir) == False:
         os.makedirs(sub_dir)
     fullpath = os.path.join(sub_dir, midiname)
     midifile.save(fullpath)

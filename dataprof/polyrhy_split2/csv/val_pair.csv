@@ -1,11 +1,11 @@
 pair,count
-Agogo_MelodicTom,154
-Agogo_TaikoDrum,165
-D:SnareDrum1_TaikoDrum,166
-TaikoDrum_Woodblock,166
 Agogo_D:SnareDrum1,155
+MelodicTom_Woodblock,149
+Agogo_MelodicTom,154
 MelodicTom_TaikoDrum,161
-Agogo_Woodblock,158
 D:SnareDrum1_Woodblock,165
 D:SnareDrum1_MelodicTom,167
-MelodicTom_Woodblock,149
+TaikoDrum_Woodblock,166
+Agogo_TaikoDrum,165
+D:SnareDrum1_TaikoDrum,166
+Agogo_Woodblock,158

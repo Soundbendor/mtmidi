@@ -1,11 +1,11 @@
 pair,count
-MelodicTom_TaikoDrum,1026
 Agogo_Woodblock,1026
-MelodicTom_Woodblock,1026
-TaikoDrum_Woodblock,1026
 Agogo_TaikoDrum,1026
-D:SnareDrum1_Woodblock,1026
-D:SnareDrum1_TaikoDrum,1026
 Agogo_MelodicTom,1026
 D:SnareDrum1_MelodicTom,1026
 Agogo_D:SnareDrum1,1026
+MelodicTom_TaikoDrum,1026
+D:SnareDrum1_TaikoDrum,1026
+D:SnareDrum1_Woodblock,1026
+TaikoDrum_Woodblock,1026
+MelodicTom_Woodblock,1026

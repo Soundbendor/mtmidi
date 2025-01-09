@@ -2,23 +2,33 @@
 import numpy as np
 import librosa as lr
 import util_hf as uhf
+import argparse
 
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("-ds", "--dataset", type=str, default="polyrhythms", help="dataset")
 parser.add_argument("-at", "--activation_type", type=str, default="jukebox", help="mg_{small/med/large}_{h/at} / mg_audio / jukebox")
 parser.add_argument("-lp", "--layers_per", type=int, default=4, help="layers per loop if doing all layers")
 parser.add_argument("-l", "--layer_num", type=int, default=-1, help="layer num (all if < 0)")
 parser.add_argument("-n", "--normalize", type=strtobool, default=True, help="normalize audio")
-parser.add_argument("-hf", "--hf_dataset", type=str, default="", help="use old hugging face dataset if passed")
 
 jb_model_sr = 44100
 args = parser.parse_args()
 lnum = args.layer_num
-hfds_str = args.hf_dataset
 normalize = args.normalize
-acts_dir = 'acts'
-path_list = um.path_list('wav')
+act_type = args.activation_type
 dur = 4.0 
-use_hf = len(hfds_str) > 0
 jb_dsamp_rate = 15
+dataset = args.dataset
+
+# exit if not a "real" dataset
+if (dataset in um.all_datasets) == False:
+    sys.exit('not a dataset')
+
+path_list = um.path_list(os.path.join(dataset, 'wav'))
+
+use_hf = dataset in um.hf_datasets
+if use_hf == True:
+    path_list = uhf.load_syntheory_train_dataset(_dataset)
 
 
 def get_hf_audio(f, model_sr = 44100):
@@ -27,11 +37,38 @@ def get_hf_audio(f, model_sr = 44100):
         audio = librosa.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
     return audio
 
+def path_handler(fpath, using_hf=False, model_sr = 44100, logfile_handle=None):
+    outname = None
+    if using_hf == False:
+        print(f'loading {f}', file=logfile_handle)
+        outname = um.ext_replace(fpath, new_ext="pt")
+    else:
+        print(f"loading {f['audio']['path']}", file=lf)
+        outname = um.ext_replace(f['audio']['path'], new_ext="pt")
+        outpath = os.path.join(out_dir, outname)
+    audio = None
+    aud_sr = None
+    if use_hf == True:
+        audio, aud_sr = uhf.get_from_entry_syntheory_audio(f, mono=True, normalize =normalize, dur = dur)
+        if aud_sr != model_sr:
+            audio = librosa.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
+    
+
+
 # 1-indexed
-def get_jukebox_activations(fpath=None, audio = None, layers=list(range(1,73))):
+def get_jukebox_layer_activations(fpath=None, audio = None, layers=list(range(1,73))):
     reps = None
     if fpath != None:
         acts = jml.extract(fpath=fpath, layers=layers, duration=dur, meanpool=True, downsample_target_rate=jb_dsamp_rate, downsample_method=None)
     else:
         acts = jml.extract(audio=audio, layers=layers, duration=dur, meanpool=True, downsample_target_rate=jb_dsamp_rate, downsample_method=None)
+    jml.lib.empty_cache()
     return np.array([acts[i] for i in layers])
+
+def get_activations(cur_pathlist, cur_act_type, using_hf = False, logfile_handle=None):
+    cur_model_type = um.get_model_type(cur_act_type)
+    model_sr = um.model_sr[cur_model_type]
+    if cur_model_type == 'jukebox':
+        jml.setup_models(cache_dir='/nfs/guille/eecs_research/soundbendor/kwand/jukemirlib')
+        #for fidx,f in enumerate(cur_pathlist):
+
