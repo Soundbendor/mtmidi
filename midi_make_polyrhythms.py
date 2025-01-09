@@ -65,7 +65,7 @@ for (cur_bpm, num_bars) in PL.bpm_bars:
                         inst1 = short_names[inst_order[0]]
                         inst2 = short_names[inst_order[1]]
                         pstr = PL.get_pstr(pnums)
-                        #outname = f"polyrhy-{inst1}_{inst2}-bpm_{cur_bpm}-rvb_{rvb_lvl}-offms_{offset_ms}-{pstr}.mid"
+                        #outname = f"{inst1}_{inst2}-bpm_{cur_bpm}-rvb_{rvb_lvl}-offms_{offset_ms}-{pstr}.mid"
                         outname = PL.get_outname(inst1, inst2, cur_bpm, rvb_lvl, offset_ms, pstr)
                         #print(outname)
                         # number of bars to do polyrhthm (polyrhythm isolated for one bar)
@@ -129,7 +129,7 @@ for (cur_bpm, num_bars) in PL.bpm_bars:
                             mid.tracks[i].append(mido.MetaMessage('end_of_track', time=0))
                         # end of run, save file
                         #mid.print_tracks()
-                        um.save_midi(mid, outname)
+                        um.save_midi(mid, outname, dataset='polyrhythms')
 
 
 

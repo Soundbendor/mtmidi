@@ -25,10 +25,10 @@ drum_pgm = 0
 drum_chnum = 9
 default_midinote = 60
 
-act_longhand = {'mg_audio': 'musicgen-encoder',
+model_longhand = {'mg_audio': 'musicgen-encoder',
                  'mg_small_h': 'musicgen-small_hidden', 'mg_med_h': 'musicgen-medium_hidden', 'mg_large_h': 'musicgen-large_hidden',
                  'mg_small_at': 'musicgen-small_attn', 'mg_med_at': 'musicgen-medium_attn', 'mg_large_at': 'musicgen-large_attn',
-                'jukebox36': 'jukebox36', 'jukebox38': 'jukebox38'}
+                  'jukebox': 'jukebox', 'jukebox36': 'jukebox36', 'jukebox38': 'jukebox38'}
 
 model_type = {'musicgen-encoder': 'musicgen-large',
               'musicgen-small_hidden': 'musicgen-small',
@@ -40,8 +40,8 @@ model_type = {'musicgen-encoder': 'musicgen-large',
               'jukebox': 'jukebox',
               'jukebox36': 'jukebox',
               'jukebox38': 'jukebox'}
-#model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 72}
-model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 1, "jukebox36": 1, "jukebox38": "jukebox38"} #until we get all jukebox layers
+model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 72}
+#model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 1, "jukebox36": 1, "jukebox38": "jukebox38"} #until we get all jukebox layers
 
 act_layer_dim = {"musicgen-small_hidden": 1024, "musicgen-medium_hidden": 1536, "musicgen-large_hidden": 2048, 
                    "musicgen-small_attn": 16, "musicgen-medium_attn": 24, "musicgen-large_attn": 32,
@@ -74,6 +74,35 @@ def by_projpath(subpath=None,make_dir = False):
         if os.path.exists(cur_path) == False and make_dir == True:
             os.makedirs(cur_path)
     return cur_path
+
+def get_activations_shape(shorthand):
+    longhand = model_longhand[shorthand]
+    mtype = model_type[longhand]
+    num_layers = model_num_layers[mtype]
+    layer_dim = act_layer_dim[longhand]
+    shape = (num_layers, layer_dim)
+    return shape
+
+def get_activations_file(model_shorthand, actfolder = 'acts', dataset='polyrhythms', fname='', write = True, is_64 = True):
+    actpath = by_projpath( actfolder)
+    datapath = os.path.join(actpath, dataset)
+    fpath = os.path.join(datapath, fname)
+    fp = None
+    dtype = 'float32'
+    mode = 'r'
+    shape = get_activations_shape(model_shorthand)
+    if is_64 == True:
+        dtype = 'float64'
+    if write == True:
+        if os.path.exists(datapath) == False:
+            os.makedirs(datapath)
+
+        if os.path.isfile(fpath) == True:
+            mode = 'r+'
+        else:
+            mode = 'w+'
+    fp = np.memmap(fpath, dtype = dtype, mode=mode, order='C', shape=shape)
+    return fp
 
 with open(by_projpath('inst_list.csv'), 'r') as f:
     csvr = csv.reader(f, delimiter=',')
@@ -173,10 +202,13 @@ def get_inst_midinote(cur_inst, default=default_midinote):
     return ret
 
 
-def save_midi(midifile, midiname, save_dir = "midi"):
+def save_midi(midifile, midiname, save_dir = "midi", dataset='polyrhythms'):
+    sub_dir = os.path.join(by_projpath(save_dir), dataset)
     if os.path.exists(save_dir) == False:
         os.makedirs(save_dir)
-    fullpath = os.path.join(save_dir, midiname)
+    is os.path.exists(sub_dir) == False:
+        os.makedirs(sub_dir)
+    fullpath = os.path.join(sub_dir, midiname)
     midifile.save(fullpath)
 
 def write_to_wav_pyfl(midifilepath, save_dir = 'wav', sr = 44100, gain=0.2, channels=16, sec=4):
@@ -247,7 +279,8 @@ def clean_wav(wavpath, out_dir,sr=44100):
     sf.write(opath, snd_trim, sr)
 
 def get_saved_midi():
-    return [os.path.join('midi', x)  for x in os.listdir('midi') if '.mid' in x]
+    midipath = by_projpath('midi')
+    return [os.path.join(midipath, x)  for x in os.listdir(midipath) if '.mid' in x]
 
 def series_plot_save(pl_series, cat, fname='chart.png', ds='polyrhy_split1'):
     title = f'{ds} {cat} counts'
