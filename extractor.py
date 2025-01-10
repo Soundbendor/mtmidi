@@ -104,8 +104,19 @@ def get_activations(cur_pathlist, cur_act_type, cur_dataset, using_hf = False, l
     cur_model_type = um.get_model_type(cur_act_type)
     model_sr = um.model_sr[cur_model_type]
     model_longhand = um.model_longhand(cur_act_type)
+    
+    device = 'cpu'
     if cur_model_type == 'jukebox':
         jml.setup_models(cache_dir='/nfs/guille/eecs_research/soundbendor/kwand/jukemirlib')
+    # is a musicgen model, need to specify torch params (?)
+    else:
+
+        if torch.cuda.is_available() == True:
+            device = 'cuda'
+            torch.cuda.empty_cache()
+            torch.set_default_device(device)
+
+
     for fidx,f in enumerate(cur_pathlist):
         fdict = path_handler(f, model_sr = model_sr, wav_path = wav_path, normalize = normalize, dur = dur,model_type = cur_model_type, using_hf = using_hf, logfile_handle=logfile_handle)
         #outpath = os.path.join(out_dir, outname)
@@ -130,13 +141,6 @@ def get_activations(cur_pathlist, cur_act_type, cur_dataset, using_hf = False, l
             text = ""
             model_str = f"facebook/{cur_model_type}" 
             num_layers = model_num_layers[model_str]
-
-            device = 'cpu'
-
-            if torch.cuda.is_available() == True:
-                device = 'cuda'
-                torch.cuda.empty_cache()
-                torch.set_default_device(device)
 
             proc = AutoProcessor.from_pretrained(model_str)
             model = MusicgenForConditionalGeneration.from_pretrained(model_str, device_map=device)
