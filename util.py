@@ -55,6 +55,9 @@ model_sr = {'jukebox': 44100, 'musicgen-encoder': 32000,
 model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 72}
 #model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 1, "jukebox36": 1, "jukebox38": "jukebox38"} #until we get all jukebox layers
 
+# because jukebox does a weird 1-indexing thing
+model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": list(range(1,73))}
+
 act_layer_dim = {"musicgen-small_hidden": 1024, "musicgen-medium_hidden": 1536, "musicgen-large_hidden": 2048, 
                    "musicgen-small_attn": 16, "musicgen-medium_attn": 24, "musicgen-large_attn": 32,
                    "musicgen-encoder": 128,
@@ -97,7 +100,7 @@ def get_activations_shape(shorthand):
     shape = (num_layers, layer_dim)
     return shape
 
-def get_activations_file(model_shorthand, actfolder = 'acts', dataset='polyrhythms', fname='', write = True, is_64 = True):
+def get_activations_file(model_shorthand, actfolder = 'acts', dataset='polyrhythms', fname='', write = True, use_64bit = True):
     actpath = by_projpath( actfolder)
     datapath = os.path.join(actpath, dataset)
     fpath = os.path.join(datapath, fname)
@@ -105,7 +108,7 @@ def get_activations_file(model_shorthand, actfolder = 'acts', dataset='polyrhyth
     dtype = 'float32'
     mode = 'r'
     shape = get_activations_shape(model_shorthand)
-    if is_64 == True:
+    if use_64bit == True:
         dtype = 'float64'
     if write == True:
         if os.path.exists(datapath) == False:

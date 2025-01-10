@@ -11,6 +11,7 @@ parser.add_argument("-lp", "--layers_per", type=int, default=4, help="layers per
 parser.add_argument("-l", "--layer_num", type=int, default=-1, help="layer num (all if < 0)")
 parser.add_argument("-n", "--normalize", type=strtobool, default=True, help="normalize audio")
 
+acts_folder = 'acts'
 jb_model_sr = 44100
 args = parser.parse_args()
 lnum = args.layer_num
@@ -19,6 +20,7 @@ act_type = args.activation_type
 dur = 4.0 
 jb_dsamp_rate = 15
 dataset = args.dataset
+use_64bit = True
 
 # exit if not a "real" dataset
 if (dataset in um.all_datasets) == False:
@@ -37,22 +39,22 @@ def get_hf_audio(f, model_sr = 44100):
         audio = librosa.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
     return audio
 
-def path_handler(fpath, using_hf=False, model_sr = 44100, logfile_handle=None):
-    outname = None
+def path_handler(f, using_hf=False, model_sr = 44100, logfile_handle=None):
+    out_fname = None
+    audio = None
     if using_hf == False:
         print(f'loading {f}', file=logfile_handle)
-        outname = um.ext_replace(fpath, new_ext="pt")
+        out_fname = um.ext_replace(fpath, new_ext="pt")
     else:
         print(f"loading {f['audio']['path']}", file=lf)
-        outname = um.ext_replace(f['audio']['path'], new_ext="pt")
-        outpath = os.path.join(out_dir, outname)
+        out_fname = um.ext_replace(f['audio']['path'], new_ext="pt")
     audio = None
     aud_sr = None
-    if use_hf == True:
+    if using_hf == True:
         audio, aud_sr = uhf.get_from_entry_syntheory_audio(f, mono=True, normalize =normalize, dur = dur)
         if aud_sr != model_sr:
             audio = librosa.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
-    
+    return {'out_fname':out_fname, 'audio': audio}
 
 
 # 1-indexed
@@ -65,10 +67,15 @@ def get_jukebox_layer_activations(fpath=None, audio = None, layers=list(range(1,
     jml.lib.empty_cache()
     return np.array([acts[i] for i in layers])
 
-def get_activations(cur_pathlist, cur_act_type, using_hf = False, logfile_handle=None):
+def get_activations(cur_pathlist, cur_act_type, cur_dataset, using_hf = False, logfile_handle=None):
     cur_model_type = um.get_model_type(cur_act_type)
     model_sr = um.model_sr[cur_model_type]
     if cur_model_type == 'jukebox':
         jml.setup_models(cache_dir='/nfs/guille/eecs_research/soundbendor/kwand/jukemirlib')
-        #for fidx,f in enumerate(cur_pathlist):
+    for fidx,f in enumerate(cur_pathlist):
+        fdict = path_handler(f, model_sr = model_sr, using_hf = using_hf, logfile_handle=logfile_handle)
+        #outpath = os.path.join(out_dir, outname)
+        out_fname = fdict['out_fname']
+        act_file = um.get_activations_file(cur_act_type, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = use_64bit, write=True)
+
 
