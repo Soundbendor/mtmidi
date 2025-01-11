@@ -1,35 +1,18 @@
+# heavily referencing the original code:
 # https://github.com/brown-palm/syntheory/blob/main/embeddings/models.py
 import numpy as np
+import time
 import torch
 import librosa as lr
 import util_hf as uhf
 import argparse
 from transformers import AutoProcessor, MusicgenForConditionalGeneration
-
-parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("-ds", "--dataset", type=str, default="polyrhythms", help="dataset")
-parser.add_argument("-at", "--activation_type", type=str, default="jukebox", help="mg_{small/med/large}_{h/at} / mg_audio / jukebox")
-parser.add_argument("-lp", "--layers_per", type=int, default=4, help="layers per loop if doing all layers (for jukebox)")
-parser.add_argument("-l", "--layer_num", type=int, default=-1, help="1-indexed layer num (all if < 0, for jukebox)")
-parser.add_argument("-n", "--normalize", type=strtobool, default=True, help="normalize audio")
+from distutils.util import strtobool
 
 acts_folder = 'acts'
-jb_model_sr = 44100
-args = parser.parse_args()
-lnum = args.layer_num
-lper = args.layer_per
-normalize = args.normalize
-act_type = args.activation_type
-dur = 4.0 
 jb_dsamp_rate = 15
-dataset = args.dataset
-use_64bit = True
+dur = 4.0 
 
-# exit if not a "real" dataset
-if (dataset in um.all_datasets) == False:
-    sys.exit('not a dataset')
-
-path_list = um.path_list(os.path.join(dataset, 'wav'))
 
 use_hf = dataset in um.hf_datasets
 if use_hf == True:
@@ -66,7 +49,7 @@ def path_handler(f, using_hf=False, model_sr = 44100, wav_path = None, model_typ
             audio = librosa.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
     return {'in_fpath': in_fpath, 'out_fname': out_fname, 'audio': audio}
 
-def get_musicgen_encoder_activations(model, proc, audio, meanpool = True, model_sr = 32000):
+def get_musicgen_encoder_embeddings(model, proc, audio, meanpool = True, model_sr = 32000):
     procd = proc(audio = audio, sampling_rate = model_sr, padding=True, return_tensors = 'pt')
     enc = model.get_audio_encoder()
     out = procd['input_values']
@@ -89,9 +72,40 @@ def get_musicgen_encoder_activations(model, proc, audio, meanpool = True, model_
         out = out.squeeze()
     return out
 
+def get_musicgen_lm_hidden_states(model, proc, audio, text="", meanpool = True, model_sr = 32000):
+    procd = proc(audio = audio, text = text, sampling_rate = model_sr, padding=True, return_tensors = 'pt')
+    outputs = model(**procd, output_attentions=True, output_hidden_states=True)
+    dhs = None
+    
+    #dat = None
+
+    # hidden
+    # outputs is a tuple of tensors with  shape (batch_size, seqlen, dimension) with 1 per layer
+    # torch stack makes it so we have (num_layers, batch_size, seqlen, dimension)
+    # then we average over seqlen in the meanpool case
+    # then squeeze to get rid of the 1 dim (if batch_size == 1)
+    # final shape is (num_layers, batch_size, dim)  (or (num_layers, dim) if bs=1)
+    
+    # attentions
+    # outputs is a tuple of tensors with  shape (batch_size, num_heads, seqlen, seqlen) with 1 per layer
+    # torch stack makes it so we have (num_layers, batch_size, num_heads, seqlen, sequlen)
+    # then we average over seqlens in the meanpool case
+    # then squeeze to get rid of the 1 dim (if batch_size == 1)
+    # final shape is (num_layers, batch_size, num_heads) (or (num_layers, num_heads) if bs = 1)
+
+    if meanpool == True:
+        dhs = torch.stack(outputs.decoder_hidden_states).mean(axis=2).squeeze().detach().numpy()
+        #dat = torch.stack(outputs.decoder_attentions).mean(axis=(3,4)).squeeze().detach().numpy()
+    else:
+        dhs = torch.stack(outputs.decoder_hidden_states).squeeze().detach().numpy()
+        #dat = torch.stack(outputs.decoder_attentions).squeeze().detach().numpy()
+    return dhs
+
+
+
 
 # 1-indexed
-def get_jukebox_layer_activations(fpath=None, audio = None, layers=list(range(1,73))):
+def get_jukebox_layer_embeddings(fpath=None, audio = None, layers=list(range(1,73))):
     reps = None
     if fpath != None:
         acts = jml.extract(fpath=fpath, layers=layers, duration=dur, meanpool=True, downsample_target_rate=jb_dsamp_rate, downsample_method=None)
@@ -100,12 +114,20 @@ def get_jukebox_layer_activations(fpath=None, audio = None, layers=list(range(1,
     jml.lib.empty_cache()
     return np.array([acts[i] for i in layers])
 
-def get_activations(cur_pathlist, cur_act_type, cur_dataset, using_hf = False, layers_per = 4, layer_num = -1, normalize = True, dur = 4., wav_path=None, logfile_handle=None):
+def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, normalize = True, dur = 4., use_64bit = True, logfile_handle=None):
     cur_model_type = um.get_model_type(cur_act_type)
     model_sr = um.model_sr[cur_model_type]
     model_longhand = um.model_longhand(cur_act_type)
     
+    using_hf = cur_dataset in um.hf_datasets
+    # musicgen stuff
     device = 'cpu'
+    num_layers = None
+    proc = None
+    model = None
+    text = ""
+    wav_path = os.path.join(cur_dataset, 'wav')
+    cur_pathlist = um.path_list(wav_path)
     if cur_model_type == 'jukebox':
         jml.setup_models(cache_dir='/nfs/guille/eecs_research/soundbendor/kwand/jukemirlib')
     # is a musicgen model, need to specify torch params (?)
@@ -117,6 +139,13 @@ def get_activations(cur_pathlist, cur_act_type, cur_dataset, using_hf = False, l
             torch.set_default_device(device)
 
 
+        model_str = f"facebook/{cur_model_type}" 
+        num_layers = model_num_layers[model_str]
+
+        proc = AutoProcessor.from_pretrained(model_str)
+        model = MusicgenForConditionalGeneration.from_pretrained(model_str, device_map=device)
+        model_sr = model.config.audio_encoder.sampling_rate
+
     for fidx,f in enumerate(cur_pathlist):
         fdict = path_handler(f, model_sr = model_sr, wav_path = wav_path, normalize = normalize, dur = dur,model_type = cur_model_type, using_hf = using_hf, logfile_handle=logfile_handle)
         #outpath = os.path.join(out_dir, outname)
@@ -124,8 +153,9 @@ def get_activations(cur_pathlist, cur_act_type, cur_dataset, using_hf = False, l
         fpath = fdict['in_fpath']
         audio = fdict['audio']
         # store by cur_act_type (model shorthand)
-        act_file = um.get_activations_file(cur_act_type, acts_folder=acts_folder, dataset=cur_dataset, model_folder = cur_act_type, fname=out_fname, use_64bit = use_64bit, write=True)
+        emb_file = um.get_embedding_file(cur_act_type, acts_folder=acts_folder, dataset=cur_dataset, model_folder = cur_act_type, fname=out_fname, use_64bit = use_64bit, write=True)
         if cur_model_type == 'jukebox':
+            print(f'--- extracting jukebox for {f} with {layers_per} layers at a time ---', file=logfile_handle)
             # note that layers are 1-indexed in jukebox
             # so let's 0-idx and then add 1 when feeding into jukebox fn
             layer_gen = (list(range(l, l + layers_per)) for l in range(0,um.model_num_layers['jukebox'], layers_per)) 
@@ -135,20 +165,51 @@ def get_activations(cur_pathlist, cur_act_type, cur_dataset, using_hf = False, l
             for layer_arr in layer_gen:
                 # 1-idx for passing into fn
                 j_idx = [l+1 for l in layer_arr]
-                rep_arr = get_jukebox_layer_activations(fpath=fpath, audio = audio, layers=j_idx)
-                act_file[layer_arr,:] = rep_arr
+                print(f'extracting layers {j_idx}', file=logfile_handle)
+                rep_arr = get_jukebox_layer_embeddings(fpath=fpath, audio = audio, layers=j_idx)
+                emb_file[layer_arr,:] = rep_arr
         else:
-            text = ""
-            model_str = f"facebook/{cur_model_type}" 
-            num_layers = model_num_layers[model_str]
-
-            proc = AutoProcessor.from_pretrained(model_str)
-            model = MusicgenForConditionalGeneration.from_pretrained(model_str, device_map=device)
-            model_sr = model.config.audio_encoder.sampling_rate
-
+            
             if model_longhand == "musicgen-encoder":
+                print(f'--- extracting musicgen-encoder for {f} ---', file=logfile_handle)
 
-                rep_arr = get_musicgen_encoder_activations(model, proc, fdict['audio'], meanpool = True, model_sr = model_sr)
-                act_file = rep_arr
+                rep_arr = get_musicgen_encoder_embeddings(model, proc, fdict['audio'], meanpool = True, model_sr = model_sr)
+                emb_file = rep_arr
             else:
-                pass
+
+                print(f'--- extracting musicgen_lm for {f} ---', file=logfile_handle)
+                get_musicgen_encoder_embeddings(model, proc, fdict['audio'], meanpool = True, model_sr = model_sr)
+                emb_file = rep_arr
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-ub", "--use_64bit", type=strtobool, default=True, help="use 64-bit")
+    parser.add_argument("-ds", "--dataset", type=str, default="polyrhythms", help="dataset")
+    parser.add_argument("-at", "--activation_type", type=str, default="jukebox", help="mg_{small/med/large}_{h/at} / mg_audio / jukebox")
+    parser.add_argument("-lp", "--layers_per", type=int, default=4, help="layers per loop if doing all layers (for jukebox)")
+    parser.add_argument("-l", "--layer_num", type=int, default=-1, help="1-indexed layer num (all if < 0, for jukebox)")
+    parser.add_argument("-n", "--normalize", type=strtobool, default=True, help="normalize audio")
+
+
+    args = parser.parse_args()
+    use_64bit = args.use_64bit
+    lnum = args.layer_num
+    lper = args.layer_per
+    normalize = args.normalize
+    act_type = args.activation_type
+    dataset = args.dataset
+    # exit if not a "real" dataset
+    logdir = um.by_projpath(subpath='log', make_dir = True)
+    timestamp = int(time.time() * 1000)
+    log_fname = f'{dataset}_{act_type}-{timestamp}.txt'
+    if normalize == True:
+        log_fname = f'{dataset}_{act_type}_norm-{timestamp}.txt'
+    log_fpath = os.path.join(lodir, log_fname)
+    if (dataset in um.all_datasets) == False:
+        sys.exit('not a dataset')
+    else:
+        path_list = um.path_list(os.path.join(dataset, 'wav'))
+        with open(log_fpath, 'a') as lf:
+            print(f'=== running extraction for {dataset} with {act_type} at {timestamp} ===', file=lf)
+            get_embeddings(act_type, dataset, layers_per = lper, layer_num = lnum, normalize = normalize, dur = dur, use_64bit = use_64bit, logfile_handle=lf)

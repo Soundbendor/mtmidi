@@ -94,7 +94,7 @@ def by_projpath(subpath=None,make_dir = False):
 def get_model_type(shorthand):
     return model_type[model_longhand[shorthand]]
 
-def get_activations_shape(shorthand):
+def get_embedding_shape(shorthand):
     longhand = model_longhand[shorthand]
     mtype = model_type[longhand]
     num_layers = model_num_layers[mtype]
@@ -102,7 +102,7 @@ def get_activations_shape(shorthand):
     shape = (num_layers, layer_dim)
     return shape
 
-def get_activations_file(model_shorthand, acts_folder = 'acts', model_folder = 'jukebox', dataset='polyrhythms', fname='', write = True, use_64bit = True):
+def get_embedding_file(model_shorthand, acts_folder = 'acts', model_folder = 'jukebox', dataset='polyrhythms', fname='', write = True, use_64bit = True):
     actpath = by_projpath(acts_folder)
     modelpath = os.path.join(actpath, model_folder)
     datapath = os.path.join(modelpath, dataset)
@@ -110,7 +110,7 @@ def get_activations_file(model_shorthand, acts_folder = 'acts', model_folder = '
     fp = None
     dtype = 'float32'
     mode = 'r'
-    shape = get_activations_shape(model_shorthand)
+    shape = get_embedding_shape(model_shorthand)
     if use_64bit == True:
         dtype = 'float64'
     if write == True:
