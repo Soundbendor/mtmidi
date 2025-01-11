@@ -1,11 +1,11 @@
 act_kind = "jukebox38"
 split = 2
 cls = false
-num_hidden = 1
+num_hidden = 0
 layer_idx = -1
 lr = 0.001
 bs = 64
-num_epochs = 100
+num_epochs = 1000
 dataset = 'tempi'
 class_binsize = 10
 thresh = 5

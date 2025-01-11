@@ -1,11 +1,12 @@
 # heavily referencing the original code:
 # https://github.com/brown-palm/syntheory/blob/main/embeddings/models.py
+import sys,os,time,argparse
 import numpy as np
-import time
 import torch
 import librosa as lr
 import util_hf as uhf
-import argparse
+import util as um
+import jukemirlib as jml
 from transformers import AutoProcessor, MusicgenForConditionalGeneration
 from distutils.util import strtobool
 
@@ -14,12 +15,8 @@ jb_dsamp_rate = 15
 dur = 4.0 
 
 
-use_hf = dataset in um.hf_datasets
-if use_hf == True:
-    path_list = uhf.load_syntheory_train_dataset(_dataset)
 
-
-def get_hf_audio(f, model_sr = 44100):
+def get_hf_audio(f, model_sr = 44100, normalize=True):
     audio, aud_sr = uhf.get_from_entry_syntheory_audio(f, mono=True, normalize =normalize, dur = dur)
     if aud_sr != model_sr:
         audio = librosa.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
@@ -117,7 +114,7 @@ def get_jukebox_layer_embeddings(fpath=None, audio = None, layers=list(range(1,7
 def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, normalize = True, dur = 4., use_64bit = True, logfile_handle=None):
     cur_model_type = um.get_model_type(cur_act_type)
     model_sr = um.model_sr[cur_model_type]
-    model_longhand = um.model_longhand(cur_act_type)
+    model_longhand = um.model_longhand[cur_act_type]
     
     using_hf = cur_dataset in um.hf_datasets
     # musicgen stuff
@@ -126,8 +123,13 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
     proc = None
     model = None
     text = ""
-    wav_path = os.path.join(cur_dataset, 'wav')
-    cur_pathlist = um.path_list(wav_path)
+    wav_path = os.path.join(um.by_projpath('wav'), cur_dataset)
+    cur_pathlist = None
+    if using_hf == True:
+        cur_pathlist = uhf.load_syntheory_train_dataset(cur_dataset)
+    else:
+        cur_pathlist = um.path_list(wav_path)
+
     if cur_model_type == 'jukebox':
         jml.setup_models(cache_dir='/nfs/guille/eecs_research/soundbendor/kwand/jukemirlib')
     # is a musicgen model, need to specify torch params (?)
@@ -195,7 +197,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     use_64bit = args.use_64bit
     lnum = args.layer_num
-    lper = args.layer_per
+    lper = args.layers_per
     normalize = args.normalize
     act_type = args.activation_type
     dataset = args.dataset
@@ -205,11 +207,10 @@ if __name__ == '__main__':
     log_fname = f'{dataset}_{act_type}-{timestamp}.txt'
     if normalize == True:
         log_fname = f'{dataset}_{act_type}_norm-{timestamp}.txt'
-    log_fpath = os.path.join(lodir, log_fname)
+    log_fpath = os.path.join(logdir, log_fname)
     if (dataset in um.all_datasets) == False:
         sys.exit('not a dataset')
     else:
-        path_list = um.path_list(os.path.join(dataset, 'wav'))
         with open(log_fpath, 'a') as lf:
             print(f'=== running extraction for {dataset} with {act_type} at {timestamp} ===', file=lf)
             get_embeddings(act_type, dataset, layers_per = lper, layer_num = lnum, normalize = normalize, dur = dur, use_64bit = use_64bit, logfile_handle=lf)

@@ -75,7 +75,6 @@ if torch.cuda.is_available() == True:
     torch.cuda.empty_cache()
     torch.set_default_device(device)
 
-
 if model_size == "audio":
     num_layers = -1
 out_dir = None
@@ -126,6 +125,7 @@ model_sr = model.config.audio_encoder.sampling_rate
 if os.path.isfile(log):
     os.remove(log)
 with open(log, 'a') as lf:
+    print(device,file=lf)
     for fidx,f in enumerate(path_list):
         if debug == True:
             if fidx > 0: break
