@@ -19,7 +19,7 @@ dur = 4.0
 def get_hf_audio(f, model_sr = 44100, normalize=True):
     audio, aud_sr = uhf.get_from_entry_syntheory_audio(f, mono=True, normalize =normalize, dur = dur)
     if aud_sr != model_sr:
-        audio = librosa.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
+        audio = lr.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
     return audio
 
 def path_handler(f, using_hf=False, model_sr = 44100, wav_path = None, model_type = 'jukebox', dur = 4., normalize = True, out_ext = 'dat', logfile_handle=None):
@@ -43,11 +43,12 @@ def path_handler(f, using_hf=False, model_sr = 44100, wav_path = None, model_typ
     if using_hf == True:
         audio, aud_sr = uhf.get_from_entry_syntheory_audio(f, mono=True, normalize =normalize, dur = dur)
         if aud_sr != model_sr:
-            audio = librosa.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
+            audio = lr.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
     return {'in_fpath': in_fpath, 'out_fname': out_fname, 'audio': audio}
 
-def get_musicgen_encoder_embeddings(model, proc, audio, meanpool = True, model_sr = 32000):
+def get_musicgen_encoder_embeddings(model, proc, audio, meanpool = True, model_sr = 32000, device='cpu'):
     procd = proc(audio = audio, sampling_rate = model_sr, padding=True, return_tensors = 'pt')
+    procd.to(device)
     enc = model.get_audio_encoder()
     out = procd['input_values']
     
@@ -67,10 +68,11 @@ def get_musicgen_encoder_embeddings(model, proc, audio, meanpool = True, model_s
         # still need to squeeze
         # gives shape (128, 200)
         out = out.squeeze()
-    return out
+    return out.detach().cpu().numpy()
 
-def get_musicgen_lm_hidden_states(model, proc, audio, text="", meanpool = True, model_sr = 32000):
+def get_musicgen_lm_hidden_states(model, proc, audio, text="", meanpool = True, model_sr = 32000, device = 'cpu'):
     procd = proc(audio = audio, text = text, sampling_rate = model_sr, padding=True, return_tensors = 'pt')
+    procd.to(device)
     outputs = model(**procd, output_attentions=True, output_hidden_states=True)
     dhs = None
     
@@ -91,12 +93,12 @@ def get_musicgen_lm_hidden_states(model, proc, audio, text="", meanpool = True, 
     # final shape is (num_layers, batch_size, num_heads) (or (num_layers, num_heads) if bs = 1)
 
     if meanpool == True:
-        dhs = torch.stack(outputs.decoder_hidden_states).mean(axis=2).squeeze().detach().numpy()
-        #dat = torch.stack(outputs.decoder_attentions).mean(axis=(3,4)).squeeze().detach().numpy()
+        dhs = torch.stack(outputs.decoder_hidden_states).mean(axis=2).squeeze()
+        #dat = torch.stack(outputs.decoder_attentions).mean(axis=(3,4)).squeeze()
     else:
-        dhs = torch.stack(outputs.decoder_hidden_states).squeeze().detach().numpy()
-        #dat = torch.stack(outputs.decoder_attentions).squeeze().detach().numpy()
-    return dhs
+        dhs = torch.stack(outputs.decoder_hidden_states).squeeze()
+        #dat = torch.stack(outputs.decoder_attentions).squeeze()
+    return dhs.detach().cpu().numpy()
 
 
 
@@ -142,7 +144,6 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
 
 
         model_str = f"facebook/{cur_model_type}" 
-        num_layers = model_num_layers[model_str]
 
         proc = AutoProcessor.from_pretrained(model_str)
         model = MusicgenForConditionalGeneration.from_pretrained(model_str, device_map=device)
@@ -170,18 +171,21 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
                 print(f'extracting layers {j_idx}', file=logfile_handle)
                 rep_arr = get_jukebox_layer_embeddings(fpath=fpath, audio = audio, layers=j_idx)
                 emb_file[layer_arr,:] = rep_arr
+                emb_file.flush()
         else:
-            
+            audio_ipt = fdict['audio']
             if model_longhand == "musicgen-encoder":
                 print(f'--- extracting musicgen-encoder for {f} ---', file=logfile_handle)
 
-                rep_arr = get_musicgen_encoder_embeddings(model, proc, fdict['audio'], meanpool = True, model_sr = model_sr)
-                emb_file = rep_arr
+                rep_arr = get_musicgen_encoder_embeddings(model, proc, audio_ipt, meanpool = True, model_sr = model_sr, device=device)
+                emb_file[:,:] = rep_arr
+                emb_file.flush()
             else:
 
                 print(f'--- extracting musicgen_lm for {f} ---', file=logfile_handle)
-                get_musicgen_encoder_embeddings(model, proc, fdict['audio'], meanpool = True, model_sr = model_sr)
-                emb_file = rep_arr
+                rep_arr =  get_musicgen_lm_hidden_states(model, proc, audio_ipt, text="", meanpool = True, model_sr = model_sr, device=device)
+                emb_file[:,:] = rep_arr
+                emb_file.flush()
 
 if __name__ == '__main__':
 

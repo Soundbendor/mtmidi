@@ -54,7 +54,9 @@ model_sr = {'jukebox': 44100, 'musicgen-encoder': 32000,
             'musicgen-small': 32000, 'musicgen-medium': 32000,
             'musicgen-large': 32000}
 
-model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 72}
+# musicgen-medium/large: 48 + 1
+# musicgen-small: 24 + 1
+model_num_layers = {"musicgen-small": 25, "musicgen-medium": 49, "musicgen-large": 49, "musicgen-encoder": 1, "jukebox": 72}
 #model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 1, "jukebox36": 1, "jukebox38": "jukebox38"} #until we get all jukebox layers
 
 # because jukebox does a weird 1-indexing thing
@@ -104,9 +106,9 @@ def get_embedding_shape(shorthand):
 
 def get_embedding_file(model_shorthand, acts_folder = 'acts', model_folder = 'jukebox', dataset='polyrhythms', fname='', write = True, use_64bit = True):
     actpath = by_projpath(acts_folder)
-    modelpath = os.path.join(actpath, model_folder)
-    datapath = os.path.join(modelpath, dataset)
-    fpath = os.path.join(datapath, fname)
+    datapath = os.path.join(actpath, dataset)
+    modelpath = os.path.join(datapath, model_folder)
+    fpath = os.path.join(modelpath, fname)
     fp = None
     dtype = 'float32'
     mode = 'r'
@@ -114,12 +116,12 @@ def get_embedding_file(model_shorthand, acts_folder = 'acts', model_folder = 'ju
     if use_64bit == True:
         dtype = 'float64'
     if write == True:
+        if os.path.exists(datapath) == False:
+            os.makedirs(datapath)
         if os.path.exists(modelpath) == False:
             os.makedirs(modelpath)
 
 
-        if os.path.exists(datapath) == False:
-            os.makedirs(datapath)
 
         if os.path.isfile(fpath) == True:
             mode = 'r+'
