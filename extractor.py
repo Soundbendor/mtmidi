@@ -38,7 +38,6 @@ def path_handler(f, using_hf=False, model_sr = 44100, wav_path = None, model_typ
     else:
         print(f"loading {f['audio']['path']}", file=lf)
         out_fname = um.ext_replace(f['audio']['path'], new_ext=out_ext)
-    audio = None
     aud_sr = None
     if using_hf == True:
         audio, aud_sr = uhf.get_from_entry_syntheory_audio(f, mono=True, normalize =normalize, dur = dur)
