@@ -160,7 +160,7 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
             print(f'--- extracting jukebox for {f} with {layers_per} layers at a time ---', file=logfile_handle)
             # note that layers are 1-indexed in jukebox
             # so let's 0-idx and then add 1 when feeding into jukebox fn
-            layer_gen = (list(range(l, l + layers_per)) for l in range(0,um.model_num_layers['jukebox'], layers_per)) 
+            layer_gen = (list(range(l, min(um.model_num_layers['jukebox'], l + layers_per))) for l in range(0,um.model_num_layers['jukebox'], layers_per)) 
             if layer_num > 0:
                 # 0-idx from 1-idxed argt
                 layer_gen = ([l-1] for l in [layer_num])
