@@ -39,6 +39,9 @@ model_longhand = {'mg_audio': 'musicgen-encoder',
                   'jukebox': 'jukebox', 'jukebox36': 'jukebox36', 'jukebox38': 'jukebox38'}
 
 model_shorthand = model_longhand.keys()
+
+
+
 model_type = {'musicgen-encoder': 'musicgen-large',
               'musicgen-small_hidden': 'musicgen-small',
               'musicgen-small_attn': 'musicgen-small',
@@ -95,6 +98,10 @@ def by_projpath(subpath=None,make_dir = False):
 
 def get_model_type(shorthand):
     return model_type[model_longhand[shorthand]]
+
+def get_layer_dim(shorthand):
+    model_lh = model_longhand[shorthand]
+    return act_layer_dim[model_lh]
 
 def get_embedding_shape(shorthand):
     longhand = model_longhand[shorthand]
