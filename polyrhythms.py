@@ -16,8 +16,8 @@ instruments = ['Agogo','Woodblock','Taiko Drum','Melodic Tom','D:Snare Drum 1']
 inst_combos = [x for x in combinations(instruments, 2)]
 num_inst_combos = len(inst_combos)
 inst_pairs_train = int(train_prop * num_inst_combos)
-max_num = 11
-max_range = 6
+max_num = 12
+max_range = max_num
 poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,min(i + max_range, max_num+1)) if (np.gcd(i,j) == 1 and i < j)}
 
 
@@ -53,8 +53,11 @@ reg_class_arr = [k for (k,v) in reg_polystr_to_idx.items()]
 
 
 
-
-offset_ms_arr = [0, 120, 204]
+# 0 is baseline
+# 1,2, witin 16th note at 60 bpm (250)
+# 3,4 within 250 and 0.4 * 4000 = 1600 of sample (because slowest polyrhythm is 2:someting)
+# first run for 3,4 = array([ 700.23030532, 1067.37954942])
+offset_ms_arr = [0, 120, 204, 700, 1067]
 bpm_bars = [(60, 1),(120, 2), (180, 3)]
 reverb_lvl = {0:0, 1: 63, 2:127}
 
