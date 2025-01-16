@@ -21,6 +21,7 @@ max_range = max_num
 poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,min(i + max_range, max_num+1)) if (np.gcd(i,j) == 1 and i < j)}
 
 
+fieldnames = ['name','inst1', 'inst2', 'bpm', 'num_bars', 'poly', 'pair', 'ratio', 'norm_ratio', 'offset_lvl', 'offset_ms', 'offset_ticks', 'rvb_lvl', 'rvb_val', 'poly1', 'poly2']
 
 poly_tups = [((i,j),x) for (i,j),x in poly_pairs.items()]
 ptsort = sorted(poly_tups, key=itemgetter(1))

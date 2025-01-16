@@ -1,3 +1,4 @@
+import os,csv
 import util as um
 import mido
 import musicnoteconv as mnc
@@ -34,11 +35,16 @@ runs = 2 if do_reverse == True else 1
 #offset_ms_arr = [0, 67, 105, 170, 249]
 # another hand curated random randint
 
+csvpath = os.path.join(um.by_projpath('csv'), 'polyrhythms.csv')
+outf = open(csvpath, 'w')
+csvw = csv.DictWriter(outf,fieldnames=PL.fieldnames)
+csvw.writeheader()
+
 
 for (cur_bpm, num_bars) in PL.bpm_bars:
     tempo_microsec = mido.bpm2tempo(cur_bpm)
-    tick_offsets = {x:int(um.ms_to_ticks(x,ticks_per_beat = ticks_per_beat, bpm = cur_bpm)) for x in PL.offset_ms_arr}
-    for offset_ms, offset_ticks in tick_offsets.items():
+    tick_offsets = {x:(offset_lvl, int(um.ms_to_ticks(x,ticks_per_beat = ticks_per_beat, bpm = cur_bpm))) for offset_lvl, x in enumerate(PL.offset_ms_arr)}
+    for offset_ms, (offset_lvl, offset_ticks) in tick_offsets.items():
         for rvb_lvl, rvb_val in PL.reverb_lvl.items():
 
             for cur_pair in PL.inst_combos:
@@ -67,6 +73,16 @@ for (cur_bpm, num_bars) in PL.bpm_bars:
                         pstr = PL.get_pstr(pnums)
                         #outname = f"{inst1}_{inst2}-bpm_{cur_bpm}-rvb_{rvb_lvl}-offms_{offset_ms}-{pstr}.mid"
                         outname = PL.get_outname(inst1, inst2, cur_bpm, rvb_lvl, offset_ms, pstr)
+                        # csv naming stuff
+                        short_pair = [inst1,inst2]
+                        short_pair.sort()
+                        pstr2 = '_'.join(short_pair)
+                        ratio = PL.get_ratio(pnums)
+                        norm_ratio = PL.normalize_ratio(ratio)
+
+                        outname2 = PL.get_outname(inst1, inst2, cur_bpm, rvb_lvl, offset_ms, pstr, with_ext=False)
+                        cur_row = {'inst1': inst1, 'inst2': inst2, 'poly': pstr, 'pair': pstr2, 'bpm': cur_bpm, 'num_bars': num_bars, 'rvb_lvl': rvb_lvl, 'rvb_val': rvb_val, 'offset_lvl': offset_lvl, 'offset_ms': offset_ms, 'offset_ticks': offset_ticks, 'poly1': pnums[0], 'poly2': pnums[1], 'name': outname2, 'ratio': ratio, 'norm_ratio': norm_ratio}
+                        csvw.writerow(cur_row)
                         #print(outname)
                         # number of bars to do polyrhthm (polyrhythm isolated for one bar)
                         # do one instrument at a time
@@ -131,7 +147,7 @@ for (cur_bpm, num_bars) in PL.bpm_bars:
                         #mid.print_tracks()
                         um.save_midi(mid, outname, dataset='polyrhythms')
 
-
+outf.close()
 
 
 
