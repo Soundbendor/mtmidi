@@ -28,22 +28,26 @@ def path_handler(f, using_hf=False, model_sr = 44100, wav_path = None, model_typ
     in_dir = um.by_projpath(wav_path)
     in_fpath = None
     out_fname = None
+    fname = None
     if using_hf == False:
         print(f'loading {f}', file=logfile_handle)
         in_fpath = os.path.join(in_dir, f)
         out_fname = um.ext_replace(f, new_ext=out_ext)
+        fname = um.ext_replace(f, new_ext='')
         # don't need to load audio if jukebox
         if model_type != 'jukebox':
             audio = um.load_wav(f, dur = dur, normalize = normalize, sr = model_sr,  load_dir = in_dir)
     else:
-        print(f"loading {f['audio']['path']}", file=lf)
-        out_fname = um.ext_replace(f['audio']['path'], new_ext=out_ext)
+        hf_path = f['audio'],['path']
+        print(f"loading {hf_path}", file=lf)
+        out_fname = um.ext_replace(hf_path, new_ext=out_ext)
+        fname = um.ext_replace(hf_path, new_ext='')
     aud_sr = None
     if using_hf == True:
         audio, aud_sr = uhf.get_from_entry_syntheory_audio(f, mono=True, normalize =normalize, dur = dur)
         if aud_sr != model_sr:
             audio = lr.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
-    return {'in_fpath': in_fpath, 'out_fname': out_fname, 'audio': audio}
+    return {'in_fpath': in_fpath, 'out_fname': out_fname, 'audio': audio, 'fname': fname}
 
 def get_musicgen_encoder_embeddings(model, proc, audio, meanpool = True, model_sr = 32000, device='cpu'):
     procd = proc(audio = audio, sampling_rate = model_sr, padding=True, return_tensors = 'pt')
@@ -112,7 +116,7 @@ def get_jukebox_layer_embeddings(fpath=None, audio = None, layers=list(range(1,7
     jml.lib.empty_cache()
     return np.array([acts[i] for i in layers])
 
-def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, normalize = True, dur = 4., use_64bit = True, logfile_handle=None):
+def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, normalize = True, dur = 4., use_64bit = True, logfile_handle=None, recfile_handle = None):
     cur_model_type = um.get_model_type(cur_act_type)
     model_sr = um.model_sr[cur_model_type]
     model_longhand = um.model_longhand[cur_act_type]
@@ -148,6 +152,7 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
         model = MusicgenForConditionalGeneration.from_pretrained(model_str, device_map=device)
         model_sr = model.config.audio_encoder.sampling_rate
 
+    print('file,is_extracted', file=rf)
     for fidx,f in enumerate(cur_pathlist):
         fdict = path_handler(f, model_sr = model_sr, wav_path = wav_path, normalize = normalize, dur = dur,model_type = cur_model_type, using_hf = using_hf, logfile_handle=logfile_handle)
         #outpath = os.path.join(out_dir, outname)
@@ -185,7 +190,8 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
                 rep_arr =  get_musicgen_lm_hidden_states(model, proc, audio_ipt, text="", meanpool = True, model_sr = model_sr, device=device)
                 emb_file[:,:] = rep_arr
                 emb_file.flush()
-
+        fname = fdict['fname']
+        print(f'{fname},1', file=rf)
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -207,13 +213,22 @@ if __name__ == '__main__':
     # exit if not a "real" dataset
     logdir = um.by_projpath(subpath='log', make_dir = True)
     timestamp = int(time.time() * 1000)
-    log_fname = f'{dataset}_{act_type}-{timestamp}.txt'
+
+    # miscellaneous logs
+    log_fname = f'{dataset}_{act_type}-{timestamp}.log'
+    # record saving activations
+    rec_fname = f'{dataset}_{act_type}-{timestamp}.csv'
     if normalize == True:
         log_fname = f'{dataset}_{act_type}_norm-{timestamp}.txt'
+        rec_fname = f'{dataset}_{act_type}_norm-{timestamp}.csv'
     log_fpath = os.path.join(logdir, log_fname)
+    rec_fpath = os.path.join(logdir, rec_fname)
     if (dataset in um.all_datasets) == False:
         sys.exit('not a dataset')
     else:
-        with open(log_fpath, 'a') as lf:
-            print(f'=== running extraction for {dataset} with {act_type} at {timestamp} ===', file=lf)
-            get_embeddings(act_type, dataset, layers_per = lper, layer_num = lnum, normalize = normalize, dur = dur, use_64bit = use_64bit, logfile_handle=lf)
+        lf = open(log_fpath, 'a')
+        rf = open(rec_fpath, 'w')
+        print(f'=== running extraction for {dataset} with {act_type} at {timestamp} ===', file=lf)
+        get_embeddings(act_type, dataset, layers_per = lper, layer_num = lnum, normalize = normalize, dur = dur, use_64bit = use_64bit, logfile_handle=lf, recfile_handle=rf)
+        lf.close()
+        rf.close()

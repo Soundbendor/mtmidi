@@ -288,6 +288,8 @@ def ext_replace(old_path, new_ext = 'pt'):
     outname = fsplit
     if len(new_ext) > 0:
         outname = f'{fsplit}.{new_ext}'
+    else:
+        outname = f'{fsplit}'
     return outname
 
 
