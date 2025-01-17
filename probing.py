@@ -7,9 +7,9 @@ import torch_nep as TN
 import sklearn.metrics as SKM
 import os,sys,time,argparse
 from functools import partial
-import matplotlib.pyplot as plt
 import polyrhythms as PL
-import util as um
+import util as UM
+import utils_probing as UP
 import tempi as TP
 import tomllib
 from distutils.util import strtobool
@@ -24,6 +24,10 @@ if torch.cuda.is_available() == True:
     device = 'cuda'
     torch.cuda.empty_cache()
     torch.set_default_device(device)
+tempo_class_binsize=3
+# hacky way of initialize tempo things with a class_binsize for "classification" from regression
+TP.init(tempo_class_binsize)
+UP.init(tempo_class_binsize)
 
 ### PROBE ###
 class Probe(nn.Module):
@@ -51,8 +55,43 @@ class Probe(nn.Module):
     def forward(self, x):
         return self.layers(x)
 
-def train_classification(trial):
-    pass
+def train_loop(model, opt_fn, loss_fn, train_dl, is_classification = True):
+    model.train(True)
+    iters = 0
+    total_loss = 0
+    for data_idx, data in enumerate(train_dl):
+        loss = None
+        if is_classification == True:
+            ipt, ground_truth = data
+            pred = model(ipt)
+            loss = loss_fn(pred, ground_truth)
+        else:
+            ipt, ground_truth, ground_label = data
+            pred = model(ipt.float())
+            loss = loss_fn(pred.flatten().float(), ground_truth.flatten().float(), reduction = 'mean')
+     
+        loss.backward()
+        opt_fn.step()
+        cur_loss = loss.item()
+        total_loss += cur_loss
+        iters += 1
+    avg_loss = total_loss/float(iters)
+    return avg_loss
+
+def valid_test_loop(model, loss_fn, eval_dl, dataset = 'polyrhythms', is_classification = True):
+    model.eval()
+    iters = 0
+    total_loss = 0
+    for data_idx, data in enumerate(train_dl):
+        loss = None
+        if is_classification == True:
+            ipt, ground_truth = data
+            pred = model(ipt)
+            loss = loss_fn(pred, ground_truth)
+        else:
+            ipt, ground_truth, ground_label = data
+            pred = model(ipt.float())
+            loss = loss_fn(pred.flatten().float(), ground_truth.flatten().float(), reduction = 'mean')
 
 def _objective(trial, dataset = 'polyrhythms', model_shorthand = 'mg_small_h', is_classification = True):
     # suggested params
@@ -62,13 +101,28 @@ def _objective(trial, dataset = 'polyrhythms', model_shorthand = 'mg_small_h', i
     weight_decay = trial.suggest_categorical('l2_weight_decay', [-1, 1e-4, 1e-3])
     num_epochs = trial.suggest_categorical('num_epochs', [50,100,250,500])
 
-    model_type = um.get_model_type(model_shorthand)  
-    model_layer_dim = um.get_layer_dim(model_shorthand)
+    model_type = UM.get_model_type(model_shorthand)  
+    model_layer_dim = UM.get_layer_dim(model_shorthand)
+    
+    # model init
     out_dim = 1
     if dataset == 'polyrhythms':
         if is_classification == True:
             out_dim = PL.num_poly
     model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
+
+    # optimizer and loss init
+    opt_fn = torch.optim.Adam(mode.parameters(), lr=lr, weight_decay=weight_decay)
+    loss_fn = None
+    if is_classification == True:
+        loss_fn = nn.CrossEntropyLoss(reduction='mean')
+    else:
+        loss_fn = nn.MSELoss(reduction='mean')
+
+    
+    for epoch_idx in range(num_epochs):
+        train_loss = train_loop(model, opt_fn, loss_fn, train_dl, is_classification = is_classification)
+
     
 
 if __name__ == "__main__":
