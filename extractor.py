@@ -38,7 +38,7 @@ def path_handler(f, using_hf=False, model_sr = 44100, wav_path = None, model_typ
         if model_type != 'jukebox':
             audio = um.load_wav(f, dur = dur, normalize = normalize, sr = model_sr,  load_dir = in_dir)
     else:
-        hf_path = f['audio'],['path']
+        hf_path = f['audio']['path']
         print(f"loading {hf_path}", file=lf)
         out_fname = um.ext_replace(hf_path, new_ext=out_ext)
         fname = um.ext_replace(hf_path, new_ext='')
