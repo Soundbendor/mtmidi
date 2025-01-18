@@ -2,6 +2,7 @@ import sklearn.metrics as SKM
 import polyrhythms as PL
 import matplotlib.pyplot as plt
 import util as UM
+import neptune
 import tempi as TP
 import os
 
@@ -86,3 +87,19 @@ def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset, he
          "root_mean_squared_error": rmse, "d2_absolute_error_score": d2ae,
          "accuracy_score": acc, "f1_macro": f1_macro, "f1_micro": f1_micro}
     return d
+
+
+def init(params):
+    nep_tok = None
+    nep_path = os.path.join(util.script_dir, 'nep_api.txt')
+    with open(nep_path, 'r') as f:
+        nep_tok = f.read().strip()
+    run = neptune.init_run(
+        project="Soundbendor/SynTheoryPlus",
+        api_token=nep_tok,
+    )  
+    run['parameters'] = params
+    return run
+
+
+
