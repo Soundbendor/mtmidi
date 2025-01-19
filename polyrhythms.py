@@ -92,7 +92,8 @@ def get_nearest_poly(normed_pred, thresh=0.001, as_str = True):
         ret = reg_pair_to_str[ret]
     return ret
 
-
+def get_idx_from_polystr(_pstr):
+    return polystr_to_idx[_pstr]
 
 def get_ratio(pnums):
     ratio = pnums[0]/pnums[1]

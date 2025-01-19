@@ -154,7 +154,7 @@ def valid_test_loop(model, loss_fn, eval_dl, dataset = 'polyrhythms', is_classif
     avg_loss = total_loss/float(iters)
     return avg_loss, metrics
 
-def _objective(trial, dataset = 'polyrhythms', activation_type = 'mg_small_h', is_classification = True, poly_regcls_thresh=0.01):
+def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, poly_regcls_thresh=0.01):
     # suggested params
     lr = trial.suggest_categorical('learning_rate', [1e-3, 1e-4, 1e-5])
     bs = trial.suggest_categorical('batch_size', [62,256])
@@ -163,8 +163,8 @@ def _objective(trial, dataset = 'polyrhythms', activation_type = 'mg_small_h', i
     num_epochs = trial.suggest_categorical('num_epochs', [50,100,250,500])
     
 
-    model_type = UM.get_model_type(activation_type)  
-    model_layer_dim = UM.get_layer_dim(activation_type)
+    model_type = UM.get_model_type(embedding_type)  
+    model_layer_dim = UM.get_layer_dim(embedding_type)
     
     # model init
     out_dim = 1
@@ -193,14 +193,14 @@ def _objective(trial, dataset = 'polyrhythms', activation_type = 'mg_small_h', i
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-ds", "--dataset", type=str, default="polyrhythms", help="dataset")
-    parser.add_argument("-at", "--activation_type", type=str, default="jukebox", help="mg_{small/med/large}_{h/at} / mg_audio / jukebox")
+    parser.add_argument("-at", "--embedding_type", type=str, default="jukebox", help="mg_{small/med/large}_{h/at} / mg_audio / jukebox")
     parser.add_argument("-nt", "--num_trials", type=int, default=50, help="number of optuna trials")
     
     args = parser.parse_args()
     arg_dict = vars(args)
     arg_dict.update({'poly_clsreg_thresh': polyrhy_clsreg_thresh})
     cur_time = int(time.time() * 1000)
-    study_name = f"{cur_time}-{args.dataset}-{args.activation_type}-{args.num_trials}"
+    study_name = f"{cur_time}-{args.dataset}-{args.embedding_type}-{args.num_trials}"
     rdb_string_url = "sqlite:///" + os.path.join(os.path.dirname(__file__), 'db', f'{study_name}.db')
     study = optuna.create_study(study_name=study_name, storage=rdb_string_url, direction='maximize')
     objective = partial(_objective, **arg_dict)
