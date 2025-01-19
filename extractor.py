@@ -191,7 +191,7 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
                 emb_file[:,:] = rep_arr
                 emb_file.flush()
         fname = fdict['fname']
-        print(f'{fname},1', file=rf)
+        print(f'{fname},1', file=recfile_handle)
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
