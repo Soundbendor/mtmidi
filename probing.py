@@ -261,7 +261,7 @@ def study_callback(study, trial):
 
     global trial_model_state_dict
     global best_model_state_dict
-    if study.best_trial_number == trial.number:
+    if study.best_trial.number == trial.number:
         # turns out state dicts are not json serializable (so doesn't work)
         #trial.set_user_attr(key='best_state_dict', value=copy.deepcopy(trial.user_attrs['best_state_dict']))
         best_model_state_dict = copy.deepcopy(trial_model_state_dict)
