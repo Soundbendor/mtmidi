@@ -1,5 +1,7 @@
 import sklearn.metrics as SKM
 import torch.utils.data as TUD
+from sklearn.model_selection import train_test_split
+import numpy as np
 import polyrhythms as PL
 import matplotlib.pyplot as plt
 import util as UM
@@ -92,7 +94,7 @@ def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset, he
 
     d = {'mean_squared_error': mse, "r2_score": r2, "mean_absolute_error": mae,
          "explained_variance_score": ev, "median_absolute_error": medae,
-         "max_error": eaxerr, "mean_absolute_percentage_error": mape,
+         "max_error": maxerr, "mean_absolute_percentage_error": mape,
          "root_mean_squared_error": rmse, "d2_absolute_error_score": d2ae,
          "accuracy_score": acc, "f1_macro": f1_macro, "f1_micro": f1_micro,
          "confmat": cm, 'confmat_path': cm_path}
@@ -103,13 +105,12 @@ def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset, he
 # train_pct refers to entire dataset, test_subpct refers to length after split
 def get_train_valid_test_subsets(dataset_obj, dataset_label_arr, train_on_middle = True, train_pct = 0.7, test_subpct = 0.5, seed = 5):
     test_valid_pct = 1. - train_pct
-    valid_pct = (1. - test_subpct) * test_pct
-    test_pct = test_subpct * test_pct
+    valid_pct = (1. - test_subpct) * test_valid_pct
+    test_pct = test_subpct * test_valid_pct
     train_idx = None
     test_valid_idx = None
     total_num = len(dataset_obj)
     all_idx = np.arange(0, total_num)
-    labels = dataset_obj['label_idx'].to_numpy()
     if train_on_middle == False:
         _train_idx, _test_valid_idx = train_test_split(all_idx, random_state = seed, shuffle = True, stratify=dataset_label_arr)
         train_idx = np.array(train_idx)
@@ -122,9 +123,9 @@ def get_train_valid_test_subsets(dataset_obj, dataset_label_arr, train_on_middle
         test_valid_idx = np.concatenate((all_idx[:train_start],all_idx[train_end:]))
     leftover_labels = dataset_label_arr[test_valid_idx]
     # returns indices of our index lists so we have to convert to regular indices
-    _test_idx, _valid_idx = train_test_split(test_valid_idx, random_state = seed, shuffle= True, stratify=leftover_labels)
-    test_idx = test_valid_idx[_test_idx]
-    valid_idx = test_valid_idx[_valid_idx]
+    test_idx, valid_idx = train_test_split(test_valid_idx, random_state = seed, shuffle= True, stratify=leftover_labels)
+    #test_idx = test_valid_idx[_test_idx]
+    #valid_idx = test_valid_idx[_valid_idx]
     train_subset = TUD.Subset(dataset_obj, train_idx)
     valid_subset = TUD.Subset(dataset_obj, valid_idx)
     test_subset = TUD.Subset(dataset_obj, test_idx)

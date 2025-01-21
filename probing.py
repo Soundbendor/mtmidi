@@ -17,6 +17,10 @@ from distutils.util import strtobool
 import optuna
 import copy
 
+# global declarations (hacky) to save model state dicts
+global trial_model_state_dict
+global best_model_state_dict
+
 
 ### some params to play around with
 # polyrhythms
@@ -35,8 +39,8 @@ plots_update_freq = 10
 log_plot_slice = True
 log_plot_contour = True
 # hacky way of initialize tempo things with a class_binsize for "classification" from regression
-TEMPOS_CLASS_BINSIZE=3
-POLY_REGCLS_THRESH = 0.01
+TEMPOS_CLASS_BINSIZE=4
+THRESH = 0.1
 
 TP.init(TEMPOS_CLASS_BINSIZE)
 UP.init(TEMPOS_CLASS_BINSIZE)
@@ -51,8 +55,8 @@ if torch.cuda.is_available() == True:
 ### PROBE ###
 class Probe(nn.Module):
     def __init__(self, in_dim=4800, hidden_layers = [512],out_dim=10, dropout = 0.5, initial_dropout = True):
+        super().__init__()
         self.num_layers = len(hidden_layers)
-        cur_dim = in_dim
         self.initial_dropout = initial_dropout
 
         self.layers = nn.Sequential()
@@ -63,6 +67,7 @@ class Probe(nn.Module):
         # dropout ->
         # num_hidden x (linear -> relu -> dropout) ->
         # linear -> out
+        cur_dim = in_dim
         for layer_idx, layer_dim in enumerate(hidden_layers):
             self.layers.append(nn.Linear(cur_dim, layer_dim))
             self.layers.append(nn.ReLU())
@@ -76,16 +81,18 @@ class Probe(nn.Module):
 
 
 ### REGRESSION "CLASSIFICATION"
-def regression_classification(dataset, predictions, poly_regcls_thresh=0.01):
+def regression_classification(dataset, predictions, thresh=0.01):
     # predictions should be in numpy format
     cur_pred_labels = None
     cur_pred_label_idx = None
     if dataset == 'polyrhythms':
-        cur_pred_labels = [PL.get_nearest_poly(x, thresh=poly_regcls_thresh) for x in predictions]
+        cur_pred_labels = [PL.get_nearest_poly(x, thresh=thresh) for x in predictions]
         cur_pred_label_idx = np.array([PL.reg_polystr_to_idx[x] for x in cur_pred_labels])
-    elif dataset == 'tempi':
-        cur_pred_labels = [TP.get_nearest_bpmclass(x, classlist_sorted, thresh=thresh) for x in predictions]
+    elif dataset == 'tempos':
+        # this maps normed predictions to bpm classes (middles of bpm bins)
+        cur_pred_labels = [TP.get_nearest_bpmclass(x, TP.classlist_sorted, thresh=thresh) for x in predictions]
         #print('test2', pred_np.shape, pred_np.dtype, len(cur_pred_labels))
+        # this maps middles of bpm bins to indices 
         cur_pred_label_idx = np.array([TP.classdict[x] for x in cur_pred_labels])
     return cur_pred_labels, cur_pred_label_idx
 
@@ -104,7 +111,7 @@ def train_loop(model, opt_fn, loss_fn, train_ds, batch_size = 64, shuffle = True
         else:
             ipt, ground_truth, ground_label = data
             pred = model(ipt.float())
-            loss = loss_fn(pred.flatten().float(), ground_truth.flatten().float(), reduction = 'mean')
+            loss = loss_fn(pred.flatten().float(), ground_truth.flatten().float())
      
         loss.backward()
         opt_fn.step()
@@ -114,7 +121,7 @@ def train_loop(model, opt_fn, loss_fn, train_ds, batch_size = 64, shuffle = True
     avg_loss = total_loss/float(iters)
     return avg_loss
 
-def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_classification = True, held_out_classes = False, is_testing = False, batch_size = 64, shuffle = True, poly_regcls_thresh = 0.01):
+def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_classification = True, held_out_classes = False, is_testing = False, batch_size = 64, shuffle = True,thresh = 0.01):
     eval_dl = TUD.DataLoader(eval_ds, batch_size = batch_size, shuffle=shuffle, generator=torch.Generator(device=device))
     model.eval()
     iters = 0
@@ -134,34 +141,36 @@ def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_
             if loss_fn != None:
                 loss = loss_fn(pred, ground_truth)
             
-            cur_truths = ground_truth.cpu().numpy().flatten()
-            cur_preds = torch.argmax(pred,axis=1).cpu().numpy().flatten()
+            cur_truths = ground_truth.detach().cpu().numpy().flatten()
+            cur_preds = torch.argmax(pred,axis=1).detach().cpu().numpy().flatten()
             
             if data_idx == 0:
-                truths = cur_truths
-                preds = cur_preds
+                truths = copy.deepcopy(cur_truths)
+                preds = copy.deepcopy(cur_preds)
             else:
-                truths = np.hstack((truths, cur_truths))
-                preds = np.hstack((preds, cur_preds))
+                truths = np.hstack((truths, copy.deepcopy(cur_truths)))
+                preds = np.hstack((preds, copy.deepcopy(cur_preds)))
         else:
             ipt, ground_truth, ground_label = data
             pred = model(ipt.float())
             if loss_fn != None:
-                loss = loss_fn(pred.flatten().float(), ground_truth.flatten().float(), reduction = 'mean')
+                loss = loss_fn(pred.flatten().float(), ground_truth.flatten().float())
             # stuff for regression "classification"  
-            pred_np = pred.cpu().numpy().flatten()
-            cur_pred_labels, cur_pred_label_idx = regression_classification(dataset, pred_np, poly_regcls_thresh=poly_regcls_thresh)
+            pred_np = pred.detach().cpu().numpy().flatten()
+            cur_pred_labels, cur_pred_label_idx = regression_classification(dataset, pred_np, thresh=thresh)
             if data_idx == 0:
-                preds = pred_np
-                truths = ground_truth.cpu().numpy().flatten()
-                truth_labels = ground_label.cpu().numpy().flatten()
-                pred_labels = cur_pred_label_idx
+                preds = copy.deepcopy(copy.deepcopy(pred_np))
+                truths = copy.deepcopy(ground_truth.detach().cpu().numpy().flatten())
+                truth_labels = copy.deepcopy(ground_label.detach().cpu().numpy().flatten())
+                pred_labels = copy.deepcopy(cur_pred_label_idx)
             else:
-                preds = np.hstack((preds, pred_np))
-                truths = np.hstack((truths, ground_truth.cpu().numpy().flatten()))
-                truth_labels = np.hstack((truth_labels, ground_label.cpu().numpy().flatten()))
-                pred_labels = np.hstack((pred_labels, cur_pred_label_idx))
+                preds = np.hstack((preds, copy.deepcopy(pred_np)))
+                truths = np.hstack((truths, copy.deepcopy(ground_truth.detach().cpu().numpy().flatten())))
+                truth_labels = np.hstack((truth_labels, copy.deepcopy(ground_label.detach().cpu().numpy().flatten())))
+                pred_labels = np.hstack((pred_labels, copy.deepcopy(cur_pred_label_idx)))
 
+            #print('truth', data_idx, truth_labels.shape)
+            #print('pred', data_idx, pred_labels.shape)
         # loss bookkeeping
         if loss_fn != None:
             cur_loss = loss.item()
@@ -190,7 +199,10 @@ def get_optimization_metric(metric_dict, is_classification = True):
 def has_held_out_classes(dataset, is_classification):
     return (dataset in ["polyrhythms", "tempos"]) and is_classification == False
 
-def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, poly_regcls_thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, to_nep = True):
+def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1):
+
+    global trial_model_state_dict
+    global best_model_state_dict
     # suggested params
     lr = trial.suggest_categorical('learning_rate', [1e-3, 1e-4, 1e-5])
     bs = trial.suggest_categorical('batch_size', [62,256])
@@ -206,8 +218,8 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     else:
         lidx = trial.suggest_int('layer_idx', 0, max_layer_idx, step=1)
 
-    train_ds.set_layer_idx(lidx)
-    valid_ds.set_layer_idx(lidx)
+    train_ds.dataset.set_layer_idx(lidx)
+    valid_ds.dataset.set_layer_idx(lidx)
 
     held_out_classes = has_held_out_classes(dataset, is_classification)     
     model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
@@ -215,9 +227,9 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     # optimizer and loss init
     opt_fn = None
     if weight_decay > 0:
-        opt_fn = torch.optim.Adam(mode.parameters(), lr=lr, weight_decay=weight_decay)
+        opt_fn = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     else:
-        opt_fn = torch.optim.Adam(mode.parameters(), lr=lr)
+        opt_fn = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = None
     if is_classification == True:
         loss_fn = nn.CrossEntropyLoss(reduction='mean')
@@ -230,7 +242,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     last_score = None
     for epoch_idx in range(num_epochs):
         train_loss = train_loop(model, opt_fn, loss_fn, train_ds, batch_size = bs, is_classification = is_classification)
-        valid_loss, valid_metrics = valid_test_loop(model,valid_ds, loss_fn = loss_fn, dataset = dataset, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = False, poly_regcls_thresh = poly_regcls_thresh, batch_size = bs)
+        valid_loss, valid_metrics = valid_test_loop(model,valid_ds, loss_fn = loss_fn, dataset = dataset, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = False, thresh = thresh, batch_size = bs)
         cur_score = get_optimization_metric(valid_metrics, is_classification = is_classification)
         # https://optuna.readthedocs.io/en/v2.0.0/tutorial/pruning.html
         trial.report(cur_score, epoch_idx)
@@ -238,15 +250,21 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
         if trial.should_prune() == True:
             raise optuna.TrialPruned()
         last_score = cur_score
-    trial.set_user_attr(key='best_state_dict', value=model.state_dict())
+    #trial.set_user_attr(key='best_state_dict', value=model.state_dict())
+
+    trial_model_state_dict = copy.deepcopy(model.state_dict())
     return last_score
     
 # use this to save the best model
 # https://stackoverflow.com/questions/62144904/python-how-to-retrieve-the-best-model-from-optuna-lightgbm-study
 def study_callback(study, trial):
+
+    global trial_model_state_dict
+    global best_model_state_dict
     if study.best_trial_number == trial.number:
-        # deepcopy since probably state dict is a reference
-        trial.set_user_attr(key='best_state_dict', value=copy.deepcopy(trial.user_attrs['best_state_dict']))
+        # turns out state dicts are not json serializable (so doesn't work)
+        #trial.set_user_attr(key='best_state_dict', value=copy.deepcopy(trial.user_attrs['best_state_dict']))
+        best_model_state_dict = copy.deepcopy(trial_model_state_dict)
 
 if __name__ == "__main__":
     #### arg parsing
@@ -258,7 +276,8 @@ if __name__ == "__main__":
     parser.add_argument("-cls", "--is_classification", type=strtobool, default=True, help="is classification")
     parser.add_argument("-tom", "--train_on_middle", type=strtobool, default=True, help="train on middle")
     parser.add_argument("-nep", "--to_nep", type=strtobool, default=True, help="log on neptune")
-   
+
+    drop_keys = set(['to_nep', 'num_trials'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -270,8 +289,7 @@ if __name__ == "__main__":
     if arg_dict['dataset'] == 'polyrhythms':
         if arg_dict['is_classification'] == True:
             out_dim = PL.num_poly
-
-    arg_dict.update({'poly_regcls_thresh': POLY_REGCLS_THRESH, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
+    arg_dict.update({'thresh': THRESH, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
 
     #### some variable definitions
     cur_ds = None
@@ -285,7 +303,7 @@ if __name__ == "__main__":
     elif arg_dict['dataset'] == 'tempos':
        cur_ds = STHFTempiData(embedding_type= arg_dict['embedding_type'], device=device, norm_labels = True, layer_idx= arg_dict['layer_idx'], class_binsize = TEMPOS_CLASS_BINSIZE, num_classes = TP.num_classes, bpm_class_mapper = TP.bpm_class_mapper, is_64bit = is_64bit)
        label_arr = cur_ds.all_classes
-    train_ds, valid_ds, test_ds = UP.get_train_valid_test_subsets(cur_ds, label_all, train_on_middle = arg_dict['train_on_middle'], train_pct = train_pct, test_subpct = test_subpct, seed = seed)
+    train_ds, valid_ds, test_ds = UP.get_train_valid_test_subsets(cur_ds, label_arr, train_on_middle = arg_dict['train_on_middle'], train_pct = train_pct, test_subpct = test_subpct, seed = seed)
     arg_dict.update({'train_ds': train_ds, 'valid_ds': valid_ds})
 
     #### running the optuna study
@@ -294,20 +312,22 @@ if __name__ == "__main__":
     rdb_string_url = "sqlite:///" + os.path.join(os.path.dirname(__file__), 'db', f'{study_name}.db')
 
     study = optuna.create_study(study_name=study_name, storage=rdb_string_url, direction='maximize')
-    objective = partial(_objective, **arg_dict)
+    obj_dict = {k:v for (k,v) in arg_dict.items() if k not in drop_keys}
+    objective = partial(_objective, **obj_dict)
     callbacks = [study_callback]
 
     # init neptune and then run
+    to_nep = arg_dict['to_nep'] == True
+    num_trials = arg_dict['num_trials']
     nep = None
     nep_callback = None
-    if arg_dict['to_nep'] == True:
+    if to_nep == True:
         nep, nep_callback = TN.init(arg_dict, plots_update_freq = plots_update_freq, log_plot_slice = log_plot_slice, log_plot_contour = log_plot_contour)
         callbacks.append(nep_callback)
 
-    study.optimize(objective, n_trials = arg_dict['num_trials'], callbacks=[study_callback, ])
+    study.optimize(objective, n_trials = num_trials, callbacks=callbacks)
 
     #### final testing on best trial
-    best_state_dict = study.user_attrs['best_state_dict']
     dropout = study.best_params['dropout']
     layer_idx = arg_dict['layer_idx']
     bs = arg_dict['batch_size']
@@ -316,12 +336,12 @@ if __name__ == "__main__":
 
     ## model loading and running 
     model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
-    model.load_state_dict(best_state_dict)
+    model.load_state_dict(best_model_state_dict)
     held_out_classes = has_held_out_classes(dataset, is_classification)
-    test_ds.set_layer_idx(layer_idx)
-    test_loss, test_metrics = valid_test_loop(model, test_ds, loss_fn = None, dataset = arg_dict['dataset'], is_classification = arg_dict['is_classification'], held_out_classes = held_out_classes, is_testing = True, poly_regcls_thresh = arg_dict['poly_regcls_thresh'], batch_size = bs)
+    test_ds.dataset.set_layer_idx(layer_idx)
+    test_loss, test_metrics = valid_test_loop(model, test_ds, loss_fn = None, dataset = arg_dict['dataset'], is_classification = arg_dict['is_classification'], held_out_classes = held_out_classes, is_testing = True,  thresh = arg_dict['thresh'], batch_size = bs)
     UP.print_metrics(test_metrics, study_name)
-    if arg_dict['to_nep'] == True:
+    if to_nep == True:
         UP.neptune_log(nep, test_metrics)
         TN.tidy(study, nep)
 

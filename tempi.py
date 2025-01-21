@@ -18,7 +18,7 @@ def get_class_medians(class_binsize):
     half_binsize = class_binsize//2 
     # medians of bpm bin to index
     d = { (i + half_binsize): _bpm_class_mapper(i) for i in range(minbpm, maxbpm + class_binsize, class_binsize)}
-        # medians
+    # medians
     dlist = [(i + half_binsize) for i in range(minbpm, maxbpm + class_binsize, class_binsize)]
 
     cur_num_classes = len(dlist)
@@ -68,4 +68,9 @@ def init(class_binsize=3):
     global classset_aug
     global num_classes
     global bpm_class_mapper
+    # classdict maps middles of bpm bins to indices (+ a default class for non matches)
+    # rev_classdict maps indices to middles of bpm bins
+    # classlist_sorted lists all classes (without default class)
+    # classset_aug is a set combining classlist_sorted and default_class
+
     classdict, rev_classdict, classlist_sorted, classset_aug, num_classes, bpm_class_mapper = get_class_medians(class_binsize)

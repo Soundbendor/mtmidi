@@ -160,7 +160,7 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
         fpath = fdict['in_fpath']
         audio = fdict['audio']
         # store by cur_act_type (model shorthand)
-        emb_file = um.get_embedding_file(cur_act_type, acts_folder=acts_folder, dataset=cur_dataset, model_folder = cur_act_type, fname=out_fname, use_64bit = use_64bit, write=True)
+        emb_file = um.get_embedding_file(cur_act_type, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = use_64bit, write=True)
         if cur_model_type == 'jukebox':
             print(f'--- extracting jukebox for {f} with {layers_per} layers at a time ---', file=logfile_handle)
             # note that layers are 1-indexed in jukebox

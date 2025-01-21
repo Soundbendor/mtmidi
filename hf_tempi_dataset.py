@@ -28,16 +28,17 @@ class STHFTempiData(torch.utils.data.Dataset):
         self.bpm_range = self.max_bpm - self.min_bpm
         self.num_classes = num_classes
         self.bpm_class_mapper = bpm_class_mapper
-        cur_data = cur_data.with_columns(bpm_class=self.bpm_class_mapper(cur_data['bpm'])).cast({'bpm_class': int})
+        cur_data = cur_data.with_columns(pl.col('bpm').map_elements(self.bpm_class_mapper, return_dtype=int).alias('bpm_class'))
         self.all_classes = cur_data['bpm_class'].to_numpy().flatten()
         self.data = cur_data
         # class dict with medians
         #self.scalefunc = np.vectorize(lambda x: (x - self.min_bpm)/self.bpm_range)
         #cur_data = cur_data.with_columns(norm_bpm=self.scalefunc(cur_data['bpm']))
 
-        self.total_num = cur_data['path'].count()
+        self.total_num = self.data['path'].count()
+        self.coldict = {x:i for (i,x) in enumerate(self.data.columns)}
         self.norm_labels = norm_labels
-        self.data_folder = os.path.join(UM.by_projpath('acts'),'tempi', embedding_type)
+        #self.data_folder = os.path.join(UM.by_projpath('acts'),'tempi', embedding_type)
         self.layer_idx = layer_idx 
     def __len__(self):
         return self.data['path'].count()
@@ -47,15 +48,17 @@ class STHFTempiData(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         cur_truth = None
-        cur_name = self.data['name'][idx]
+        cur_row = self.data.row(idx)
+        cur_name = cur_row[self.coldict['name']]
+        cur_fname = f'{cur_name}.dat'
         cur_reg = None
-        cur_truth = self.data['bpm_class'][idx]
+        cur_truth = cur_row[self.coldict['bpm_class']]
         if self.norm_labels == True:
-            cur_reg = self.data['norm_bpm'][idx]
+            cur_reg = cur_row[self.coldict['norm_bpm']]
         else:
-            cur_reg = self.data['bpm'][idx]
+            cur_reg = cur_row[self.coldict['bpm']]
 
-        cur_arr =  UM.embedding_file_to_torch(self.embedding_type, acts_folder = 'acts', dataset='polyrhythms', fname=cur_name, write = False, layer_idx = self.layer_idx, device = self.device, use_64bit = self.is_64bit)
+        cur_arr =  UM.embedding_file_to_torch(self.embedding_type, acts_folder = 'acts', dataset='tempos', fname=cur_fname, layer_idx = self.layer_idx, device = self.device, use_64bit = self.is_64bit)
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
         return cur_arr, cur_reg, cur_truth
 

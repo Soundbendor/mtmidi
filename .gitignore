@@ -7,3 +7,4 @@ st*
 log/*
 *.swp
 dont_save/*
+db/*
