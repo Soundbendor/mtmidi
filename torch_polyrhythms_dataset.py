@@ -1,4 +1,5 @@
 import torch
+import torch.utils.data as TUD
 import os
 import polars as pl
 from sklearn import preprocessing as SKP
@@ -9,9 +10,10 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 # exclude_polys should be in pstr format
-class PolyrhythmsData(torch.utils.data.Dataset):
-    def __init__(self, embedding_type = 'mg_small_h', device='cpu', classification = True, exclude_polys = [], exclude_offset_lvls = [], norm_labels = True, layer_idx=-1):
+class PolyrhythmsData(TUD.Dataset):
+    def __init__(self, embedding_type = 'mg_small_h', device='cpu', classification = True, exclude_polys = [], exclude_offset_lvls = [], norm_labels = True, layer_idx=-1, is_64bit = True):
         self.device = device
+        self.is_64bit = is_64bit
         self.embedding_type = embedding_type
         cur_data = pl.scan_csv(csvfile).collect()
         self.all_pstr = cur_data.select(['poly']).to_numpy().flatten()
@@ -28,6 +30,9 @@ class PolyrhythmsData(torch.utils.data.Dataset):
     def __len__(self):
         return self.data['name'].count()
 
+    def set_layer_idx(self, idx):
+        self.layer_idx = idx
+
     def __getitem__(self, idx):
         cur_truth = None
         cur_name = self.data['name'][idx]
@@ -39,12 +44,7 @@ class PolyrhythmsData(torch.utils.data.Dataset):
                 cur_reg = self.data['norm_ratio'][idx]
             else:
                 cur_reg = self.data['ratio'][idx]
-        fpath = os.path.join(self.data_folder, f'{cur_name}.pt')
-        cur_arr = None
-        if self.layer_idx < 0:
-            cur_arr = torch.load(fpath, map_location=torch.device(self.device))
-        else:
-            cur_arr = torch.load(fpath, map_location=torch.device(self.device))[self.layer_idx,:]
+        cur_arr =  UM.embedding_file_to_torch(self.embedding_type, acts_folder = 'acts', dataset='polyrhythms', fname=cur_name, write = False, layer_idx = self.layer_idx, device = self.device, use_64bit = self.is_64bit)
 
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
         if self.classification == True:
@@ -53,33 +53,3 @@ class PolyrhythmsData(torch.utils.data.Dataset):
             return cur_arr, cur_reg, cur_truth
 
 
-# train_pct refers to entire dataset, test_subpct refers to length after split
-def get_train_valid_test_idx(poly_dataset, train_on_middle = True, train_pct = 0.7, test_subpct = 0.5, seed = 5):
-    test_valid_pct = 1. - train_pct
-    valid_pct = (1. - test_subpct) * test_pct
-    test_pct = test_subpct * test_pct
-    train_idx = None
-    test_valid_idx = None
-    total_num = poly_dataset.total_num
-    all_idx = np.arange(0, total_num)
-    labels = poly_dataset['label_idx'].to_numpy()
-    if train_on_middle == False:
-        _train_idx, _test_valid_idx = train_test_split(all_idx, random_state = seed, shuffle = True, stratify=labels)
-        train_idx = np.array(train_idx)
-        test_valid_idx = np.array(test_valid_idx)
-    else:
-        # getting start index of train, starting with valid_pct arbitrarily
-        train_start = int(valid_pct * total_num)
-        train_end = int((1. - test_pct) * total_num)
-        train_idx =  all_idx[train_start:train_end]
-        test_valid_idx = np.concatenate((all_idx[:train_start],all_idx[train_end:]))
-    leftover_labels = labels[test_valid_idx]
-    # returns indices of our index lists so we have to convert to regular indices
-    _test_idx, _valid_idx = train_test_split(test_valid_idx, random_state = seed, shuffle= True, stratify=leftover_labels)
-    test_idx = test_valid_idx[_test_idx]
-    valid_idx = test_valid_idx[_valid_idx]
-    return train_idx, valid_idx, test_idx
-
-
-
-        

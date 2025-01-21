@@ -4,6 +4,8 @@ global classdict
 global rev_classdict
 global classlist_sorted
 global classset_aug
+global num_classes
+global bpm_class_mapper
 
 
 minbpm = 50
@@ -12,21 +14,21 @@ bpmrange = maxbpm - minbpm
 default_cls = -1
 
 def get_class_medians(class_binsize):
-    bpmclass_mapper = lambda x: int((x - minbpm)/class_binsize)
+    _bpm_class_mapper = lambda x: int((x - minbpm)/class_binsize)
     half_binsize = class_binsize//2 
     # medians of bpm bin to index
-    d = { (i + half_binsize): bpmclass_mapper(i) for i in range(minbpm, maxbpm + class_binsize, class_binsize)}
+    d = { (i + half_binsize): _bpm_class_mapper(i) for i in range(minbpm, maxbpm + class_binsize, class_binsize)}
         # medians
     dlist = [(i + half_binsize) for i in range(minbpm, maxbpm + class_binsize, class_binsize)]
 
-    num_classes = len(dlist)
+    cur_num_classes = len(dlist)
     # add nullclass (don't want in list of classes)
     d[default_cls] = num_classes # maps to the very last clsas
     # index to bpm bin
     revd = {x:i for (i,x) in d.items()}
 
     dset_aug = set(dlist + [default_cls])
-    return d, revd, dlist, dset_aug
+    return d, revd, dlist, dset_aug, cur_num_classes, _bpm_class_mapper
 
 
 def get_nearest_bpmclass(normed_pred, sorted_bpm_list, thresh=3):
@@ -64,4 +66,6 @@ def init(class_binsize=3):
     global rev_classdict
     global classlist_sorted
     global classset_aug
-    classdict, rev_classdict, classlist_sorted, classset_aug = get_class_medians(class_binsize)
+    global num_classes
+    global bpm_class_mapper
+    classdict, rev_classdict, classlist_sorted, classset_aug, num_classes bpm_class_mapper = get_class_medians(class_binsize)

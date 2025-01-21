@@ -1,4 +1,5 @@
 import sklearn.metrics as SKM
+import torch.utils.data as TUD
 import polyrhythms as PL
 import matplotlib.pyplot as plt
 import util as UM
@@ -9,18 +10,25 @@ import os
 
 
 res_dir = UM.by_projpath("res", make_dir = True)
-
+# do not log these metrics because it won't work with neptune anyways
+nep_dont_log = set(['confmat'])
+# dont need to log this either, use to upload
+nep_paths = set(['confmat_path'])
 def init(class_binsize):
     TP.init(class_binsize)
 
 
-def get_classification_metrics(truths, preds, save_confmat=True):
+def get_classification_metrics(truths, preds, dataset = 'polyrhythms', save_confmat=True):
     acc = SKM.accuracy_score(truths, preds)
     f1_macro = SKM.f1_score(truths, preds, average='macro')
     f1_micro = SKM.f1_score(truths, preds, average='micro')
-    class_truths = [PL.rev_polystr_to_idx[x] for x in truths]
-    class_preds = [PL.rev_polystr_to_idx[x] for x in preds]
+    class_truths = None
+    class_preds = None
+    if dataset == 'polyrhythms':
+        class_truths = [PL.rev_polystr_to_idx[x] for x in truths]
+        class_preds = [PL.rev_polystr_to_idx[x] for x in preds]
     cm = None
+    cm_path = None
     if save_confat == True:
         cm = SKM.confusion_matrix(class_truths, class_preds)
         cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=PL.class_arr)
@@ -32,7 +40,7 @@ def get_classification_metrics(truths, preds, save_confmat=True):
         cm_path = os.path.join(res_dir, cm_fname)
         plt.savefig(cm_path)
         plt.clf()
-    d = {'accuracy_score': acc, 'f1_macro': f1_macro, 'f1_micro': f1_micro, 'confmat': cm}
+    d = {'accuracy_score': acc, 'f1_macro': f1_macro, 'f1_micro': f1_micro, 'confmat': cm, 'confmat_path': cm_path}
     return d
 
 def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset, held_out_classes = False, save_confmat = True):
@@ -53,6 +61,7 @@ def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset, he
     class_truths = None
     class_preds = None
     cm = None
+    cm_path = None
     if save_confmat == True:
         if dataset == 'polyrhythms':
             class_truths = [PL.reg_rev_polystr_to_idx[x] for x in truth_labels]
@@ -67,8 +76,8 @@ def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset, he
             class_arr2 = None
             if dataset == 'polyrhythms':
                 class_arr2 = [x for x in PL.reg_class_arr if x in all_labels]
-            else:
-                class_arr2 = [x for x in classset_aug if x in all_labels]
+            elif dataset == 'tempos':
+                class_arr2 = [x for x in TP.classset_aug if x in all_labels]
             _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=class_arr2)
         else:
             _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=PL.reg_class_arr)
@@ -85,21 +94,68 @@ def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset, he
          "explained_variance_score": ev, "median_absolute_error": medae,
          "max_error": eaxerr, "mean_absolute_percentage_error": mape,
          "root_mean_squared_error": rmse, "d2_absolute_error_score": d2ae,
-         "accuracy_score": acc, "f1_macro": f1_macro, "f1_micro": f1_micro}
+         "accuracy_score": acc, "f1_macro": f1_macro, "f1_micro": f1_micro,
+         "confmat": cm, 'confmat_path': cm_path}
     return d
 
 
-def init(params):
-    nep_tok = None
-    nep_path = os.path.join(util.script_dir, 'nep_api.txt')
-    with open(nep_path, 'r') as f:
-        nep_tok = f.read().strip()
-    run = neptune.init_run(
-        project="Soundbendor/SynTheoryPlus",
-        api_token=nep_tok,
-    )  
-    run['parameters'] = params
-    return run
+
+# train_pct refers to entire dataset, test_subpct refers to length after split
+def get_train_valid_test_subsets(dataset_obj, dataset_label_arr, train_on_middle = True, train_pct = 0.7, test_subpct = 0.5, seed = 5):
+    test_valid_pct = 1. - train_pct
+    valid_pct = (1. - test_subpct) * test_pct
+    test_pct = test_subpct * test_pct
+    train_idx = None
+    test_valid_idx = None
+    total_num = len(dataset_obj)
+    all_idx = np.arange(0, total_num)
+    labels = dataset_obj['label_idx'].to_numpy()
+    if train_on_middle == False:
+        _train_idx, _test_valid_idx = train_test_split(all_idx, random_state = seed, shuffle = True, stratify=dataset_label_arr)
+        train_idx = np.array(train_idx)
+        test_valid_idx = np.array(test_valid_idx)
+    else:
+        # getting start index of train, starting with valid_pct arbitrarily
+        train_start = int(valid_pct * total_num)
+        train_end = int((1. - test_pct) * total_num)
+        train_idx =  all_idx[train_start:train_end]
+        test_valid_idx = np.concatenate((all_idx[:train_start],all_idx[train_end:]))
+    leftover_labels = dataset_label_arr[test_valid_idx]
+    # returns indices of our index lists so we have to convert to regular indices
+    _test_idx, _valid_idx = train_test_split(test_valid_idx, random_state = seed, shuffle= True, stratify=leftover_labels)
+    test_idx = test_valid_idx[_test_idx]
+    valid_idx = test_valid_idx[_valid_idx]
+    train_subset = TUD.Subset(dataset_obj, train_idx)
+    valid_subset = TUD.Subset(dataset_obj, valid_idx)
+    test_subset = TUD.Subset(dataset_obj, test_idx)
+    return train_subset, valid_subset, test_subset
+
+def print_metrics(results_dict, study_name, filehandle = None):
+    if filehandle != None:
+        print(study_name)
+    else:
+        print(study_name, file=filehandle)
+    for res_key, res_val in results_dict.items():
+        if res_key not in nep_dont_log and res_key not in nep_paths:
+            print_str = f"{res_key}: {res_val}"
+            if filehandle != None:
+                print(print_str)
+            else:
+                print(print_str, file=filehandle)
 
 
 
+     
+# log test results to neptune
+def neptune_log(nep, results_dict):
+    for res_key, res_val in results_dict.items():
+        if res_key not in nep_dont_log:
+            if res_key in nep_paths:
+                split_key = res_key.split("_")[0]
+                nep_key = f"test/{split_key}"
+                nep[nep_key].upload(res_val)
+            else:
+                nep_key = f"test/{res_key}"
+                nep[nep_key] = res_val
+
+        

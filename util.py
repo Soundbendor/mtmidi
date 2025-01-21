@@ -1,5 +1,6 @@
 # delegating all random stuff here since I'm setting the seed here
 
+import torch
 import sys
 import mido
 import csv
@@ -57,6 +58,18 @@ model_sr = {'jukebox': 44100, 'musicgen-encoder': 32000,
             'musicgen-small': 32000, 'musicgen-medium': 32000,
             'musicgen-large': 32000}
 
+# decoder.hidden_states
+# --- large: 1, 200, 2048 (49 hidden states, 0-47: AddBackward0, 48: NativeLayerNormBackward0)
+# --- medium: 1, 200, 1536 (49 hidden states, 0-47: AddBackward0, 48: NativeLayerNormBackward0)
+# --- small: 1, 200, 1024 (25 hidden states, 0-47: AddBackward0, 48: NativeLayerNormBackward0)
+
+# decoder.attention
+# --- large: 1, 32, 200, 200 (48, all ViewBackward0)
+# --- medium: 1, 24, 200, 200 (48, all ViewBackward0)
+# --- medium: 1, 16, 200, 200 (24, all ViewBackward0)
+
+# from https://huggingface.co/docs/transformers/main/en/model_doc/musicgen#transformers.MusicgenForConditionalGeneration:
+# output of each hidden layer of decoder plus initial embedding outputs (so before decoder)
 # musicgen-medium/large: 48 + 1
 # musicgen-small: 24 + 1
 model_num_layers = {"musicgen-small": 25, "musicgen-medium": 49, "musicgen-large": 49, "musicgen-encoder": 1, "jukebox": 72}
@@ -103,18 +116,23 @@ def get_layer_dim(shorthand):
     model_lh = model_longhand[shorthand]
     return act_layer_dim[model_lh]
 
-def get_embedding_shape(shorthand):
+def get_embedding_num_layers(shorthand):
     longhand = model_longhand[shorthand]
     mtype = model_type[longhand]
     num_layers = model_num_layers[mtype]
+    return num_layers
+
+def get_embedding_shape(shorthand):
+    longhand = model_longhand[shorthand]
+    num_layers = get_embedding_num_layers(shorthand)
     layer_dim = act_layer_dim[longhand]
     shape = (num_layers, layer_dim)
     return shape
 
-def get_embedding_file(model_shorthand, acts_folder = 'acts', model_folder = 'jukebox', dataset='polyrhythms', fname='', write = True, use_64bit = True):
+def get_embedding_file(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', fname='', write = True, use_64bit = True):
     actpath = by_projpath(acts_folder)
     datapath = os.path.join(actpath, dataset)
-    modelpath = os.path.join(datapath, model_folder)
+    modelpath = os.path.join(datapath, model_shorthand)
     fpath = os.path.join(modelpath, fname)
     fp = None
     dtype = 'float32'
@@ -136,6 +154,17 @@ def get_embedding_file(model_shorthand, acts_folder = 'acts', model_folder = 'ju
             mode = 'w+'
     fp = np.memmap(fpath, dtype = dtype, mode=mode, order='C', shape=shape)
     return fp
+
+def embedding_file_to_torch(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', fname='', layer_idx = -1, use_64bit = True, device = 'cpu'):
+    emb_file = get_embedding_file(model_shorthand, acts_folder = acts_folder, dataset=dataset, fname=fname, write = False, use_64bit = use_64bit)
+    cur = None
+    if layer_idx >= 0:
+        cur = emb_file[layer_idx,:].copy()
+    else:
+        cur = emb_file.copy()
+    v = torch.from_numpy(cur).to(device)
+    return v
+
 
 with open(by_projpath('inst_list.csv'), 'r') as f:
     csvr = csv.reader(f, delimiter=',')
