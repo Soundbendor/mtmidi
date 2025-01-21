@@ -23,7 +23,7 @@ def get_class_medians(class_binsize):
 
     cur_num_classes = len(dlist)
     # add nullclass (don't want in list of classes)
-    d[default_cls] = num_classes # maps to the very last clsas
+    d[default_cls] = cur_num_classes # maps to the very last clsas
     # index to bpm bin
     revd = {x:i for (i,x) in d.items()}
 
@@ -68,4 +68,4 @@ def init(class_binsize=3):
     global classset_aug
     global num_classes
     global bpm_class_mapper
-    classdict, rev_classdict, classlist_sorted, classset_aug, num_classes bpm_class_mapper = get_class_medians(class_binsize)
+    classdict, rev_classdict, classlist_sorted, classset_aug, num_classes, bpm_class_mapper = get_class_medians(class_binsize)

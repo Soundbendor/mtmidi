@@ -14,11 +14,13 @@ import util as UM
 
 # class_binsize = bpms within int(bpm/10) go within this bin
 class STHFTempiData(torch.utils.data.Dataset):
-    def __init__(self, embedding_type='mg_small_h', device='cpu', norm_labels = True, layer_idx=-1, class_binsize = 10, num_classes = -1, bpm_class_mapper = None):
+    def __init__(self, embedding_type='mg_small_h', device='cpu', norm_labels = True, layer_idx=-1, class_binsize = 10, is_64bit = True, num_classes = -1, bpm_class_mapper = None):
         self.seed = 5
-        self.set_type = set_type
+        self.is_64bit = is_64bit
+        self.embedding_type = embedding_type
         self.device = device
         self.class_binsize = class_binsize
+        csvfile = os.path.join(UM.by_projpath('hf_csv', make_dir = False), 'tempi.csv')
         cur_data = pl.scan_csv(csvfile).collect()
         cur_data = cur_data.sort('bpm', descending=False)
         self.min_bpm = cur_data['bpm'].min()
@@ -26,7 +28,7 @@ class STHFTempiData(torch.utils.data.Dataset):
         self.bpm_range = self.max_bpm - self.min_bpm
         self.num_classes = num_classes
         self.bpm_class_mapper = bpm_class_mapper
-        cur_data = cur_data.with_columns(bpm_class=self.bpm_classmap(cur_data['bpm'])).cast({'bpm_class': int})
+        cur_data = cur_data.with_columns(bpm_class=self.bpm_class_mapper(cur_data['bpm'])).cast({'bpm_class': int})
         self.all_classes = cur_data['bpm_class'].to_numpy().flatten()
         self.data = cur_data
         # class dict with medians

@@ -35,6 +35,9 @@ plots_update_freq = 10
 log_plot_slice = True
 log_plot_contour = True
 # hacky way of initialize tempo things with a class_binsize for "classification" from regression
+TEMPOS_CLASS_BINSIZE=3
+POLY_REGCLS_THRESH = 0.01
+
 TP.init(TEMPOS_CLASS_BINSIZE)
 UP.init(TEMPOS_CLASS_BINSIZE)
 
@@ -44,9 +47,6 @@ if torch.cuda.is_available() == True:
     device = 'cuda'
     torch.cuda.empty_cache()
     torch.set_default_device(device)
-TEMPOS_CLASS_BINSIZE=3
-POLYRHY_REGCLS_THRESH = 0.01
-
 
 ### PROBE ###
 class Probe(nn.Module):
@@ -114,7 +114,7 @@ def train_loop(model, opt_fn, loss_fn, train_ds, batch_size = 64, shuffle = True
     avg_loss = total_loss/float(iters)
     return avg_loss
 
-def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_classification = True, held_out_classes = False, is_testing = False, batch_size = 64, shuffle = True, , poly_regcls_thresh = 0.01):
+def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_classification = True, held_out_classes = False, is_testing = False, batch_size = 64, shuffle = True, poly_regcls_thresh = 0.01):
     eval_dl = TUD.DataLoader(eval_ds, batch_size = batch_size, shuffle=shuffle, generator=torch.Generator(device=device))
     model.eval()
     iters = 0
@@ -137,7 +137,7 @@ def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_
             cur_truths = ground_truth.cpu().numpy().flatten()
             cur_preds = torch.argmax(pred,axis=1).cpu().numpy().flatten()
             
-            if data_idx = 0:
+            if data_idx == 0:
                 truths = cur_truths
                 preds = cur_preds
             else:
@@ -263,8 +263,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     arg_dict = vars(args)
     # model type is slightly distinct from embedding_type (which is also shorthand) because musicgen-encoder uses musicgen-large
-    model_type = UM.get_model_type(embedding_type)  
-    model_layer_dim = UM.get_layer_dim(embedding_type)
+    model_type = UM.get_model_type(arg_dict['embedding_type'])  
+    model_layer_dim = UM.get_layer_dim(arg_dict['embedding_type'])
     
     out_dim = 1
     if arg_dict['dataset'] == 'polyrhythms':
@@ -283,7 +283,7 @@ if __name__ == "__main__":
        cur_ds = PolyrhythmsData(embedding_type = arg_dict['embedding_type'], device=device, classification = arg_dict["is_classification"], exclude_polys = exclude_polys, exclude_offset_lvls = exclude_offset_lvls, norm_labels = True, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit)
        label_arr = cur_ds.all_pstr
     elif arg_dict['dataset'] == 'tempos':
-       cur_ds = STHFTempiDataset(embedding_type= arg_dict['embedding_type'], device=device, norm_labels = True, layer_idx= arg_dict['layer_idx'], class_binsize = tempos_class_binsize, num_classes = TP.num_classes, bpm_class_mapper = TP.bpm_class_mapper, is_64bit = is_64bit)
+       cur_ds = STHFTempiData(embedding_type= arg_dict['embedding_type'], device=device, norm_labels = True, layer_idx= arg_dict['layer_idx'], class_binsize = TEMPOS_CLASS_BINSIZE, num_classes = TP.num_classes, bpm_class_mapper = TP.bpm_class_mapper, is_64bit = is_64bit)
        label_arr = cur_ds.all_classes
     train_ds, valid_ds, test_ds = UP.get_train_valid_test_subsets(cur_ds, label_all, train_on_middle = arg_dict['train_on_middle'], train_pct = train_pct, test_subpct = test_subpct, seed = seed)
     arg_dict.update({'train_ds': train_ds, 'valid_ds': valid_ds})
@@ -295,7 +295,16 @@ if __name__ == "__main__":
 
     study = optuna.create_study(study_name=study_name, storage=rdb_string_url, direction='maximize')
     objective = partial(_objective, **arg_dict)
-    study.optimize(objective n_trials = arg_dict['num_trials'], callbacks=[study_callback])
+    callbacks = [study_callback]
+
+    # init neptune and then run
+    nep = None
+    nep_callback = None
+    if arg_dict['to_nep'] == True:
+        nep, nep_callback = TN.init(arg_dict, plots_update_freq = plots_update_freq, log_plot_slice = log_plot_slice, log_plot_contour = log_plot_contour)
+        callbacks.append(nep_callback)
+
+    study.optimize(objective, n_trials = arg_dict['num_trials'], callbacks=[study_callback, ])
 
     #### final testing on best trial
     best_state_dict = study.user_attrs['best_state_dict']
@@ -305,9 +314,6 @@ if __name__ == "__main__":
     if user_specify_layer_idx == False:
         layer_idx = study.best_params['layer_idx']
 
-    nep = None
-    if arg_dict['to_nep'] == True:
-        nep = TN.init(arg_dict, plots_update_freq = plots_update_freq, log_plot_slice = log_plot_slice, log_plot_contour = log_plot_contour)
     ## model loading and running 
     model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
     model.load_state_dict(best_state_dict)
