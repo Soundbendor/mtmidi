@@ -271,7 +271,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-ds", "--dataset", type=str, default="polyrhythms", help="dataset")
     parser.add_argument("-et", "--embedding_type", type=str, default="jukebox", help="mg_{small/med/large}_{h/at} / mg_audio / jukebox")
-    parser.add_argument("-nt", "--num_trials", type=int, default=50, help="number of optuna trials")
+    parser.add_argument("-nt", "--num_trials", type=int, default=1000, help="number of optuna trials")
     parser.add_argument("-li", "--layer_idx", type=int, default=-1, help="< 0 to optimize by optuna, else specifies layer_idx 0-indexed")
     parser.add_argument("-cls", "--is_classification", type=strtobool, default=True, help="is classification")
     parser.add_argument("-tom", "--train_on_middle", type=strtobool, default=True, help="train on middle")
@@ -330,7 +330,7 @@ if __name__ == "__main__":
     #### final testing on best trial
     dropout = study.best_params['dropout']
     layer_idx = arg_dict['layer_idx']
-    bs = arg_dict['batch_size']
+    bs = study.best_params['batch_size']
     if user_specify_layer_idx == False:
         layer_idx = study.best_params['layer_idx']
 
