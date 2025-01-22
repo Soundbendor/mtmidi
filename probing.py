@@ -337,7 +337,7 @@ if __name__ == "__main__":
     ## model loading and running 
     model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
     model.load_state_dict(best_model_state_dict)
-    held_out_classes = has_held_out_classes(dataset, is_classification)
+    held_out_classes = has_held_out_classes(arg_dict['dataset'], arg_dict['is_classification'])
     test_ds.dataset.set_layer_idx(layer_idx)
     test_loss, test_metrics = valid_test_loop(model, test_ds, loss_fn = None, dataset = arg_dict['dataset'], is_classification = arg_dict['is_classification'], held_out_classes = held_out_classes, is_testing = True,  thresh = arg_dict['thresh'], batch_size = bs)
     UP.print_metrics(test_metrics, study_name)
