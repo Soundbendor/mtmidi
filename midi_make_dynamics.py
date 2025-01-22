@@ -12,6 +12,7 @@ sustain = 1.0
 beg_padding = 0
 end_padding = 10
 bpm = 60
+dur = 4 # dealing with quarter notes
 
 # copied from midi_make_polyrhythms
 tick_offsets = {x:(offset_lvl, int(UM.ms_to_ticks(x,ticks_per_beat = ticks_per_beat, bpm = bpm))) for offset_lvl, x in enumerate(DYN.offset_ms_arr)}
@@ -60,27 +61,27 @@ for _bsd in DYN.beat_subdiv_arr:
                         if cur_time == 1:
                             dyn1 = _dp[1]
                             dyn2 = _dp[1]
-                        _v = dyn.get_velocities(dyn1, dyn2, beat_subdiv = _bsd, start_beat_dyn2 = inflection_pt, dyn_category=dyn_category)
-                        for _inst in dyn.instruments:
+                        _v = DYN.get_velocities(dyn1, dyn2, beat_subdiv = _bsd, start_beat_dyn2 = inflection_pt, dyn_category=dyn_category)
+                        for _inst in DYN.instruments:
                             pg_num = UM.get_inst_program_number(_inst)
                             midi_num = UM.get_inst_midinote(_inst, default=midinote)
                             is_drum = UM.is_inst_drum(_inst)
                             short_name = ''.join(_inst.split(' '))
-                            chnum = 0 if is_drum == false else UM.drum_chnum
-                            mid = none
-                            mid = mido.midifile(type=1, ticks_per_beat=ticks_per_beat)
-                            mid.tracks.append(mido.miditrack())
-                            mid.tracks[0].append(mido.metamessage('set_tempo', tempo = tempo_microsec, time = 0))
+                            chnum = 0 if is_drum == False else UM.drum_chnum
+                            mid = None
+                            mid = mido.MidiFile(type=1, ticks_per_beat=ticks_per_beat)
+                            mid.tracks.append(mido.MidiTrack())
+                            mid.tracks[0].append(mido.MetaMessage('set_tempo', tempo = tempo_microsec, time = 0))
 
-                            mid.tracks[0].append(mido.message('control_change', control=91, value=rvb_val, time =0, channel=chnum))
-                            mid.tracks[0].append(mido.message('program_change', program=_pgnum, time =0, channel=chnum))
+                            mid.tracks[0].append(mido.Message('control_change', control=91, value=rvb_val, time =0, channel=chnum))
+                            mid.tracks[0].append(mido.Message('program_change', program=pg_num, time =0, channel=chnum))
                             mid.tracks[0].name = short_name
-                            d_on, d_off = UM.notedur_to_ticks(dur, subdiv = subdiv, ticks_per_beat = ticks_per_beat, sustain = sustain)
+                            d_on, d_off = UM.notedur_to_ticks(beat, subdiv = subdiv, ticks_per_beat = ticks_per_beat, sustain = sustain)
                             dynstr = f"{_dt}-{dyn1}_{dyn2}"
                             durstr = f"{dur}_{subdiv}"
                             outname = f"dyn-{short_name}-{dynstr}-{durstr}.mid"
                             outname = DYN.get_outname(dyn_subcategory, dyn1, dyn2, short_name, beat, subdiv, rvb_lvl, offset_ms, ext="mid")
-                            cur_row = {'dyn1': dyn1, 'dyn2': dyn2,  'inst': short_name, 'inflection_point': inflection_point,
+                            cur_row = {'dyn1': dyn1, 'dyn2': dyn2,  'inst': short_name, 'inflection_point': inflection_pt,
                                        'dyn_category': dyn_category, 'dyn_subcategory': dyn_subcategory,
                                        'rvb_lvl': rvb_lvl, 'rvb_val':rvb_val,
                                        'offset_lvl':offset_lvl, 'offset_ms': offset_ms, 'offset_ticks': offset_ticks,
@@ -105,11 +106,11 @@ for _bsd in DYN.beat_subdiv_arr:
                                     # not sure of cur padding/offset_scenario since copied from midi_make_polyrhythms
                                     # might be hacky
                                     cur_padding = (beg_padding + offset_ticks) if first_beat == True else 0
-                                    mid.tracks[0].append(mido.message('note_on', note=midinote, velocity=curvel, time=start_time + last_ticks_left + cur_padding, channel=chnum))
+                                    mid.tracks[0].append(mido.Message('note_on', note=midi_num, velocity=curvel, time=start_time + last_ticks_left + cur_padding, channel=chnum))
                                     ticks_left -= start_time
                                     last_ticks_left = 0
                                     end_time = d_on
-                                    mid.tracks[0].append(mido.message('note_off', note=midinote, velocity=curvel, time=end_time, channel=chnum))
+                                    mid.tracks[0].append(mido.Message('note_off', note=midi_num, velocity=curvel, time=end_time, channel=chnum))
                                     ticks_left -= end_time
                                     if notenum == (notes_per_bar) - 1:
                                         last_ticks_left = max(0,ticks_left)
@@ -117,13 +118,13 @@ for _bsd in DYN.beat_subdiv_arr:
                                 if end_padding > 0:
                                     # only delay note_on by last ticks left, delay note_off by end_padding
                                     # so total is last ticks left + end_padding
-                                    mid.tracks[0].append(mido.message('note_on', note=midinote, velocity=0, time=last_ticks_left, channel=chnum))
-                                    mid.tracks[0].append(mido.message('note_off', note=midinote, velocity=0, time=end_padding, channel=chnum))
+                                    mid.tracks[0].append(mido.Message('note_on', note=midi_num, velocity=0, time=last_ticks_left, channel=chnum))
+                                    mid.tracks[0].append(mido.Message('note_off', note=midi_num, velocity=0, time=end_padding, channel=chnum))
                                 else:
                                     # don't delay note on, delay note off by last ticks left
-                                    mid.tracks[0].append(mido.message('note_on', note=midinote, velocity=0, time=0,channel=chnum))
-                                    mid.tracks[0].append(mido.message('note_off', note=midinote, velocity=0, time=end_padding, channel=chnum))
-                            mid.tracks[0].append(mido.metamessage('end_of_track', time=0))
+                                    mid.tracks[0].append(mido.Message('note_on', note=midi_num, velocity=0, time=0,channel=chnum))
+                                    mid.tracks[0].append(mido.Message('note_off', note=midi_num, velocity=0, time=end_padding, channel=chnum))
+                            mid.tracks[0].append(mido.MetaMessage('end_of_track', time=0))
                             UM.save_midi(mid, outname, dataset="dynamics")
 
 outf.close()
