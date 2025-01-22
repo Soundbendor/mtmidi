@@ -31,7 +31,7 @@ reverb_lvl = {0:0, 1: 63, 2:127}
 hf_datasets = set(['tempos', 'time_signatures', 'chords', 'notes', 'scales', 'intervals', 'chord_progressions']) 
 
 # datasets this project is introducing
-new_datasets = set(['polyrhythms'])
+new_datasets = set(['polyrhythms', 'dynamics'])
 
 all_datasets = hf_datasets.union(new_datasets)
 
@@ -120,8 +120,20 @@ def get_layer_dim(shorthand):
 def get_embedding_num_layers(shorthand):
     longhand = model_longhand[shorthand]
     mtype = model_type[longhand]
-    num_layers = model_num_layers[mtype]
+    num_layers = None
+    if shorthand != 'mg_audio':
+        num_layers = model_num_layers[mtype]
+    else:
+        num_layers = model_num_layers['musicgen-encoder']
     return num_layers
+
+def old_get_embedding_shape(shorthand):
+    longhand = model_longhand[shorthand]
+    mtype = model_type[longhand]
+    num_layers = model_num_layers[mtype]
+    layer_dim = act_layer_dim[longhand]
+    shape = (num_layers, layer_dim)
+    return shape
 
 def get_embedding_shape(shorthand):
     longhand = model_longhand[shorthand]
