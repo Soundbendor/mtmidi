@@ -77,11 +77,9 @@ for _bsd in DYN.beat_subdiv_arr:
                             mid.tracks[0].append(mido.Message('program_change', program=pg_num, time =0, channel=chnum))
                             mid.tracks[0].name = short_name
                             d_on, d_off = UM.notedur_to_ticks(beat, subdiv = subdiv, ticks_per_beat = ticks_per_beat, sustain = sustain)
-                            dynstr = f"{_dt}-{dyn1}_{dyn2}"
-                            durstr = f"{dur}_{subdiv}"
-                            outname = f"dyn-{short_name}-{dynstr}-{durstr}.mid"
+                            dyn_pair_str = DYN.make_dyn_pair_str(dyn1, dyn2)
                             outname = DYN.get_outname(dyn_subcategory, dyn1, dyn2, short_name, beat, subdiv, rvb_lvl, offset_ms, ext="mid")
-                            cur_row = {'dyn1': dyn1, 'dyn2': dyn2,  'inst': short_name, 'inflection_point': inflection_pt,
+                            cur_row = {'dyn1': dyn1, 'dyn2': dyn2,  'dyn_pair': dyn_pair_str, 'inst': short_name, 'inflection_point': inflection_pt,
                                        'dyn_category': dyn_category, 'dyn_subcategory': dyn_subcategory,
                                        'rvb_lvl': rvb_lvl, 'rvb_val':rvb_val,
                                        'offset_lvl':offset_lvl, 'offset_ms': offset_ms, 'offset_ticks': offset_ticks,

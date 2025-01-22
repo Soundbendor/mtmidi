@@ -7,7 +7,7 @@ inflection_marker = "-" # marks dynamic types with inflection
 instruments = ['Agogo','Woodblock','Taiko Drum','Melodic Tom','D:Snare Drum 1']
 
 # inst is shortname
-fieldnames = ['dyn1', 'dyn2', 'inst', 'inflection_point', 'dyn_category', 'dyn_subcategory',
+fieldnames = ['dyn1', 'dyn2', 'dyn_pair', 'inst', 'inflection_point', 'dyn_category', 'dyn_subcategory',
               'rvb_lvl', 'rvb_val', 'offset_lvl', 'offset_ms', 'offset_ticks', 
               'beats_per_bar', 'num_bars', 'beat_subdiv', 'bpm', 'num_beats']
 
@@ -20,6 +20,8 @@ dyn = {x:y for (x,y) in zip(dyn_ltr, dyn_num)}
 def make_dynamic_ramp(start_num, end_num, num_notes):
     return [int(start_num + i*((end_num - start_num)/num_notes)) for i in range(num_notes)]
 
+def make_dyn_pair_str(_dyn1, _dyn2):
+    return "-".join([_dyn1, _dyn2])
 
 # flat = stay at first dynamic of pair
 # hairpin = go from dyn1 to dyn2 to dyn1 smoothly over (div1 + div2)
