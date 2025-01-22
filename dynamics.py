@@ -94,6 +94,9 @@ dyn_subcat_three = [f"{x}{inflection_marker}{y}" for x in dyn_cat_three for y in
 dyn_categories = dyn_cat_one + dyn_cat_two + dyn_cat_three
 dyn_subcategories = dyn_cat_one + dyn_cat_two + dyn_subcat_three
 
+num_categories = len(dyn_categories)
+num_subcategories = len(dyn_subcategories)
+
 dyn_category_to_idx = {x:i for (i,x) in enumerate(dyn_categories)}
 dyn_idx_to_category = {i:x for (x,i) in dyn_category_to_idx.items()}
 dyn_subcategory_to_idx = {x:i for (i,x) in enumerate(dyn_subcategories)}

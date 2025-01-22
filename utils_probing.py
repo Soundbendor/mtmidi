@@ -3,6 +3,7 @@ import torch.utils.data as TUD
 from sklearn.model_selection import train_test_split
 import numpy as np
 import polyrhythms as PL
+import dynamics as DYN
 import matplotlib.pyplot as plt
 import util as UM
 import neptune
@@ -20,7 +21,7 @@ def init(class_binsize):
     TP.init(class_binsize)
 
 
-def get_classification_metrics(truths, preds, dataset = 'polyrhythms', save_confmat=True):
+def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_by_subcategory = False, save_confmat=True):
     acc = SKM.accuracy_score(truths, preds)
     f1_macro = SKM.f1_score(truths, preds, average='macro')
     f1_micro = SKM.f1_score(truths, preds, average='micro')
@@ -29,6 +30,13 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', save_conf
     if dataset == 'polyrhythms':
         class_truths = [PL.rev_polystr_to_idx[x] for x in truths]
         class_preds = [PL.rev_polystr_to_idx[x] for x in preds]
+    elif dataset == 'dynamics':
+        if classify_by_subcategory == True:
+            class_truths = [DYN.dyn_idx_to_subcategory[x] for x in truths]
+            class_preds = [DYN.dyn_idx_to_subcategory[x] for x in preds]
+        else:
+            class_truths = [DYN.dyn_idx_to_category[x] for x in truths]
+            class_preds = [DYN.dyn_idx_to_category[x] for x in preds]
     cm = None
     cm_path = None
     if save_confat == True:
@@ -45,7 +53,7 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', save_conf
     d = {'accuracy_score': acc, 'f1_macro': f1_macro, 'f1_micro': f1_micro, 'confmat': cm, 'confmat_path': cm_path}
     return d
 
-def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset, held_out_classes = False, save_confmat = True):
+def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = 'polyrhythms',  held_out_classes = False, save_confmat = True):
     mse = SKM.mean_squared_error(truths, preds)
     r2 = SKM.r2_score(truths, preds)
     mae = SKM.mean_absolute_error(truths, preds)

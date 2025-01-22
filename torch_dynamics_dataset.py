@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 # exclude_dyn_pairs are given as 'dyn1-dyn2'
 # either classify by category or subcategory
 class DynamicsData(TUD.Dataset):
-    def __init__(self, embedding_type = 'mg_small_h', device='cpu', exclude_dyn_pairs = [], exclude_dyn_categories= [], exclude_dyn_subcategories=[], norm_labels = True, layer_idx=-1, classify_by_subcategory = False, is_64bit = True):
+    def __init__(self, embedding_type = 'mg_small_h', device='cpu', exclude_dyn_pairs = [], exclude_dyn_categories= [], exclude_dyn_subcategories=[],layer_idx=-1, classify_by_subcategory = False, is_64bit = True):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
@@ -32,6 +32,8 @@ class DynamicsData(TUD.Dataset):
         self.catdict = DYN.dyn_category_to_idx
         self.subcatdict = DYN.dyn_subcategory_to_idx
         self.classify_by_subcategory = classify_by_subcategory
+        self.num_categories = DYN.num_categories
+        self.num_subcategories = DYN.num_subcategories
 
     def __len__(self):
         return self.data['name'].count()
