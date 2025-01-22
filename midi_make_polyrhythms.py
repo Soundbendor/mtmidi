@@ -1,5 +1,5 @@
 import os,csv
-import util as um
+import util as UM
 import mido
 import musicnoteconv as mnc
 import numpy as np
@@ -30,12 +30,12 @@ runs = 2 if do_reverse == True else 1
 
 #offset_ms_arr = [0.] + [((i+1.) * max_offset_ms)/num_offsets for i in range(num_offsets)]
 #if random_offsets == True:
-#offset_ms = [0] + [int(x) for x in um.get_random_list(1., float(max_offset_ms), num_offsets)]
+#offset_ms = [0] + [int(x) for x in UM.get_random_list(1., float(max_offset_ms), num_offsets)]
 # hand curated using [random.randint(1,251) for _ in range(4)]
 #offset_ms_arr = [0, 67, 105, 170, 249]
 # another hand curated random randint
 
-csvpath = os.path.join(um.by_projpath('csv'), 'polyrhythms.csv')
+csvpath = os.path.join(UM.by_projpath('csv'), 'polyrhythms.csv')
 outf = open(csvpath, 'w')
 csvw = csv.DictWriter(outf,fieldnames=PL.fieldnames)
 csvw.writeheader()
@@ -43,21 +43,21 @@ csvw.writeheader()
 
 for (cur_bpm, num_bars) in PL.bpm_bars:
     tempo_microsec = mido.bpm2tempo(cur_bpm)
-    tick_offsets = {x:(offset_lvl, int(um.ms_to_ticks(x,ticks_per_beat = ticks_per_beat, bpm = cur_bpm))) for offset_lvl, x in enumerate(PL.offset_ms_arr)}
+    tick_offsets = {x:(offset_lvl, int(UM.ms_to_ticks(x,ticks_per_beat = ticks_per_beat, bpm = cur_bpm))) for offset_lvl, x in enumerate(PL.offset_ms_arr)}
     for offset_ms, (offset_lvl, offset_ticks) in tick_offsets.items():
-        for rvb_lvl, rvb_val in PL.reverb_lvl.items():
+        for rvb_lvl, rvb_val in UM.reverb_lvl.items():
 
             for cur_pair in PL.inst_combos:
                 # iterate over instruments
-                pg_nums = [um.get_inst_program_number(x) for x in cur_pair]
-                midi_nums = [um.get_inst_midinote(x, default=midinote) for x in cur_pair]
-                is_drum = [um.is_inst_drum(x) for x in cur_pair]
+                pg_nums = [UM.get_inst_program_number(x) for x in cur_pair]
+                midi_nums = [UM.get_inst_midinote(x, default=midinote) for x in cur_pair]
+                is_drum = [UM.is_inst_drum(x) for x in cur_pair]
                 short_names = [''.join(x.split(' ')) for x in cur_pair]
                 print([x for x in zip(pg_nums, midi_nums, is_drum, short_names)])
                 for pnums in PL.poly_pairs.keys():
                     # iterate over polyrhythm pairs
-                    r1on, r1off = um.notedur_to_ticks(dur, subdiv = pnums[0], ticks_per_beat = ticks_per_beat, sustain = sustain)
-                    r2on, r2off = um.notedur_to_ticks(dur, subdiv = pnums[1], ticks_per_beat = ticks_per_beat, sustain = sustain)
+                    r1on, r1off = UM.notedur_to_ticks(dur, subdiv = pnums[0], ticks_per_beat = ticks_per_beat, sustain = sustain)
+                    r2on, r2off = UM.notedur_to_ticks(dur, subdiv = pnums[1], ticks_per_beat = ticks_per_beat, sustain = sustain)
                     durs = [(r1on, r1off), (r2on, r2off)]
                     for run in range(runs):
                         mid = None
@@ -90,7 +90,7 @@ for (cur_bpm, num_bars) in PL.bpm_bars:
                             inst_idx = inst_order[i] # current instrument
                             _pgnum = pg_nums[inst_idx]
                             _isdrum = is_drum[inst_idx]
-                            _chnum = i if _isdrum == False else um.drum_chnum
+                            _chnum = i if _isdrum == False else UM.drum_chnum
                             mid.tracks.append(mido.MidiTrack())
                             mid.tracks[i].append(mido.Message('control_change', control=91, value=rvb_val, time =0, channel=_chnum))
                             mid.tracks[i].append(mido.MetaMessage('set_tempo', tempo = tempo_microsec, time = 0))
@@ -102,7 +102,7 @@ for (cur_bpm, num_bars) in PL.bpm_bars:
                             inst_idx = inst_order[i] # current instrument
                             _midinote = midi_nums[inst_idx]
                             _isdrum = is_drum[inst_idx]
-                            _chnum = i if _isdrum == False else um.drum_chnum
+                            _chnum = i if _isdrum == False else UM.drum_chnum
                             pnum = pnums[i] # number of notes per other number of notes
                             #print(short_names[inst_idx])
                             d_on, d_off = durs[i] # current length of note_on and note_off
@@ -145,7 +145,7 @@ for (cur_bpm, num_bars) in PL.bpm_bars:
                             mid.tracks[i].append(mido.MetaMessage('end_of_track', time=0))
                         # end of run, save file
                         #mid.print_tracks()
-                        um.save_midi(mid, outname, dataset='polyrhythms')
+                        UM.save_midi(mid, outname, dataset='polyrhythms')
 
 outf.close()
 

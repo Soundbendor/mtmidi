@@ -20,7 +20,7 @@ max_num = 12
 max_range = max_num
 poly_pairs = { (i,j): (i/j) for i in range(2,max_num+1) for j in range(2,min(i + max_range, max_num+1)) if (np.gcd(i,j) == 1 and i < j)}
 
-
+# inst is shortname
 fieldnames = ['name','inst1', 'inst2', 'bpm', 'num_bars', 'poly', 'pair', 'ratio', 'norm_ratio', 'offset_lvl', 'offset_ms', 'offset_ticks', 'rvb_lvl', 'rvb_val', 'poly1', 'poly2']
 
 poly_tups = [((i,j),x) for (i,j),x in poly_pairs.items()]
@@ -60,7 +60,6 @@ reg_class_arr = [k for (k,v) in reg_polystr_to_idx.items()]
 # first run for 3,4 = array([ 700.23030532, 1067.37954942])
 offset_ms_arr = [0, 120, 204, 700, 1067]
 bpm_bars = [(60, 1),(120, 2), (180, 3)]
-reverb_lvl = {0:0, 1: 63, 2:127}
 
 def get_nearest_poly(normed_pred, thresh=0.001, as_str = True):
     _start_idx = 0

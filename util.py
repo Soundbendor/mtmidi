@@ -26,6 +26,7 @@ drum_pgm = 0
 drum_chnum = 9
 default_midinote = 60
 
+reverb_lvl = {0:0, 1: 63, 2:127}
 # datasets in the original dataset (for debugging)
 hf_datasets = set(['tempos', 'time_signatures', 'chords', 'notes', 'scales', 'intervals', 'chord_progressions']) 
 
