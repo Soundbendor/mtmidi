@@ -34,7 +34,7 @@ for _bsd in DYN.beat_subdiv_arr:
         # don't do offsets bigger than 0 for now
         if offset_ms > 0:
             break
-        for _dt in DYN.dyn_types:
+        for _dt in DYN.dyn_subcategories:
             # since calculating velocites from first dynamic
             # flat needs to calculate using dyn1 as first dynamic and dyn2 as first dynamic
             # so repeat the whole loop flipping the dynamics
@@ -79,12 +79,14 @@ for _bsd in DYN.beat_subdiv_arr:
                             d_on, d_off = UM.notedur_to_ticks(beat, subdiv = subdiv, ticks_per_beat = ticks_per_beat, sustain = sustain)
                             dyn_pair_str = DYN.make_dyn_pair_str(dyn1, dyn2)
                             outname = DYN.get_outname(dyn_subcategory, dyn1, dyn2, short_name, beat, subdiv, rvb_lvl, offset_ms, ext="mid")
+                            cur_name = DYN.get_outname(dyn_subcategory, dyn1, dyn2, short_name, beat, subdiv, rvb_lvl, offset_ms, ext="")
                             cur_row = {'dyn1': dyn1, 'dyn2': dyn2,  'dyn_pair': dyn_pair_str, 'inst': short_name, 'inflection_point': inflection_pt,
                                        'dyn_category': dyn_category, 'dyn_subcategory': dyn_subcategory,
                                        'rvb_lvl': rvb_lvl, 'rvb_val':rvb_val,
                                        'offset_lvl':offset_lvl, 'offset_ms': offset_ms, 'offset_ticks': offset_ticks,
                                        'beats_per_bar':beat, 'num_bars':DYN.num_bars,
-                                       'beat_subdiv': subdiv, 'bpm': bpm, 'num_beats': beat * DYN.num_bars}
+                                       'beat_subdiv': subdiv, 'bpm': bpm, 'num_beats': beat * DYN.num_bars,
+                                       'name': cur_name}
                             
                             csvw.writerow(cur_row)
                             #print(outname)

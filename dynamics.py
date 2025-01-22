@@ -7,7 +7,7 @@ inflection_marker = "-" # marks dynamic types with inflection
 instruments = ['Agogo','Woodblock','Taiko Drum','Melodic Tom','D:Snare Drum 1']
 
 # inst is shortname
-fieldnames = ['dyn1', 'dyn2', 'dyn_pair', 'inst', 'inflection_point', 'dyn_category', 'dyn_subcategory',
+fieldnames = ['name','dyn1', 'dyn2', 'dyn_pair', 'inst', 'inflection_point', 'dyn_category', 'dyn_subcategory',
               'rvb_lvl', 'rvb_val', 'offset_lvl', 'offset_ms', 'offset_ticks', 
               'beats_per_bar', 'num_bars', 'beat_subdiv', 'bpm', 'num_beats']
 
@@ -81,16 +81,29 @@ dyn_pairs = [(x,y) for x in dyn1 for y in dyn2]
 beat_subdiv_arr = [(4,2),(4,3), (4,4),(4,5),(4,6),(4,7),(4,8)]
 
 # one dynamic
-dyn_type_one = ["flat"]
+dyn_cat_one = ["flat"]
 
 # two dynamics but from beginning to end
-dyn_type_two = ["cresc", "decresc"]
+dyn_cat_two = ["cresc", "decresc"]
 
+dyn_cat_three = ['hairpin', 'revhairpin', 'subp', 'subf']
 # two dynamics but can change dynamic inflection point
 # name formatL {type}-{start_of_dyn2}
-dyn_type_three = [f"{x}{inflection_marker}{y}" for x in ['hairpin', 'revhairpin', 'subp', 'subf'] for y in range(1,4)]
+dyn_subcat_three = [f"{x}{inflection_marker}{y}" for x in dyn_cat_three for y in range(1,4)]
 
-dyn_types = dyn_type_one + dyn_type_two + dyn_type_three
+dyn_categories = dyn_cat_one + dyn_cat_two + dyn_cat_three
+dyn_subcategories = dyn_cat_one + dyn_cat_two + dyn_subcat_three
+
+dyn_category_to_idx = {x:i for (i,x) in enumerate(dyn_categories)}
+dyn_idx_to_category = {i:x for (x,i) in dyn_category_to_idx.items()}
+dyn_subcategory_to_idx = {x:i for (i,x) in enumerate(dyn_subcategories)}
+dyn_idx_to_subcategory = {i:x for (x,i) in dyn_subcategory_to_idx.items()}
+
+def get_category_idx(category):
+    return dyn_category_to_idx[category]
+
+def get_subcategory_idx(subcategory):
+    return dyn_subcategory_to_idx[subcategory]
 
 def has_inflection_pt(_dyn):
     return inflection_marker in _dyn

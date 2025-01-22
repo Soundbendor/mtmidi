@@ -19,7 +19,7 @@ class PolyrhythmsData(TUD.Dataset):
         cur_data = pl.scan_csv(csvfile).collect()
         self.all_pstr = cur_data.select(['poly']).to_numpy().flatten()
         self.all_offset_lvls = cur_data.select(['offset_lvl']).to_numpy().flatten()
-        # filter out exclude_polys and exclude_offset_lvls
+        # filter out exclude_polys and exclude_offset_lvls (keep given matching both nonexcluded) 
         # also sort by norm_ratio ascending
         # also map the 'poly' to label indices
         self.data = cur_data.filter((pl.col('poly').is_in(np.setdiff1d(self.all_pstr, exclude_polys)) & pl.col('offset_lvl').is_in(np.setdiff1d(self.all_offset_lvls, exclude_offset_lvls)))).sort('norm_ratio', descending=False).with_columns(pl.col('poly').map_elements(PL.get_idx_from_polystr, return_dtype=int).alias('label_idx'))
