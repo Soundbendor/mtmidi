@@ -15,7 +15,7 @@ import polyrhythms as PL
 import dynamics as DYN
 import tempi as TP
 from torch_polyrhythms_dataset import PolyrhythmsData
-from torch_dynamics_datset import DynamicsData
+from torch_dynamics_dataset import DynamicsData
 from hf_tempi_dataset import STHFTempiData
 
 # global declarations (hacky) to save model state dicts
@@ -127,7 +127,7 @@ def train_loop(model, opt_fn, loss_fn, train_ds, batch_size = 64, shuffle = True
     avg_loss = total_loss/float(iters)
     return avg_loss
 
-def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_classification = True, held_out_classes = False, is_testing = False, batch_size = 64, shuffle = True,thresh = 0.01, classify_by_subcategory = False):
+def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_classification = True, held_out_classes = False, is_testing = False, batch_size = 64, shuffle = True,thresh = 0.01, do_regression_classification = True, classify_by_subcategory = False):
     eval_dl = TUD.DataLoader(eval_ds, batch_size = batch_size, shuffle=shuffle, generator=torch.Generator(device=device))
     model.eval()
     iters = 0
@@ -163,17 +163,20 @@ def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_
                 loss = loss_fn(pred.flatten().float(), ground_truth.flatten().float())
             # stuff for regression "classification"  
             pred_np = pred.detach().cpu().numpy().flatten()
-            cur_pred_labels, cur_pred_label_idx = regression_classification(dataset, pred_np, thresh=thresh)
+            if do_regression_classification == True:
+                cur_pred_labels, cur_pred_label_idx = regression_classification(dataset, pred_np, thresh=thresh)
             if data_idx == 0:
                 preds = copy.deepcopy(copy.deepcopy(pred_np))
                 truths = copy.deepcopy(ground_truth.detach().cpu().numpy().flatten())
-                truth_labels = copy.deepcopy(ground_label.detach().cpu().numpy().flatten())
-                pred_labels = copy.deepcopy(cur_pred_label_idx)
+                if do_regression_classification == True:
+                    truth_labels = copy.deepcopy(ground_label.detach().cpu().numpy().flatten())
+                    pred_labels = copy.deepcopy(cur_pred_label_idx)
             else:
                 preds = np.hstack((preds, copy.deepcopy(pred_np)))
                 truths = np.hstack((truths, copy.deepcopy(ground_truth.detach().cpu().numpy().flatten())))
-                truth_labels = np.hstack((truth_labels, copy.deepcopy(ground_label.detach().cpu().numpy().flatten())))
-                pred_labels = np.hstack((pred_labels, copy.deepcopy(cur_pred_label_idx)))
+                if do_regression_classification == True:
+                    truth_labels = np.hstack((truth_labels, copy.deepcopy(ground_label.detach().cpu().numpy().flatten())))
+                    pred_labels = np.hstack((pred_labels, copy.deepcopy(cur_pred_label_idx)))
 
             #print('truth', data_idx, truth_labels.shape)
             #print('pred', data_idx, pred_labels.shape)
@@ -188,7 +191,7 @@ def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_
         # only save confusion matrix if testing
         metrics = UP.get_classification_metrics(truths, preds, dataset = dataset, classify_by_subcategory = classify_by_subcategory, save_confmat=is_testing)
     else:
-        metrics = UP.get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = dataset,  held_out_classes = held_out_classes, save_confmat = is_testing)
+        metrics = UP.get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = dataset,  held_out_classes = held_out_classes, save_confmat = is_testing, do_regression_classification = do_regression_classification)
     
     avg_loss = total_loss/float(iters)
     return avg_loss, metrics
@@ -205,7 +208,7 @@ def get_optimization_metric(metric_dict, is_classification = True):
 def has_held_out_classes(dataset, is_classification):
     return (dataset in ["polyrhythms", "tempos"]) and is_classification == False
 
-def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1):
+def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, do_regression_classification =True):
 
     global trial_model_state_dict
     global best_model_state_dict
@@ -248,7 +251,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     last_score = None
     for epoch_idx in range(num_epochs):
         train_loss = train_loop(model, opt_fn, loss_fn, train_ds, batch_size = bs, is_classification = is_classification)
-        valid_loss, valid_metrics = valid_test_loop(model,valid_ds, loss_fn = loss_fn, dataset = dataset, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = False, thresh = thresh, batch_size = bs, classify_by_subcategory = classify_by_subcategory)
+        valid_loss, valid_metrics = valid_test_loop(model,valid_ds, loss_fn = loss_fn, dataset = dataset, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = False, thresh = thresh, batch_size = bs, classify_by_subcategory = classify_by_subcategory, do_regression_classification = do_regression_classification)
         cur_score = get_optimization_metric(valid_metrics, is_classification = is_classification)
         # https://optuna.readthedocs.io/en/v2.0.0/tutorial/pruning.html
         trial.report(cur_score, epoch_idx)
@@ -281,6 +284,7 @@ if __name__ == "__main__":
     parser.add_argument("-li", "--layer_idx", type=int, default=-1, help="< 0 to optimize by optuna, else specifies layer_idx 0-indexed")
     parser.add_argument("-cls", "--is_classification", type=strtobool, default=True, help="is classification")
     parser.add_argument("-tom", "--train_on_middle", type=strtobool, default=True, help="train on middle")
+    parser.add_argument("-rc", "--do_regression_classification", type=strtobool, default=True, help="do regression classification")
     parser.add_argument("-nep", "--to_nep", type=strtobool, default=True, help="log on neptune")
     parser.add_argument("-tos", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory (for dynamics)")
 
@@ -358,7 +362,7 @@ if __name__ == "__main__":
     model.load_state_dict(best_model_state_dict)
     held_out_classes = has_held_out_classes(arg_dict['dataset'], arg_dict['is_classification'])
     test_ds.dataset.set_layer_idx(layer_idx)
-    test_loss, test_metrics = valid_test_loop(model, test_ds, loss_fn = None, dataset = arg_dict['dataset'], is_classification = arg_dict['is_classification'], held_out_classes = held_out_classes, is_testing = True,  thresh = arg_dict['thresh'], classify_by_subcategory = arg_dict['classify_by_subcategory'], batch_size = bs)
+    test_loss, test_metrics = valid_test_loop(model, test_ds, loss_fn = None, dataset = arg_dict['dataset'], is_classification = arg_dict['is_classification'], held_out_classes = held_out_classes, is_testing = True,  thresh = arg_dict['thresh'], classify_by_subcategory = arg_dict['classify_by_subcategory'], do_regression_classification = arg_dict['do_regression_classification'], batch_size = bs)
     UP.print_metrics(test_metrics, study_name)
     if to_nep == True:
         UP.neptune_log(nep, test_metrics)

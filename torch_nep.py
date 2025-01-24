@@ -12,6 +12,12 @@ def init(params, plots_update_freq = 10, log_plot_slice = True, log_plot_contour
     run = neptune.init_run(
         project="Soundbendor/SynTheoryPlus",
         api_token=nep_tok,
+        capture_hardware_metrics = False,
+        capture_stderr = False,
+        capture_stdout=False,
+        capture_traceback=False,
+        git_ref=False,
+        source_files=[]
     )  # your credentials
     run['parameters'] = params
     callback = NIO.NeptuneCallback(run, plots_update_freq = 10, log_plot_slice = log_plot_slice, log_plot_contour=log_plot_contour)

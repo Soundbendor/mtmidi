@@ -41,9 +41,9 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
     cm_path = None
     if save_confat == True:
         cm = SKM.confusion_matrix(class_truths, class_preds)
-        cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=PL.class_arr)
+        cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=PL.class_arr)
         fig, ax = plt.subplots(figsize=(figsize,figsize))
-        _cmd.plot(ax=ax)
+        cmd.plot(ax=ax)
         timestamp = int(time.time()*1000)
 
         cm_fname = f'{timestamp}-cm.png' 
@@ -53,7 +53,7 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
     d = {'accuracy_score': acc, 'f1_macro': f1_macro, 'f1_micro': f1_micro, 'confmat': cm, 'confmat_path': cm_path}
     return d
 
-def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = 'polyrhythms',  held_out_classes = False, save_confmat = True):
+def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = 'polyrhythms',  held_out_classes = False, save_confmat = True, do_regression_classification = True):
     mse = SKM.mean_squared_error(truths, preds)
     r2 = SKM.r2_score(truths, preds)
     mae = SKM.mean_absolute_error(truths, preds)
@@ -63,16 +63,20 @@ def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = '
     mape = SKM.mean_absolute_percentage_error(truths, preds)
     rmse = SKM.root_mean_squared_error(truths, preds)
     d2ae = SKM.d2_absolute_error_score(truths, preds)
-    acc = SKM.accuracy_score(truth_labels, pred_labels)
-    f1_macro = SKM.f1_score(truth_labels, pred_labels, average='macro')
-    f1_micro = SKM.f1_score(truth_labels, pred_labels, average='micro')
+    acc = None
+    f1_macro = None
+    f1_micro = None
+    if do_regression_classification == True:
+        acc = SKM.accuracy_score(truth_labels, pred_labels)
+        f1_macro = SKM.f1_score(truth_labels, pred_labels, average='macro')
+        f1_micro = SKM.f1_score(truth_labels, pred_labels, average='micro')
 
     
     class_truths = None
     class_preds = None
     cm = None
     cm_path = None
-    if save_confmat == True:
+    if do_regression_classification == True and save_confmat == True:
         if dataset == 'polyrhythms':
             class_truths = [PL.reg_rev_polystr_to_idx[x] for x in truth_labels]
             class_preds = [PL.reg_rev_polystr_to_idx[x] for x in pred_labels]
@@ -88,12 +92,12 @@ def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = '
                 class_arr2 = [x for x in PL.reg_class_arr if x in all_labels]
             elif dataset == 'tempos':
                 class_arr2 = [x for x in TP.classset_aug if x in all_labels]
-            _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=class_arr2)
+            cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_arr2)
         else:
-            _cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=_cm, display_labels=PL.reg_class_arr)
-        _cmd.plot()
+            cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=PL.reg_class_arr)
+        cmd.plot()
         fig, ax = plt.subplots(figsize=(figsize,figsize))
-        _cmd.plot(ax=ax)
+        cmd.plot(ax=ax)
         timestamp = int(time.time()*1000)
         cm_fname = f'{timestamp}-cm.png' 
         cm_path = os.path.join(res_dir, cm_fname)
