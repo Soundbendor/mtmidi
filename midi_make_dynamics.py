@@ -31,9 +31,6 @@ for _bsd in DYN.beat_subdiv_arr:
     notes_per_bar = beat * subdiv
     total_notes = notes_per_bar * DYN.num_bars
     for offset_ms, (offset_lvl, offset_ticks) in tick_offsets.items():
-        # don't do offsets bigger than 0 for now
-        if offset_ms > 0:
-            break
         for _dt in DYN.dyn_subcategories:
             # since calculating velocites from first dynamic
             # flat needs to calculate using dyn1 as first dynamic and dyn2 as first dynamic

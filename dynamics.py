@@ -69,8 +69,8 @@ def get_velocities(_dyn1, _dyn2, beat_subdiv = (4,2), start_beat_dyn2 = 1, dyn_c
 num_bars = 1
 bpm = 60
 
-# copied from polyrhythms
-offset_ms_arr = [0, 120, 204, 700, 1067]
+# curated from array([ 73.38251409, 263.56219544, 327.15342688, 420.31061945, 430.5955094 ])
+offset_ms_arr = [0, 264, 431]
 
 dyn1 = ["pp", "p", "mp"]
 dyn2 = ["mf", "f", "ff"]
