@@ -192,8 +192,9 @@ def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_
         metrics = UP.get_classification_metrics(truths, preds, dataset = dataset, classify_by_subcategory = classify_by_subcategory, save_confmat=is_testing)
     else:
         metrics = UP.get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = dataset,  held_out_classes = held_out_classes, save_confmat = is_testing, do_regression_classification = do_regression_classification)
-    
-    avg_loss = total_loss/float(iters)
+    avg_loss = 0
+    if loss_fn != None:
+        avg_loss = total_loss/float(iters)
     return avg_loss, metrics
 
 # for use with optuna trials
