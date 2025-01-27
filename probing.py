@@ -346,7 +346,7 @@ if __name__ == "__main__":
     nep = None
     nep_callback = None
     if to_nep == True:
-        nep, nep_callback = TN.init(arg_dict, plots_update_freq = plots_update_freq, log_plot_slice = log_plot_slice, log_plot_contour = log_plot_contour)
+        nep, nep_callback = TN.init(plots_update_freq = plots_update_freq, log_plot_slice = log_plot_slice, log_plot_contour = log_plot_contour)
         callbacks.append(nep_callback)
 
     study.optimize(objective, n_trials = num_trials, callbacks=callbacks)
