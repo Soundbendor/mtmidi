@@ -1,14 +1,16 @@
 # heavily referencing the original code:
 # https://github.com/brown-palm/syntheory/blob/main/embeddings/models.py
-import sys,os,time,argparse
+import sys,os,time,argparse, copy
 import numpy as np
 import torch
 import librosa as lr
+from librosa import feature as lrf
 import util_hf as uhf
 import util as um
 import jukemirlib as jml
 from transformers import AutoProcessor, MusicgenForConditionalGeneration
 from distutils.util import strtobool
+
 
 acts_folder = 'acts'
 jb_dsamp_rate = 15
@@ -48,6 +50,53 @@ def path_handler(f, using_hf=False, model_sr = 44100, wav_path = None, model_typ
         if aud_sr != model_sr:
             audio = lr.resample(audio, orig_sr=aud_sr, target_sr=model_sr)
     return {'in_fpath': in_fpath, 'out_fname': out_fname, 'audio': audio, 'fname': fname}
+
+# mel = melspectrogram, chroma = chroma_cqt, mfcc = mfcc
+# concat = mel + chroma + mfcc
+def get_baseline_features(audio, sr=22050, feat_type="concat"):
+    feat = []
+    if feat_type == "mel" or feat_type == "concat":
+        # mel spectrogram
+        # https://librosa.org/doc/latest/generated/librosa.feature.melspectrogram.html
+        cur_mel = lrf.melspectrogram(y=audio, sr=sr, n_fft=2048, hop_length = 512)
+        # returns (N=1, n_mels, t)
+        feat.append(cur_mel)
+    if feat_type == "chroma" or feat_type == "concat":
+        # constant q chromagram
+        # https://librosa.org/doc/0.10.2/generated/librosa.feature.chroma_cqt.html#librosa.feature.chroma_cqt
+        # default fmin = 32.7
+        # default norm = infinity norm normalization
+        # default 36 bins per octave
+        cur_chroma = lrf.chroma_cqt(y=audio, sr=sr, hop_length=512)
+        # returns (N=1, n_chroma, t)
+        feat.append(cur_chroma)
+    if feat_type == "mfcc" or feat_type == "concat":
+        # mfcc
+        # https://librosa.org/doc/0.10.2/generated/librosa.feature.mfcc.html#librosa.feature.mfcc
+        # default 20 mfccs
+        # default orthonormal dct basis
+        cur_mfcc = lrf.mfcc(y=audio, sr = sr, n_mfcc = 20)
+        # returns (N=1, n_mfcc, t)
+        feat.append(cur_mfcc)
+    ft_vec = None
+    for ft_idx,ft in enumerate(feat):
+        # as in the original codebase, do 0,1,2-order diff across time dimension
+        # and then take mean and std dev across time dimension
+        # note that 0 order diff is just the same array
+        for diff_n in range(3):
+            cur_diff = np.diff(ft, n=diff_n, axis=1)
+            cur_mean = np.mean(cur_diff, axis=1)
+            cur_std = np.std(cur_diff, axis=1)
+            cur = np.concatenate((cur_mean, cur_std))
+            if diff_n == 0 and ft_idx == 0:
+                ft_vec = copy.deepcopy(cur)
+            else:
+                ft_vec = np.concatenate([ft_vec, copy.deepcopy(cur)])
+    # make it a 1 x cur_dim vector for consistency (i think)
+    if ft_vec.shape < 2:
+        ft_vec = np.expand_dims(ft_vec,axis=0)
+    return ft_vec
+
 
 def get_musicgen_encoder_embeddings(model, proc, audio, meanpool = True, model_sr = 32000, device='cpu'):
     procd = proc(audio = audio, sampling_rate = model_sr, padding=True, return_tensors = 'pt')
@@ -152,7 +201,7 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
         model = MusicgenForConditionalGeneration.from_pretrained(model_str, device_map=device)
         model_sr = model.config.audio_encoder.sampling_rate
 
-    print('file,is_extracted', file=rf)
+    #print('file,is_extracted', file=rf)
     for fidx,f in enumerate(cur_pathlist):
         fdict = path_handler(f, model_sr = model_sr, wav_path = wav_path, normalize = normalize, dur = dur,model_type = cur_model_type, using_hf = using_hf, logfile_handle=logfile_handle)
         #outpath = os.path.join(out_dir, outname)
@@ -160,7 +209,7 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
         fpath = fdict['in_fpath']
         audio = fdict['audio']
         # store by cur_act_type (model shorthand)
-        emb_file = um.get_embedding_file(cur_act_type, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = use_64bit, write=True)
+        emb_file = um.get_embedding_file(cur_act_type, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = use_64bit, write=True, use_shape = None)
         if cur_model_type == 'jukebox':
             print(f'--- extracting jukebox for {f} with {layers_per} layers at a time ---', file=logfile_handle)
             # note that layers are 1-indexed in jukebox
@@ -192,12 +241,69 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
                 emb_file.flush()
         fname = fdict['fname']
         print(f'{fname},1', file=recfile_handle)
+
+
+
+# note that these are 32bit
+def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile_handle=None, recfile_handle = None):
+    cur_model_type = um.get_model_type(cur_act_type)
+    model_sr = um.model_sr[cur_model_type]
+    model_longhand = um.model_longhand[cur_act_type]
+    
+    using_hf = cur_dataset in um.hf_datasets
+    # musicgen stuff
+    device = 'cpu'
+    num_layers = None
+    proc = None
+    model = None
+    text = ""
+    wav_path = os.path.join(um.by_projpath('wav'), cur_dataset)
+    cur_pathlist = None
+    if using_hf == True:
+        cur_pathlist = uhf.load_syntheory_train_dataset(cur_dataset)
+    else:
+        cur_pathlist = um.path_list(wav_path)
+    
+    # original was 22050 but why not double
+    sr = 44100
+    for fidx,f in enumerate(cur_pathlist):
+        fdict = path_handler(f, model_sr = sr, wav_path = wav_path, normalize = normalize, dur = dur,model_type = 'baseline', using_hf = using_hf, logfile_handle=logfile_handle)
+        #outpath = os.path.join(out_dir, outname)
+        out_fname = fdict['out_fname']
+        fpath = fdict['in_fpath']
+        audio = fdict['audio']
+        # store by 'baseline_mel','baseline_chroma','baseline_mfcc','baseline_concat'
+        acts_to_get = set([])
+        if cur_act_type == 'baseline_all':
+            acts_to_get = acts_to_get.union(UM.baseline_names)
+        elif cur_act_type in UM.baseline_names:
+            acts_to_get = acts_to_get.add(cur_act_type)
+        for _act in acts_to_get:
+            want_feat = _act.split("_")[1]
+            ft_vec = get_baseline_features(audio, sr=sr, feat_type=want_feat)
+            emb_file = um.get_embedding_file(want_feat, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = False, write=True, use_shape = ft_vec.shape)
+            emb_file[:,:] = ft_vec
+            emb_file.flush()
+        fname = fdict['fname']
+        print(f'{fname},1', file=recfile_handle)
+
+def get_print_name(dataset, act_type, is_csv = False, normalize = True, timestamp = 0):
+    base_fname = f'{dataset}_{act_type}-{timestamp}'
+    if normalize == True:
+        base_fname = f'{dataset}_{act_type}_norm-{timestamp}'
+    ret = None
+    if is_csv == False:
+        ret = f'{base_fname}.log'
+    else:
+        ret = f'{base_fname}.csv'
+    return ret
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-ub", "--use_64bit", type=strtobool, default=True, help="use 64-bit")
     parser.add_argument("-ds", "--dataset", type=str, default="polyrhythms", help="dataset")
-    parser.add_argument("-at", "--activation_type", type=str, default="jukebox", help="mg_{small/med/large}_{h/at} / mg_audio / jukebox")
+    parser.add_argument("-at", "--activation_type", type=str, default="jukebox", help="mg_{small/med/large}_{h/at} / mg_audio / jukebox /baseline_{mel/chroma/mfcc/concat/all}")
     parser.add_argument("-lp", "--layers_per", type=int, default=4, help="layers per loop if doing all layers (for jukebox)")
     parser.add_argument("-l", "--layer_num", type=int, default=-1, help="1-indexed layer num (all if < 0, for jukebox)")
     parser.add_argument("-n", "--normalize", type=strtobool, default=True, help="normalize audio")
@@ -215,12 +321,8 @@ if __name__ == '__main__':
     timestamp = int(time.time() * 1000)
 
     # miscellaneous logs
-    log_fname = f'{dataset}_{act_type}-{timestamp}.log'
-    # record saving activations
-    rec_fname = f'{dataset}_{act_type}-{timestamp}.csv'
-    if normalize == True:
-        log_fname = f'{dataset}_{act_type}_norm-{timestamp}.txt'
-        rec_fname = f'{dataset}_{act_type}_norm-{timestamp}.csv'
+    log_fname = get_print_name(dataset, act_type, is_csv = False, normalize = normalize, timestamp = timestamp)
+    rec_fname = get_print_name(dataset, act_type, is_csv = True, normalize = normalize, timestamp = timestamp)
     log_fpath = os.path.join(logdir, log_fname)
     rec_fpath = os.path.join(logdir, rec_fname)
     if (dataset in um.all_datasets) == False:
@@ -229,6 +331,9 @@ if __name__ == '__main__':
         lf = open(log_fpath, 'a')
         rf = open(rec_fpath, 'w')
         print(f'=== running extraction for {dataset} with {act_type} at {timestamp} ===', file=lf)
-        get_embeddings(act_type, dataset, layers_per = lper, layer_num = lnum, normalize = normalize, dur = dur, use_64bit = use_64bit, logfile_handle=lf, recfile_handle=rf)
+        if 'baseline' in act_type:
+            get_baselines(act_type, dataset, normalize=normalize, dur = dur, logfile_handle = lf, recfile_handle =rf)
+        else:
+            get_embeddings(act_type, dataset, layers_per = lper, layer_num = lnum, normalize = normalize, dur = dur, use_64bit = use_64bit, logfile_handle=lf, recfile_handle=rf)
         lf.close()
         rf.close()

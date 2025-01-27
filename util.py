@@ -33,6 +33,7 @@ hf_datasets = set(['tempos', 'time_signatures', 'chords', 'notes', 'scales', 'in
 # datasets this project is introducing
 new_datasets = set(['polyrhythms', 'dynamics'])
 
+baseline_names = set(['baseline_mel', 'baseline_chroma', 'baseline_mfcc', 'baseline_concat'])
 all_datasets = hf_datasets.union(new_datasets)
 
 model_longhand = {'mg_audio': 'musicgen-encoder',
@@ -142,7 +143,8 @@ def get_embedding_shape(shorthand):
     shape = (num_layers, layer_dim)
     return shape
 
-def get_embedding_file(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', fname='', write = True, use_64bit = True):
+# use_shape argument overrides shape getting (useful for baselines)
+def get_embedding_file(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', fname='', write = True, use_64bit = True, use_shape = None):
     actpath = by_projpath(acts_folder)
     datapath = os.path.join(actpath, dataset)
     modelpath = os.path.join(datapath, model_shorthand)
@@ -150,7 +152,11 @@ def get_embedding_file(model_shorthand, acts_folder = 'acts', dataset='polyrhyth
     fp = None
     dtype = 'float32'
     mode = 'r'
-    shape = get_embedding_shape(model_shorthand)
+    shape = None
+    if use_shape == None:
+        shape = get_embedding_shape(model_shorthand)
+    else:
+        shape = use_shape
     if use_64bit == True:
         dtype = 'float64'
     if write == True:
