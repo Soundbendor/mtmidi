@@ -11,6 +11,7 @@ import tempi as TP
 import os
 
 
+figsize = 15
 
 res_dir = UM.by_projpath("res", make_dir = True)
 # do not log these metrics because it won't work with neptune anyways
