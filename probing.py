@@ -215,7 +215,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     global best_model_state_dict
     # suggested params
     lr = trial.suggest_categorical('learning_rate', [1e-3, 1e-4, 1e-5])
-    bs = trial.suggest_categorical('batch_size', [62,256])
+    bs = trial.suggest_categorical('batch_size', [64,256])
     dropout = trial.suggest_categorical('dropout', [0.25, 0.5, 0.75])
     weight_decay = trial.suggest_categorical('l2_weight_decay', [-1, 1e-4, 1e-3])
     num_epochs = trial.suggest_categorical('num_epochs', [50,100,250,500])
