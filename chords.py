@@ -1,11 +1,11 @@
-import util as um
+import util as Um
 import mido
 import musicnoteconv as mnc
 import polars as pl
 
 
 #inst is short instrument name
-fieldnames = ['name', 'root', 'pitch', 'octave', 'quality', 'inversion', 'inst', 'quality_idx', 'rvb_lvl', 'rvb_val', 'bpm']
+fieldnames = ['name', 'inst', 'root', 'pitch', 'octave', 'inversion', 'quality', 'quality_idx', 'bpm']
 # including 0th offset
 num_offsets = 12
 num_inversions = 4
@@ -26,8 +26,8 @@ chord_notes = {'major7': ['c4', 'e4', 'g4', 'b4'],
 
 chord_midi = {k:[mnc.note_to_midi(y) for y in v] for (k,v) in chord_notes.items()}
 
-chord_quality_to_idx = {x:i for (i,x) in enumerate(chord_notes.keys())}
-idx_to_chord_quality = {i:x for (x,i) in chord_quality_to_idx.items()}
+quality_to_idx = {x:i for (i,x) in enumerate(chord_notes.keys())}
+idx_to_quality = {i:x for (x,i) in quality_to_idx.items()}
 
 def make_inversion(cur_midinotes, inv):
     if inv == 0:
@@ -44,17 +44,17 @@ def offset_notes(cur_midinotes, offset):
     else:
         return [x + offset for x in cur_midinotes]
 
-def tranpose_to_range(cur_midinotes):
+def transpose_to_range(cur_midinotes):
     transposed_down = False
     if cur_midinotes[0] >= midi_upper_limit:
         transposed_down = True
-        return offset_notes(cur_midinotes, -12)
+        return offset_notes(cur_midinotes, -12), transposed_down
     else:
         return cur_midinotes, transposed_down
 
-def get_outname(chord_type, inv_idx, short_inst, cur_root, rvb_lvl, ext = ""):
+def get_outname(chord_type, inv_idx, short_inst, cur_root, ext = ""):
     ret = None
-    outname = f'{chord_type}_inv{inv_idx}-{short_inst}-{cur_root}-rvb{rvb_lvl}'
+    outname = f'{short_inst}-{cur_root}-{chord_type}_inv{inv_idx}'
     if len(ext) > 0:
         ret = f'{outname}.{ext}'
     else:
