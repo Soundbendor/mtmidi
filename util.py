@@ -28,7 +28,7 @@ default_midinote = 60
 
 reverb_lvl = {0:0, 1: 63, 2:127}
 # datasets in the original dataset (for debugging)
-hf_datasets = set(['tempos', 'time_signatures', 'chords', 'notes', 'scales', 'intervals', 'chord_progressions']) 
+hf_datasets = set(['tempos', 'time_signatures', 'chords', 'notes', 'scales', 'intervals', 'chord_progressions'])
 
 # datasets this project is introducing
 new_datasets = set(['polyrhythms', 'dynamics'])
@@ -80,7 +80,7 @@ model_num_layers = {"musicgen-small": 25, "musicgen-medium": 49, "musicgen-large
 # because jukebox does a weird 1-indexing thing
 jukebox_range = list(range(1,73))
 
-act_layer_dim = {"musicgen-small_hidden": 1024, "musicgen-medium_hidden": 1536, "musicgen-large_hidden": 2048, 
+act_layer_dim = {"musicgen-small_hidden": 1024, "musicgen-medium_hidden": 1536, "musicgen-large_hidden": 2048,
                    "musicgen-small_attn": 16, "musicgen-medium_attn": 24, "musicgen-large_attn": 32,
                    "musicgen-encoder": 128,
                  "jukebox": 4800,
@@ -99,6 +99,13 @@ act_folder = {'musicgen-encoder': 'mg_audio_mp',
               'jukebox36': 'jukebox_acts_36',
               'jukebox38': 'jukebox_acts_38',
               }
+
+
+# copying from https://github.com/brown-palm/syntheory/blob/main/dataset/synthetic/midi_instrument.py
+pitched_exclude_categories = set(['Percussive', 'Sound effects', 'Synth Effects'])
+pitched_exclude_inst = set(['Timpani', 'Celesta', 'Glockenspiel', 'Tubular Bells', 'Tango Accordion', 'Shakuhachi', 'Whistle', 'Orchestra Hit', 'Guitar harmonics', 'Harmonica', 'Accordion', 'Lead 7 (fifths)'])
+
+pitched_inst_to_use = []
 
 # https://stackoverflow.com/questions/4934806/how-can-i-find-scripts-directory
 script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -189,10 +196,13 @@ with open(by_projpath('inst_list.csv'), 'r') as f:
     csvr = csv.reader(f, delimiter=',')
     for i,row in enumerate(csvr):
         if i > 0:
-            inst_num = int(row[0])
-            inst_name = row[1]
-            inst_cat = row[2]
+            inst_num = int(row[0].strip())
+            inst_name = row[1].strip()
+            inst_cat = row[2].strip()
             inst[inst_name] = {'program_number': inst_num, 'category': inst_cat}
+            if inst_cat not in pitched_exclude_categories and inst_name not in pitched_exclude_inst:
+                pitched_inst_to_use.append(inst_name)
+
 
 with open(by_projpath('drum_list.csv'), 'r')as f:
     csvr = csv.reader(f, delimiter=",")
@@ -225,7 +235,7 @@ def read_toml(sysargv, toml_dir = os.path.join(script_dir, 'toml')):
 
 def path_list(subpath=None):
     cur_path = by_projpath(subpath=subpath, make_dir = False)
-    return os.listdir(cur_path) 
+    return os.listdir(cur_path)
 
 def get_random_list(lo, hi, num):
     return [random.uniform(lo,hi) for _ in range(num)]
@@ -311,7 +321,7 @@ def write_to_wav_pyfl(midifilepath, save_dir = 'wav', sr = 44100, gain=0.2, chan
     syn.delete()
     siw.write(outfilepath, sr, s)
 
-    
+
 def ms_to_ticks(ms, ticks_per_beat = 1000, bpm = 120):
     # ticks/beat x beats/min x min/sec x sec/ms = ticks/ms
     # ticks/beat x beats/ms = ticks/ms
@@ -329,7 +339,7 @@ def load_wav(fname, dur = 4., normalize = False, sr=32000, load_dir='wav'):
         return snd
     else:
         return librosa.util.normalize(snd)
-    
+
 # replace extension from path
 def ext_replace(old_path, new_ext = 'pt'):
     fsplit = '.'.join(old_path.split('.')[:-1])
@@ -392,9 +402,10 @@ def profile_category(df, cat, ds='polyrhy_split1', profile_dir = 'dataprof', pro
 
     if save_csv == True:
         if os.path.exists(dp_csv_dir) == False:
-            os.makedirs(dp_csv_dir) 
+            os.makedirs(dp_csv_dir)
         ocsv = os.path.join(dp_csv_dir, f'{out_name2}.csv')
         ser.write_csv(ocsv)
+
 
 
 
