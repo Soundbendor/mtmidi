@@ -8,21 +8,26 @@ import util as UM
 import polyrhythms as PL
 import numpy as np
 from sklearn.model_selection import train_test_split
+import utils_probing as UP
 
 # exclude_polys should be in pstr format
 class PolyrhythmsData(TUD.Dataset):
-    def __init__(self, embedding_type = 'mg_small_h', device='cpu', classification = True, exclude_polys = [], exclude_offset_lvls = [], norm_labels = True, layer_idx=-1, is_64bit = True):
+    def __init__(self, embedding_type = 'mg_small_h', device='cpu', classification = True, exclude = [], norm_labels = True, layer_idx=-1, is_64bit = True):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
         csvfile = os.path.join(UM.by_projpath('csv', make_dir = False), 'polyrhythms.csv')
         cur_data = pl.scan_csv(csvfile).collect()
+        
         self.all_pstr = cur_data.select(['poly']).to_numpy().flatten()
         self.all_offset_lvls = cur_data.select(['offset_lvl']).to_numpy().flatten()
+
         # filter out exclude_polys and exclude_offset_lvls (keep given matching both nonexcluded) 
         # also sort by norm_ratio ascending
         # also map the 'poly' to label indices
-        self.data = cur_data.filter((pl.col('poly').is_in(np.setdiff1d(self.all_pstr, exclude_polys)) & pl.col('offset_lvl').is_in(np.setdiff1d(self.all_offset_lvls, exclude_offset_lvls)))).sort('norm_ratio', descending=False).with_columns(pl.col('poly').map_elements(PL.get_idx_from_polystr, return_dtype=int).alias('label_idx'))
+
+        cur_data = UP.exclude_col_vals_in_data(cur_data, exclude)
+        self.data = cur_data.sort('norm_ratio', descending=False).with_columns(pl.col('poly').map_elements(PL.get_idx_from_polystr, return_dtype=int).alias('label_idx'))
         self.total_num = self.data['name'].count()
         #self.data_folder = os.path.join(UM.by_projpath('acts'), 'polyrhythms', embedding_type)
         self.coldict = {x:i for (i,x) in enumerate(self.data.columns)}

@@ -23,15 +23,7 @@ global trial_model_state_dict
 global best_model_state_dict
 
 
-### some params to play around with
-# polyrhythms
-exclude_polys = []
-exclude_offset_lvls = []
 
-# dynamics
-exclude_dyn_pairs = []
-exclude_dyn_categories= []
-exclude_dyn_subcategories=[]
 
 ### init stuff
 is_64bit = True # if embeddings are 64 bit
@@ -288,8 +280,9 @@ if __name__ == "__main__":
     parser.add_argument("-rc", "--do_regression_classification", type=strtobool, default=True, help="do regression classification")
     parser.add_argument("-nep", "--to_nep", type=strtobool, default=True, help="log on neptune")
     parser.add_argument("-tos", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory (for dynamics)")
+    parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
 
-    drop_keys = set(['to_nep', 'num_trials'])
+    drop_keys = set(['to_nep', 'num_trials', 'toml_file'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -307,22 +300,33 @@ if __name__ == "__main__":
         else:
             out_dim = DYN.num_categories
 
-    arg_dict.update({'thresh': THRESH, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
 
     #### some variable definitions
     cur_ds = None
     label_arr = None
     train_on_middle = False 
     user_specify_layer_idx = arg_dict['layer_idx'] >= 0 
+    exclude = []
+    _thresh = THRESH
+    using_toml = False
+    toml_dict = None
+    if len(arg_dict['toml_file']) > 0:
+        using_toml = True
+        toml_dict = UP.read_toml_file(arg_dict['toml_file'])
+        exclude = UP.get_exclude_col_vals(toml_dict)
+        toml_params = UP.get_toml_params(toml_dict)
+        _thresh = toml_params.get('thresh', THRESH)
+
+    arg_dict.update({'thresh': _thresh, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
     #### load dataset(s)
     if arg_dict['dataset'] == "polyrhythms":
-       cur_ds = PolyrhythmsData(embedding_type = arg_dict['embedding_type'], device=device, classification = arg_dict["is_classification"], exclude_polys = exclude_polys, exclude_offset_lvls = exclude_offset_lvls, norm_labels = True, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit)
+       cur_ds = PolyrhythmsData(embedding_type = arg_dict['embedding_type'], device=device, classification = arg_dict["is_classification"], exclude = exclude, norm_labels = True, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit)
        label_arr = cur_ds.all_pstr
     elif arg_dict['dataset'] == 'tempos':
        cur_ds = STHFTempiData(embedding_type= arg_dict['embedding_type'], device=device, norm_labels = True, layer_idx= arg_dict['layer_idx'], class_binsize = TEMPOS_CLASS_BINSIZE, num_classes = TP.num_classes, bpm_class_mapper = TP.bpm_class_mapper, is_64bit = is_64bit)
        label_arr = cur_ds.all_classes
     elif arg_dict['dataset'] == 'dynamics':
-        cur_ds = DynamicsData(embedding_type = arg_dict['embedding_type'], device=device, exclude_dyn_pairs = exclude_dyn_pairs, exclude_dyn_categories= exclude_dyn_categories, exclude_dyn_subcategories=exclude_dyn_subcategories, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit)
+        cur_ds = DynamicsData(embedding_type = arg_dict['embedding_type'], device=device, exclude = exclude, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit)
         if arg_dict['classify_by_subcategory'] == True:
             label_arr = cur_ds.all_dyn_subcategories
         else:
@@ -336,6 +340,12 @@ if __name__ == "__main__":
     rdb_string_url = "sqlite:///" + os.path.join(os.path.dirname(__file__), 'db', f'{study_name}.db')
 
     study = optuna.create_study(study_name=study_name, storage=rdb_string_url, direction='maximize')
+    flat_toml_dict = None
+    if using_toml == True:
+       flat_toml_dict = UP.flatten_toml_dict(toml_dict)
+       UP.record_dict_in_study(study, flat_toml_dict)
+    study.set_user_attr('classify_by_subcategory', arg_dict['classify_by_subcategory'])
+    study.set_user_attr('thresh', THRESH)
     obj_dict = {k:v for (k,v) in arg_dict.items() if k not in drop_keys}
     objective = partial(_objective, **obj_dict)
     callbacks = [study_callback]
@@ -346,7 +356,7 @@ if __name__ == "__main__":
     nep = None
     nep_callback = None
     if to_nep == True:
-        nep, nep_callback = TN.init(plots_update_freq = plots_update_freq, log_plot_slice = log_plot_slice, log_plot_contour = log_plot_contour)
+        nep, nep_callback = TN.init(param_dict=flat_toml_dict, plots_update_freq = plots_update_freq, log_plot_slice = log_plot_slice, log_plot_contour = log_plot_contour)
         callbacks.append(nep_callback)
 
     study.optimize(objective, n_trials = num_trials, callbacks=callbacks)

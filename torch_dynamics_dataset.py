@@ -8,24 +8,30 @@ import util as UM
 import dynamics as DYN
 import numpy as np
 from sklearn.model_selection import train_test_split
+import utils_probing as UP
 
 # exclude_dyn_pairs are given as 'dyn1-dyn2'
 # either classify by category or subcategory
+# example categories to exclude: dyn_pair, dyn_category, dyn_subcategory, offset_lvl
 class DynamicsData(TUD.Dataset):
-    def __init__(self, embedding_type = 'mg_small_h', device='cpu', exclude_dyn_pairs = [], exclude_dyn_categories= [], exclude_dyn_subcategories=[],layer_idx=-1, classify_by_subcategory = False, is_64bit = True):
+    def __init__(self, embedding_type = 'mg_small_h', device='cpu', exclude = [],layer_idx=-1, classify_by_subcategory = False, is_64bit = True):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
         csvfile = os.path.join(UM.by_projpath('csv', make_dir = False), 'dynamics.csv')
         cur_data = pl.scan_csv(csvfile).collect()
+	
         self.all_dyn_pairs = cur_data.select(['dyn_pair']).to_numpy().flatten()
         self.all_dyn_categories = cur_data.select(['dyn_category']).to_numpy().flatten()
         self.all_dyn_subcategories = cur_data.select(['dyn_subcategory']).to_numpy().flatten()
         self.all_offset_lvls = cur_data.select(['offset_lvl']).to_numpy().flatten()
+
         # filter out dyn_pair, dyn_category, and dyn_subcategories (keep given matching all three nonexcluded)
+
+        cur_data = UP.exclude_col_vals_in_data(cur_data, exclude)
         # map dyn_category to idx
         # map dyn_subcategory to idx
-        self.data = cur_data.filter((pl.col('dyn_pair').is_in(np.setdiff1d(self.all_dyn_pairs, exclude_dyn_pairs)) & pl.col('dyn_category').is_in(np.setdiff1d(self.all_dyn_categories, exclude_dyn_categories)) & pl.col('dyn_subcategory').is_in(np.setdiff1d(self.all_dyn_subcategories, exclude_dyn_subcategories)) )).with_columns(pl.col('dyn_category').map_elements(DYN.get_category_idx, return_dtype=int).alias('category_idx')).with_columns(pl.col('dyn_subcategory').map_elements(DYN.get_subcategory_idx, return_dtype=int).alias('subcategory_idx'))
+        self.data = cur_data.with_columns(pl.col('dyn_category').map_elements(DYN.get_category_idx, return_dtype=int).alias('category_idx')).with_columns(pl.col('dyn_subcategory').map_elements(DYN.get_subcategory_idx, return_dtype=int).alias('subcategory_idx'))
 
         self.total_num = self.data['name'].count()
         self.coldict = {x:i for (i,x) in enumerate(self.data.columns)}
