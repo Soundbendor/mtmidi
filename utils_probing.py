@@ -207,7 +207,7 @@ def print_metrics(results_dict, study_name, filehandle = None):
 # log test results to neptune
 def neptune_log(nep, results_dict):
     for res_key, res_val in results_dict.items():
-        if np.any(res_val) != None:
+        if res_val:
             if res_key not in nep_dont_log:
                 if res_key in nep_paths:
                     split_key = res_key.split("_")[0]
