@@ -79,9 +79,9 @@ for (cur_bpm, num_bars) in PL.bpm_bars:
                         pstr2 = '_'.join(short_pair)
                         ratio = PL.get_ratio(pnums)
                         norm_ratio = PL.normalize_ratio(ratio)
-
+                        polydist = abs(pnums[0]-pnums[1])
                         outname2 = PL.get_outname(inst1, inst2, cur_bpm, rvb_lvl, offset_ms, pstr, with_ext=False)
-                        cur_row = {'inst1': inst1, 'inst2': inst2, 'poly': pstr, 'pair': pstr2, 'bpm': cur_bpm, 'num_bars': num_bars, 'rvb_lvl': rvb_lvl, 'rvb_val': rvb_val, 'offset_lvl': offset_lvl, 'offset_ms': offset_ms, 'offset_ticks': offset_ticks, 'poly1': pnums[0], 'poly2': pnums[1], 'name': outname2, 'ratio': ratio, 'norm_ratio': norm_ratio}
+                        cur_row = {'inst1': inst1, 'inst2': inst2, 'poly': pstr, 'pair': pstr2, 'bpm': cur_bpm, 'num_bars': num_bars, 'rvb_lvl': rvb_lvl, 'rvb_val': rvb_val, 'offset_lvl': offset_lvl, 'offset_ms': offset_ms, 'offset_ticks': offset_ticks, 'poly1': pnums[0], 'poly2': pnums[1], 'polydist': polydist, 'name': outname2, 'ratio': ratio, 'norm_ratio': norm_ratio}
                         csvw.writerow(cur_row)
                         #print(outname)
                         # number of bars to do polyrhthm (polyrhythm isolated for one bar)
