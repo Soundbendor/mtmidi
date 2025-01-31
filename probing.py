@@ -13,9 +13,11 @@ import utils_probing as UP
 import torch_nep as TN
 import polyrhythms as PL
 import dynamics as DYN
+import chords
 import tempi as TP
 from torch_polyrhythms_dataset import PolyrhythmsData
 from torch_dynamics_dataset import DynamicsData
+from torch_chords_dataset import ChordsData
 from hf_tempi_dataset import STHFTempiData
 
 # global declarations (hacky) to save model state dicts
@@ -281,11 +283,14 @@ if __name__ == "__main__":
     parser.add_argument("-nep", "--to_nep", type=strtobool, default=True, help="log on neptune")
     parser.add_argument("-tos", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory (for dynamics)")
     parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
+    parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
 
-    drop_keys = set(['to_nep', 'num_trials', 'toml_file'])
+    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'debug'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
+    if arg_dict['debug'] == True:
+        exit()
     # model type is slightly distinct from embedding_type (which is also shorthand) because musicgen-encoder uses musicgen-large
     model_type = UM.get_model_type(arg_dict['embedding_type'])  
     model_layer_dim = UM.get_layer_dim(arg_dict['embedding_type'])
@@ -331,6 +336,10 @@ if __name__ == "__main__":
             label_arr = cur_ds.all_dyn_subcategories
         else:
             label_arr = cur_ds.all_dyn_categories
+    elif arg_dict['dataset'] == 'chords':
+        cur_ds = ChordsData(embedding_type = arg_dict['embedding_type'], device=device, exclude = exclude, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit)
+        label_arr = cur_ds.all_quality
+
     train_ds, valid_ds, test_ds = UP.get_train_valid_test_subsets(cur_ds, label_arr, train_on_middle = arg_dict['train_on_middle'], train_pct = train_pct, test_subpct = test_subpct, seed = seed)
     arg_dict.update({'train_ds': train_ds, 'valid_ds': valid_ds})
 

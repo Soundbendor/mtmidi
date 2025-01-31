@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import polyrhythms as PL
 import dynamics as DYN
+import chords
 import matplotlib.pyplot as plt
 import util as UM
 import neptune
@@ -81,6 +82,10 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
         else:
             class_truths = [DYN.dyn_idx_to_category[x] for x in truths]
             class_preds = [DYN.dyn_idx_to_category[x] for x in preds]
+    elif dataset == 'chords':
+        class_truths = [chords.idx_to_quality[x] for x in truths]
+        class_preds = [chords.idx_to_quality[x] for x in preds]
+
     cm = None
     cm_path = None
     if save_confat == True:
