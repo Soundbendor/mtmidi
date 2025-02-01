@@ -70,8 +70,8 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
     acc = SKM.accuracy_score(truths, preds)
     f1_macro = SKM.f1_score(truths, preds, average='macro')
     f1_micro = SKM.f1_score(truths, preds, average='micro')
-    class_truths = None
-    class_preds = None
+    class_truths = []
+    class_preds = []
     if dataset == 'polyrhythms':
         class_truths = [PL.rev_polystr_to_idx[x] for x in truths]
         class_preds = [PL.rev_polystr_to_idx[x] for x in preds]
@@ -86,8 +86,8 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
         class_truths = [chords.idx_to_quality[x] for x in truths]
         class_preds = [chords.idx_to_quality[x] for x in preds]
 
-    cm = None
-    cm_path = None
+    cm = []
+    cm_path = []
     if save_confat == True:
         cm = SKM.confusion_matrix(class_truths, class_preds)
         cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=PL.class_arr)
@@ -112,19 +112,19 @@ def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = '
     mape = SKM.mean_absolute_percentage_error(truths, preds)
     rmse = SKM.root_mean_squared_error(truths, preds)
     d2ae = SKM.d2_absolute_error_score(truths, preds)
-    acc = None
-    f1_macro = None
-    f1_micro = None
+    acc = []
+    f1_macro = []
+    f1_micro = []
     if do_regression_classification == True:
         acc = SKM.accuracy_score(truth_labels, pred_labels)
         f1_macro = SKM.f1_score(truth_labels, pred_labels, average='macro')
         f1_micro = SKM.f1_score(truth_labels, pred_labels, average='micro')
 
     
-    class_truths = None
-    class_preds = None
-    cm = None
-    cm_path = None
+    class_truths = [] 
+    class_preds = []
+    cm = []
+    cm_path = []
     if do_regression_classification == True and save_confmat == True:
         if dataset == 'polyrhythms':
             class_truths = [PL.reg_rev_polystr_to_idx[x] for x in truth_labels]
@@ -212,8 +212,8 @@ def print_metrics(results_dict, study_name, filehandle = None):
 # log test results to neptune
 def neptune_log(nep, results_dict):
     for res_key, res_val in results_dict.items():
-        if res_val:
-            if res_key not in nep_dont_log:
+        if res_key not in nep_dont_log:
+            if len(res_val) > 0:
                 if res_key in nep_paths:
                     split_key = res_key.split("_")[0]
                     nep_key = f"test/{split_key}"
