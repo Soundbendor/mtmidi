@@ -213,7 +213,14 @@ def print_metrics(results_dict, study_name, filehandle = None):
 def neptune_log(nep, results_dict):
     for res_key, res_val in results_dict.items():
         if res_key not in nep_dont_log:
-            if len(res_val) > 0:
+            to_log = True
+            if hasattr(res_val, '__len__'):
+                if len(res_val) <= 0:
+                    to_log = False
+            else:
+                if not res_val:
+                    to_log = False
+            if to_log == True:
                 if res_key in nep_paths:
                     split_key = res_key.split("_")[0]
                     nep_key = f"test/{split_key}"
