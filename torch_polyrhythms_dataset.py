@@ -19,15 +19,17 @@ class PolyrhythmsData(TUD.Dataset):
         csvfile = os.path.join(UM.by_projpath('csv', make_dir = False), 'polyrhythms.csv')
         cur_data = pl.scan_csv(csvfile).collect()
         
-        self.all_pstr = cur_data.select(['poly']).to_numpy().flatten()
-        self.all_offset_lvls = cur_data.select(['offset_lvl']).to_numpy().flatten()
 
         # filter out exclude_polys and exclude_offset_lvls (keep given matching both nonexcluded) 
         # also sort by norm_ratio ascending
         # also map the 'poly' to label indices
 
         cur_data = UP.exclude_col_vals_in_data(cur_data, exclude)
+
         self.data = cur_data.sort('norm_ratio', descending=False).with_columns(pl.col('poly').map_elements(PL.get_idx_from_polystr, return_dtype=int).alias('label_idx'))
+
+        self.all_pstr = self.data.select(['poly']).to_numpy().flatten()
+        self.all_offset_lvls = self.data.select(['offset_lvl']).to_numpy().flatten()
         self.total_num = self.data['name'].count()
         #self.data_folder = os.path.join(UM.by_projpath('acts'), 'polyrhythms', embedding_type)
         self.coldict = {x:i for (i,x) in enumerate(self.data.columns)}

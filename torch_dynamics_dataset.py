@@ -21,17 +21,18 @@ class DynamicsData(TUD.Dataset):
         csvfile = os.path.join(UM.by_projpath('csv', make_dir = False), 'dynamics.csv')
         cur_data = pl.scan_csv(csvfile).collect()
 	
-        self.all_dyn_pairs = cur_data.select(['dyn_pair']).to_numpy().flatten()
-        self.all_dyn_categories = cur_data.select(['dyn_category']).to_numpy().flatten()
-        self.all_dyn_subcategories = cur_data.select(['dyn_subcategory']).to_numpy().flatten()
-        self.all_offset_lvls = cur_data.select(['offset_lvl']).to_numpy().flatten()
-
+        
         # filter out dyn_pair, dyn_category, and dyn_subcategories (keep given matching all three nonexcluded)
 
         cur_data = UP.exclude_col_vals_in_data(cur_data, exclude)
         # map dyn_category to idx
         # map dyn_subcategory to idx
         self.data = cur_data.with_columns(pl.col('dyn_category').map_elements(DYN.get_category_idx, return_dtype=int).alias('category_idx')).with_columns(pl.col('dyn_subcategory').map_elements(DYN.get_subcategory_idx, return_dtype=int).alias('subcategory_idx'))
+
+        self.all_dyn_pairs = self.data.select(['dyn_pair']).to_numpy().flatten()
+        self.all_dyn_categories = self.data.select(['dyn_category']).to_numpy().flatten()
+        self.all_dyn_subcategories = self.data.select(['dyn_subcategory']).to_numpy().flatten()
+        self.all_offset_lvls = self.data.select(['offset_lvl']).to_numpy().flatten()
 
         self.total_num = self.data['name'].count()
         self.coldict = {x:i for (i,x) in enumerate(self.data.columns)}

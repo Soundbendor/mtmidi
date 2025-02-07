@@ -19,13 +19,13 @@ class ChordsData(TUD.Dataset):
         cur_data = pl.scan_csv(csvfile).collect()
         
 
-        self.all_quality = cur_data.select(['quality']).to_numpy().flatten()
-        self.all_quality_idx = cur_data.select(['quality_idx']).to_numpy().flatten()
 
 
         cur_data = UP.exclude_col_vals_in_data(cur_data, exclude)
         self.data = cur_data
 
+        self.all_quality = self.data.select(['quality']).to_numpy().flatten()
+        self.all_quality_idx = self.data.select(['quality_idx']).to_numpy().flatten()
         self.total_num = self.data['name'].count()
         self.coldict = {x:i for (i,x) in enumerate(self.data.columns)}
 

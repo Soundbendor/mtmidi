@@ -175,8 +175,8 @@ def get_train_valid_test_subsets(dataset_obj, dataset_label_arr, train_on_middle
     all_idx = np.arange(0, total_num)
     if train_on_middle == False:
         _train_idx, _test_valid_idx = train_test_split(all_idx, random_state = seed, shuffle = True, stratify=dataset_label_arr)
-        train_idx = np.array(train_idx)
-        test_valid_idx = np.array(test_valid_idx)
+        train_idx = np.array(train_idx, dtype=int)
+        test_valid_idx = np.array(test_valid_idx, dtype=int)
     else:
         # getting start index of train, starting with valid_pct arbitrarily
         train_start = int(valid_pct * total_num)

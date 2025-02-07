@@ -284,8 +284,12 @@ if __name__ == "__main__":
     parser.add_argument("-tos", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory (for dynamics)")
     parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
+    parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
 
-    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'debug'])
+    # obj_dict is for passing to objective function, is arg_dict without drop_keys
+    # rec_dict is for passing to neptune and study (has drop keys)
+    # arg_dict just has everything
+    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'debug', 'slurm_job'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -341,6 +345,8 @@ if __name__ == "__main__":
         label_arr = cur_ds.all_quality
 
     train_ds, valid_ds, test_ds = UP.get_train_valid_test_subsets(cur_ds, label_arr, train_on_middle = arg_dict['train_on_middle'], train_pct = train_pct, test_subpct = test_subpct, seed = seed)
+    rec_dict = {k:v for (k,v) in arg_dict.items()}
+    rec_dict['slurm_job'] = arg_dict['slurm_job']
     arg_dict.update({'train_ds': train_ds, 'valid_ds': valid_ds})
 
     #### running the optuna study
@@ -349,10 +355,12 @@ if __name__ == "__main__":
     rdb_string_url = "sqlite:///" + os.path.join(os.path.dirname(__file__), 'db', f'{study_name}.db')
 
     study = optuna.create_study(study_name=study_name, storage=rdb_string_url, direction='maximize')
-    flat_toml_dict = None
     if using_toml == True:
-       flat_toml_dict = UP.flatten_toml_dict(toml_dict)
-       UP.record_dict_in_study(study, flat_toml_dict)
+        flat_toml_dict = UP.flatten_toml_dict(toml_dict)
+        rec_dict.update(flat_toml_dict)
+        UP.record_dict_in_study(study, rec_dict)
+
+    rec_dict['study_name'] = study_name
     study.set_user_attr('classify_by_subcategory', arg_dict['classify_by_subcategory'])
     study.set_user_attr('thresh', THRESH)
     obj_dict = {k:v for (k,v) in arg_dict.items() if k not in drop_keys}
@@ -365,7 +373,7 @@ if __name__ == "__main__":
     nep = None
     nep_callback = None
     if to_nep == True:
-        nep, nep_callback = TN.init(param_dict=flat_toml_dict, plots_update_freq = plots_update_freq, log_plot_slice = log_plot_slice, log_plot_contour = log_plot_contour)
+        nep, nep_callback = TN.init(param_dict=rec_dict, plots_update_freq = plots_update_freq, log_plot_slice = log_plot_slice, log_plot_contour = log_plot_contour)
         callbacks.append(nep_callback)
 
     study.optimize(objective, n_trials = num_trials, callbacks=callbacks)
