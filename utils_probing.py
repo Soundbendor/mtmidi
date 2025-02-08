@@ -99,7 +99,7 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
 
     cm = []
     cm_path = []
-    if save_confat == True:
+    if save_confmat == True:
         cm = SKM.confusion_matrix(class_truths, class_preds)
         cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=PL.class_arr)
         fig, ax = plt.subplots(figsize=(figsize,figsize))
