@@ -95,6 +95,10 @@ def get_nearest_poly(normed_pred, thresh=0.001, as_str = True):
 def get_idx_from_polystr(_pstr):
     return polystr_to_idx[_pstr]
 
+def get_rev_idx_from_polystr(_pstr):
+    return rev_polystr_to_idx[_pstr]
+
+
 def get_ratio(pnums):
     ratio = float(pnums[0])/pnums[1]
     return ratio
@@ -105,7 +109,7 @@ def get_outname(inst1, inst2, cur_bpm, rvb_lvl, offset_ms, pstr, with_ext= True)
         outname = f"{outname}.mid"
     return outname
 
-def init(poly_df):
+def init(poly_df, is_classification):
 
     global ptsort, ptsort_norm, num_poly, smallest_ratio, biggest_ratio, ratio_gap, normalize_ratio
     global polystr_to_idx, pair_to_str, rev_polystr_to_idx, class_arr, reg_polystr_to_idx, reg_pair_to_str, reg_rev_polystr_to_idx, reg_class_arr
@@ -140,3 +144,9 @@ def init(poly_df):
     reg_rev_polystr_to_idx = {i:x for (x,i) in reg_polystr_to_idx.items()}
     reg_class_arr = [k for (k,v) in reg_polystr_to_idx.items()]
 
+    ret = None
+    if is_classification == True: 
+        ret = poly_df.with_columns(label_idx=pl.col('poly').replace_strict(polystr_to_idx).cast(int))
+    else:
+        ret = poly_df.with_columns(label_idx=pl.col('poly').replace_strict(reg_polystr_to_idx).cast(int))
+    return ret

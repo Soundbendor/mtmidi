@@ -321,7 +321,7 @@ if __name__ == "__main__":
     out_dim = 1
     pl_classdict = None
     if arg_dict['dataset'] == 'polyrhythms':
-        PL.init(cur_df)
+        cur_df = PL.init(cur_df, arg_dict['is_classification'])
         if arg_dict['is_classification'] == True:
             out_dim = PL.num_poly
 
@@ -340,7 +340,7 @@ if __name__ == "__main__":
     if arg_dict['dataset'] == "polyrhythms":
 
         cur_ds = PolyrhythmsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, classification = arg_dict["is_classification"], classdict = pl_classdict, norm_labels = True, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit)
-        label_arr = cur_ds.all_pstr
+        label_arr = cur_ds.all_idx
     elif arg_dict['dataset'] == 'tempos':
         cur_ds = STHFTempiData(cur_df, embedding_type= arg_dict['embedding_type'], device=device, norm_labels = True, layer_idx= arg_dict['layer_idx'], class_binsize = TEMPOS_CLASS_BINSIZE, num_classes = TP.num_classes, bpm_class_mapper = TP.bpm_class_mapper, is_64bit = is_64bit)
         label_arr = cur_ds.all_classes

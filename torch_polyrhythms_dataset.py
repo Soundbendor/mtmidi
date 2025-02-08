@@ -23,10 +23,8 @@ class PolyrhythmsData(TUD.Dataset):
         # also map the 'poly' to label indices
 
         self.data = cur_df.sort('norm_ratio', descending=False)
-
-        #.with_columns(pl.col('poly').map_elements(PL.get_idx_from_polystr, return_dtype=int).alias('label_idx'))
-
         self.all_pstr = self.data.select(['poly']).to_numpy().flatten()
+        self.all_idx = self.data.select(['label_idx']).to_numpy().flatten()
         self.all_offset_lvls = self.data.select(['offset_lvl']).to_numpy().flatten()
         self.total_num = self.data['name'].count()
         #self.data_folder = os.path.join(UM.by_projpath('acts'), 'polyrhythms', embedding_type)
