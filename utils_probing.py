@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import polyrhythms as PL
 import dynamics as DYN
-import chords
+import chords7 as CH7
 import matplotlib.pyplot as plt
 import util as UM
 import neptune
@@ -21,6 +21,7 @@ res_dir = UM.by_projpath("res", make_dir = True)
 nep_dont_log = set(['confmat'])
 # dont need to log this either, use to upload
 nep_paths = set(['confmat_path'])
+
 def init(class_binsize):
     TP.init(class_binsize)
 
@@ -66,6 +67,16 @@ def flatten_toml_dict(toml_dict):
             ret[rec_str] = v
     return ret
 
+def get_df(dataset, exclude_arr):
+    csvpath = None
+    if dataset in UM.new_datasets:
+        csvpath = os.path.join(UM.by_projpath('csv', make_dir = False), f'{dataset}.csv')
+    elif dataset in UM.hf_datasets:
+        csvpath = os.path.join(UM.by_projpath('hf_csv', make_dir = False), f'{dataset}.csv')
+    cur_data = pl.read_csv(csvpath)
+    cur_data = exclude_col_vals_in_data(cur_data, exclude_arr)
+    return cur_data
+
 def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_by_subcategory = False, save_confmat=True):
     acc = SKM.accuracy_score(truths, preds)
     f1_macro = SKM.f1_score(truths, preds, average='macro')
@@ -82,9 +93,9 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
         else:
             class_truths = [DYN.dyn_idx_to_category[x] for x in truths]
             class_preds = [DYN.dyn_idx_to_category[x] for x in preds]
-    elif dataset == 'chords':
-        class_truths = [chords.idx_to_quality[x] for x in truths]
-        class_preds = [chords.idx_to_quality[x] for x in preds]
+    elif dataset == 'chords7':
+        class_truths = [CH7.idx_to_quality[x] for x in truths]
+        class_preds = [CH7.idx_to_quality[x] for x in preds]
 
     cm = []
     cm_path = []

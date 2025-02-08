@@ -12,21 +12,19 @@ import utils_probing as UP
 
 # exclude_polys should be in pstr format
 class PolyrhythmsData(TUD.Dataset):
-    def __init__(self, embedding_type = 'mg_small_h', device='cpu', classification = True, exclude = [], norm_labels = True, layer_idx=-1, is_64bit = True):
+    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', classification = True, classdict={}, norm_labels = True, layer_idx=-1, is_64bit = True):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
-        csvfile = os.path.join(UM.by_projpath('csv', make_dir = False), 'polyrhythms.csv')
-        cur_data = pl.scan_csv(csvfile).collect()
         
 
         # filter out exclude_polys and exclude_offset_lvls (keep given matching both nonexcluded) 
         # also sort by norm_ratio ascending
         # also map the 'poly' to label indices
 
-        cur_data = UP.exclude_col_vals_in_data(cur_data, exclude)
+        self.data = cur_df.sort('norm_ratio', descending=False)
 
-        self.data = cur_data.sort('norm_ratio', descending=False).with_columns(pl.col('poly').map_elements(PL.get_idx_from_polystr, return_dtype=int).alias('label_idx'))
+        #.with_columns(pl.col('poly').map_elements(PL.get_idx_from_polystr, return_dtype=int).alias('label_idx'))
 
         self.all_pstr = self.data.select(['poly']).to_numpy().flatten()
         self.all_offset_lvls = self.data.select(['offset_lvl']).to_numpy().flatten()
@@ -35,7 +33,7 @@ class PolyrhythmsData(TUD.Dataset):
         self.coldict = {x:i for (i,x) in enumerate(self.data.columns)}
         self.classification = classification
         self.norm_labels = norm_labels
-        self.classdict = PL.polystr_to_idx
+        self.classdict = classdict
     def __len__(self):
         return self.data['name'].count()
 

@@ -13,11 +13,11 @@ import utils_probing as UP
 import torch_nep as TN
 import polyrhythms as PL
 import dynamics as DYN
-import chords
+import chords7 as CH7
 import tempi as TP
 from torch_polyrhythms_dataset import PolyrhythmsData
 from torch_dynamics_dataset import DynamicsData
-from torch_chords_dataset import ChordsData
+from torch_chords7_dataset import Chords7Data
 from hf_tempi_dataset import STHFTempiData
 
 # global declarations (hacky) to save model state dicts
@@ -293,23 +293,11 @@ if __name__ == "__main__":
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
-    if arg_dict['debug'] == True:
-        exit()
     # model type is slightly distinct from embedding_type (which is also shorthand) because musicgen-encoder uses musicgen-large
     model_type = UM.get_model_type(arg_dict['embedding_type'])  
     model_layer_dim = UM.get_layer_dim(arg_dict['embedding_type'])
     
-    out_dim = 1
-    if arg_dict['dataset'] == 'polyrhythms':
-        if arg_dict['is_classification'] == True:
-            out_dim = PL.num_poly
-    elif arg_dict['dataset'] == 'dynamics':
-        if arg_dict['classify_by_subcategory'] == True:
-            out_dim = DYN.num_subcategories
-        else:
-            out_dim = DYN.num_categories
-
-
+   
     #### some variable definitions
     cur_ds = None
     label_arr = None
@@ -326,22 +314,44 @@ if __name__ == "__main__":
         toml_params = UP.get_toml_params(toml_dict)
         _thresh = toml_params.get('thresh', THRESH)
 
+
+    # get dataframe from csv file
+    cur_df=UP.get_df(arg_dict['dataset'], exclude)
+    
+    out_dim = 1
+    pl_classdict = None
+    if arg_dict['dataset'] == 'polyrhythms':
+        PL.init(cur_df)
+        if arg_dict['is_classification'] == True:
+            out_dim = PL.num_poly
+
+            pl_classdict = PL.polystr_to_idx
+        else:
+            pl_classdict = PL.reg_polystr_to_idx
+    elif arg_dict['dataset'] == 'dynamics':
+        if arg_dict['classify_by_subcategory'] == True:
+            out_dim = DYN.num_subcategories
+        else:
+            out_dim = DYN.num_categories
+
     arg_dict.update({'thresh': _thresh, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
+
     #### load dataset(s)
     if arg_dict['dataset'] == "polyrhythms":
-       cur_ds = PolyrhythmsData(embedding_type = arg_dict['embedding_type'], device=device, classification = arg_dict["is_classification"], exclude = exclude, norm_labels = True, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit)
-       label_arr = cur_ds.all_pstr
+
+        cur_ds = PolyrhythmsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, classification = arg_dict["is_classification"], classdict = pl_classdict, norm_labels = True, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit)
+        label_arr = cur_ds.all_pstr
     elif arg_dict['dataset'] == 'tempos':
-       cur_ds = STHFTempiData(embedding_type= arg_dict['embedding_type'], device=device, norm_labels = True, layer_idx= arg_dict['layer_idx'], class_binsize = TEMPOS_CLASS_BINSIZE, num_classes = TP.num_classes, bpm_class_mapper = TP.bpm_class_mapper, is_64bit = is_64bit)
-       label_arr = cur_ds.all_classes
+        cur_ds = STHFTempiData(cur_df, embedding_type= arg_dict['embedding_type'], device=device, norm_labels = True, layer_idx= arg_dict['layer_idx'], class_binsize = TEMPOS_CLASS_BINSIZE, num_classes = TP.num_classes, bpm_class_mapper = TP.bpm_class_mapper, is_64bit = is_64bit)
+        label_arr = cur_ds.all_classes
     elif arg_dict['dataset'] == 'dynamics':
-        cur_ds = DynamicsData(embedding_type = arg_dict['embedding_type'], device=device, exclude = exclude, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit)
+        cur_ds = DynamicsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit)
         if arg_dict['classify_by_subcategory'] == True:
             label_arr = cur_ds.all_dyn_subcategories
         else:
             label_arr = cur_ds.all_dyn_categories
-    elif arg_dict['dataset'] == 'chords':
-        cur_ds = ChordsData(embedding_type = arg_dict['embedding_type'], device=device, exclude = exclude, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit)
+    elif arg_dict['dataset'] == 'chords7':
+        cur_ds = Chords7Data(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit)
         label_arr = cur_ds.all_quality
 
     train_ds, valid_ds, test_ds = UP.get_train_valid_test_subsets(cur_ds, label_arr, train_on_middle = arg_dict['train_on_middle'], train_pct = train_pct, test_subpct = test_subpct, seed = seed)
@@ -349,6 +359,8 @@ if __name__ == "__main__":
     rec_dict['slurm_job'] = arg_dict['slurm_job']
     arg_dict.update({'train_ds': train_ds, 'valid_ds': valid_ds})
 
+    if arg_dict['debug'] == True:
+        exit()
     #### running the optuna study
     cur_time = int(time.time() * 1000)
     study_name = f"{cur_time}-{args.dataset}-{args.embedding_type}-{args.num_trials}"
