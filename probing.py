@@ -106,7 +106,7 @@ def train_loop(model, opt_fn, loss_fn, train_ds, batch_size = 64, shuffle = True
         loss = None
         if is_classification == True:
             ipt, ground_truth = data
-            pred = model(ipt)
+            pred = model(ipt.float())
             loss = loss_fn(pred, ground_truth)
         else:
             ipt, ground_truth, ground_label = data
@@ -137,7 +137,7 @@ def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_
         loss = None
         if is_classification == True:
             ipt, ground_truth = data
-            pred = model(ipt)
+            pred = model(ipt.float())
             if loss_fn != None:
                 loss = loss_fn(pred, ground_truth)
             
