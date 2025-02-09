@@ -149,6 +149,19 @@ def get_embedding_shape(shorthand):
     layer_dim = act_layer_dim[longhand]
     shape = (num_layers, layer_dim)
     return shape
+   
+
+
+def save_npy(save_arr, fname, model_shorthand, acts_folder = 'acts', dataset='polyrhythms'):
+    actpath = by_projpath(acts_folder)
+    datapath = os.path.join(actpath, dataset)
+    modelpath = os.path.join(datapath, model_shorthand)
+    fpath = os.path.join(modelpath, fname)
+    if os.path.exists(datapath) == False:
+            os.makedirs(datapath)
+    if os.path.exists(modelpath) == False:
+        os.makedirs(modelpath)
+    np.save(fpath, save_arr, allow_pickle = True)
 
 # use_shape argument overrides shape getting (useful for baselines)
 def get_embedding_file(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', fname='', write = True, use_64bit = True, use_shape = None):
@@ -190,6 +203,25 @@ def embedding_file_to_torch(model_shorthand, acts_folder = 'acts', dataset='poly
         cur = emb_file.copy()
     v = torch.from_numpy(cur).to(device)
     return v
+
+def npy_to_torch(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', fname='', layer_idx = -1, use_64bit = True, device = 'cpu'):
+    actpath = by_projpath(acts_folder)
+    datapath = os.path.join(actpath, dataset)
+    modelpath = os.path.join(datapath, model_shorthand)
+    fpath = os.path.join(modelpath, fname)
+    arr = np.load(fpath, allow_pickle == True)
+    cur = None
+    if layer_idx >= 0:
+        cur = emb_file[layer_idx,:]
+    else:
+        cur = emb_file
+    if cur.dtype == np.float32:
+        if use_64bit == True:
+            cur = cur.astype(np.float64)
+    elif cur.dtype == np.float64:
+        if use_64bit == False:
+            cur = cur.astype(np.float32)
+    return torch.from_numpy(cur).to(device)
 
 
 with open(by_projpath('inst_list.csv'), 'r') as f:

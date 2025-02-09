@@ -14,7 +14,7 @@ import util as UM
 
 # class_binsize = bpms within int(bpm/10) go within this bin
 class STHFTempiData(torch.utils.data.Dataset):
-    def __init__(self, cur_df, embedding_type='mg_small_h', device='cpu', norm_labels = True, layer_idx=-1, class_binsize = 10, is_64bit = True, num_classes = -1, bpm_class_mapper = None):
+    def __init__(self, cur_df, embedding_type='mg_small_h', device='cpu', norm_labels = True, layer_idx=-1, class_binsize = 10, is_64bit = True, num_classes = -1, bpm_class_mapper = None, save_ext = 'dat'):
         self.seed = 5
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
@@ -38,6 +38,7 @@ class STHFTempiData(torch.utils.data.Dataset):
         self.norm_labels = norm_labels
         #self.data_folder = os.path.join(UM.by_projpath('acts'),'tempi', embedding_type)
         self.layer_idx = layer_idx 
+        self.save_ext = save_ext
     def __len__(self):
         return self.data['path'].count()
 
@@ -48,15 +49,21 @@ class STHFTempiData(torch.utils.data.Dataset):
         cur_truth = None
         cur_row = self.data.row(idx)
         cur_name = cur_row[self.coldict['name']]
-        cur_fname = f'{cur_name}.dat'
         cur_reg = None
         cur_truth = cur_row[self.coldict['bpm_class']]
+        cur_arr = None
         if self.norm_labels == True:
             cur_reg = cur_row[self.coldict['norm_bpm']]
         else:
             cur_reg = cur_row[self.coldict['bpm']]
 
-        cur_arr =  UM.embedding_file_to_torch(self.embedding_type, acts_folder = 'acts', dataset='tempos', fname=cur_fname, layer_idx = self.layer_idx, device = self.device, use_64bit = self.is_64bit)
+        if self.save_ext == 'dat':
+            cur_fname = f'{cur_name}.dat'
+            cur_arr =  UM.embedding_file_to_torch(self.embedding_type, acts_folder = 'acts', dataset='tempos', fname=cur_fname, layer_idx = self.layer_idx, device = self.device, use_64bit = self.is_64bit)
+
+        else:
+            cur_fname = f'{cur_name}.npy'
+            cur_arr = UM.npy_to_torch(self.embedding_type, acts_folder = 'acts', dataset='tempos', fname=cur_fname, layer_idx = self.layer_idx, use_64bit = self.is_64bit, device = self.device)
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
         return cur_arr, cur_reg, cur_truth
 

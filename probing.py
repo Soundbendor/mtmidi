@@ -284,12 +284,13 @@ if __name__ == "__main__":
     parser.add_argument("-tos", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory (for dynamics)")
     parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
+    parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
 
     # obj_dict is for passing to objective function, is arg_dict without drop_keys
     # rec_dict is for passing to neptune and study (has drop keys)
     # arg_dict just has everything
-    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'debug', 'slurm_job'])
+    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'debug', 'memmap', 'slurm_job'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -336,22 +337,27 @@ if __name__ == "__main__":
 
     arg_dict.update({'thresh': _thresh, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
 
+    save_ext = None
+    if arg_dict['memmap'] == True:
+        save_ext = 'dat'
+    else:
+        save_ext = 'npy'
     #### load dataset(s)
     if arg_dict['dataset'] == "polyrhythms":
 
-        cur_ds = PolyrhythmsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, classification = arg_dict["is_classification"], classdict = pl_classdict, norm_labels = True, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit)
+        cur_ds = PolyrhythmsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, classification = arg_dict["is_classification"], classdict = pl_classdict, norm_labels = True, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit, save_ext = save_ext)
         label_arr = cur_ds.all_idx
     elif arg_dict['dataset'] == 'tempos':
-        cur_ds = STHFTempiData(cur_df, embedding_type= arg_dict['embedding_type'], device=device, norm_labels = True, layer_idx= arg_dict['layer_idx'], class_binsize = TEMPOS_CLASS_BINSIZE, num_classes = TP.num_classes, bpm_class_mapper = TP.bpm_class_mapper, is_64bit = is_64bit)
+        cur_ds = STHFTempiData(cur_df, embedding_type= arg_dict['embedding_type'], device=device, norm_labels = True, layer_idx= arg_dict['layer_idx'], class_binsize = TEMPOS_CLASS_BINSIZE, num_classes = TP.num_classes, bpm_class_mapper = TP.bpm_class_mapper, is_64bit = is_64bit, save_ext = save_ext)
         label_arr = cur_ds.all_classes
     elif arg_dict['dataset'] == 'dynamics':
-        cur_ds = DynamicsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit)
+        cur_ds = DynamicsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, save_ext = save_ext)
         if arg_dict['classify_by_subcategory'] == True:
             label_arr = cur_ds.all_dyn_subcategories
         else:
             label_arr = cur_ds.all_dyn_categories
     elif arg_dict['dataset'] == 'chords7':
-        cur_ds = Chords7Data(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit)
+        cur_ds = Chords7Data(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,save_ext = save_ext)
         label_arr = cur_ds.all_quality
 
     train_ds, valid_ds, test_ds = UP.get_train_valid_test_subsets(cur_ds, label_arr, train_on_middle = arg_dict['train_on_middle'], train_pct = train_pct, test_subpct = test_subpct, seed = seed)

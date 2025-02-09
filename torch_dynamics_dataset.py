@@ -14,7 +14,7 @@ import utils_probing as UP
 # either classify by category or subcategory
 # example categories to exclude: dyn_pair, dyn_category, dyn_subcategory, offset_lvl
 class DynamicsData(TUD.Dataset):
-    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=-1, classify_by_subcategory = False, is_64bit = True):
+    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=-1, classify_by_subcategory = False, save_ext = 'dat', is_64bit = True):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
@@ -41,6 +41,7 @@ class DynamicsData(TUD.Dataset):
         self.classify_by_subcategory = classify_by_subcategory
         self.num_categories = DYN.num_categories
         self.num_subcategories = DYN.num_subcategories
+        self.save_ext = save_ext
 
     def __len__(self):
         return self.data['name'].count()
@@ -55,13 +56,17 @@ class DynamicsData(TUD.Dataset):
         cur_truth = None
         cur_row = self.data.row(idx)
         cur_name = cur_row[self.coldict['name']]
-        cur_fname = f'{cur_name}.dat'
+        cur_arr = None
         if self.classify_by_subcategory == True:
             cur_truth = cur_row[self.coldict['subcategory_idx']]
         else:
             cur_truth = cur_row[self.coldict['category_idx']]
-        cur_arr =  UM.embedding_file_to_torch(self.embedding_type, acts_folder = 'acts', dataset='dynamics', fname=cur_fname, layer_idx = self.layer_idx, device = self.device, use_64bit = self.is_64bit)
-
+        if self.save_ext == 'dat':
+            cur_fname = f'{cur_name}.dat'
+            cur_arr =  UM.embedding_file_to_torch(self.embedding_type, acts_folder = 'acts', dataset='dynamics', fname=cur_fname, layer_idx = self.layer_idx, device = self.device, use_64bit = self.is_64bit)
+        else:
+            cur_fname = f'{cur_name}.npy'
+            cur_arr = UM.npy_to_torch(self.embedding_type, acts_folder = 'acts', dataset='dynamics', fname=cur_fname, layer_idx = self.layer_idx, use_64bit = self.is_64bit, device = self.device)
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
         return cur_arr, cur_truth
 

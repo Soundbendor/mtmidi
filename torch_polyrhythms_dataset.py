@@ -12,7 +12,7 @@ import utils_probing as UP
 
 # exclude_polys should be in pstr format
 class PolyrhythmsData(TUD.Dataset):
-    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', classification = True, classdict={}, norm_labels = True, layer_idx=-1, is_64bit = True):
+    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', classification = True, classdict={}, norm_labels = True, layer_idx=-1, is_64bit = True, save_ext = 'dat'):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
@@ -32,6 +32,7 @@ class PolyrhythmsData(TUD.Dataset):
         self.classification = classification
         self.norm_labels = norm_labels
         self.classdict = classdict
+        self.save_ext = save_ext
     def __len__(self):
         return self.data['name'].count()
 
@@ -42,16 +43,21 @@ class PolyrhythmsData(TUD.Dataset):
         cur_truth = None
         cur_row = self.data.row(idx)
         cur_name = cur_row[self.coldict['name']]
-        cur_fname = f'{cur_name}.dat'
         cur_reg = None
         cur_label = cur_row[self.coldict['poly']]
         cur_truth = self.classdict[cur_label]
+        cur_arr = None
         if self.classification == False:
             if self.norm_labels == True:
                 cur_reg = cur_row[self.coldict['norm_ratio']]
             else:
                 cur_reg = cur_row[self.coldict['ratio']]
-        cur_arr =  UM.embedding_file_to_torch(self.embedding_type, acts_folder = 'acts', dataset='polyrhythms', fname=cur_fname, layer_idx = self.layer_idx, device = self.device, use_64bit = self.is_64bit)
+        if self.save_ext == "dat":
+            cur_fname = f'{cur_name}.dat'
+            cur_arr =  UM.embedding_file_to_torch(self.embedding_type, acts_folder = 'acts', dataset='polyrhythms', fname=cur_fname, layer_idx = self.layer_idx, device = self.device, use_64bit = self.is_64bit)
+        else:
+            cur_fname = f'{cur_name}.npy'
+            cur_arr = UM.npy_to_torch(self.embedding_type, acts_folder = 'acts', dataset='polyrhythms', fname=cur_fname, layer_idx = self.layer_idx, use_64bit = self.is_64bit, device = self.device)
 
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
         if self.classification == True:

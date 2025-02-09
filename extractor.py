@@ -165,7 +165,7 @@ def get_jukebox_layer_embeddings(fpath=None, audio = None, layers=list(range(1,7
     jml.lib.empty_cache()
     return np.array([acts[i] for i in layers])
 
-def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, normalize = True, dur = 4., use_64bit = True, logfile_handle=None, recfile_handle = None):
+def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, normalize = True, dur = 4., use_64bit = True, logfile_handle=None, recfile_handle = None, memmap = True):
     cur_model_type = um.get_model_type(cur_act_type)
     model_sr = um.model_sr[cur_model_type]
     model_longhand = um.model_longhand[cur_act_type]
@@ -179,6 +179,9 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
     text = ""
     wav_path = os.path.join(um.by_projpath('wav'), cur_dataset)
     cur_pathlist = None
+    out_ext = 'dat'
+    if memmap == False:
+        out_ext = 'npy'
     if using_hf == True:
         cur_pathlist = uhf.load_syntheory_train_dataset(cur_dataset)
     else:
@@ -203,18 +206,24 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
 
     #print('file,is_extracted', file=rf)
     for fidx,f in enumerate(cur_pathlist):
-        fdict = path_handler(f, model_sr = model_sr, wav_path = wav_path, normalize = normalize, dur = dur,model_type = cur_model_type, using_hf = using_hf, logfile_handle=logfile_handle)
+        fdict = path_handler(f, model_sr = model_sr, wav_path = wav_path, normalize = normalize, dur = dur,model_type = cur_model_type, using_hf = using_hf, logfile_handle=logfile_handle, out_ext = out_ext)
         #outpath = os.path.join(out_dir, outname)
         out_fname = fdict['out_fname']
         fpath = fdict['in_fpath']
         audio = fdict['audio']
         # store by cur_act_type (model shorthand)
-        emb_file = um.get_embedding_file(cur_act_type, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = use_64bit, write=True, use_shape = None)
+        emb_file = None
+        np_arr = None
+        if memmap == True:
+            emb_file = um.get_embedding_file(cur_act_type, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = use_64bit, write=True, use_shape = None)
         if cur_model_type == 'jukebox':
             print(f'--- extracting jukebox for {f} with {layers_per} layers at a time ---', file=logfile_handle)
             # note that layers are 1-indexed in jukebox
             # so let's 0-idx and then add 1 when feeding into jukebox fn
             layer_gen = (list(range(l, min(um.model_num_layers['jukebox'], l + layers_per))) for l in range(0,um.model_num_layers['jukebox'], layers_per)) 
+            if memmap == False:
+                np_shape = um.get_embedding_shape(cur_act_type)
+                np_arr = np.zeros(np_shape)
             if layer_num > 0:
                 # 0-idx from 1-idxed argt
                 layer_gen = ([l-1] for l in [layer_num])
@@ -223,29 +232,41 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
                 j_idx = [l+1 for l in layer_arr]
                 print(f'extracting layers {j_idx}', file=logfile_handle)
                 rep_arr = get_jukebox_layer_embeddings(fpath=fpath, audio = audio, layers=j_idx)
-                emb_file[layer_arr,:] = rep_arr
-                emb_file.flush()
+                if memmap == True:
+                    emb_file[layer_arr,:] = rep_arr
+                    emb_file.flush()
+                else:
+                    np_arr[layer_arr,:] = rep_arr
+                    # should be the last layer to save
+                    if um.model_num_layers['jukebox'] in layer_gen:
+                        um.save_npy(np_arr, out_fname, cur_act_type, acts_folder = acts_folder, dataset=cur_dataset)
         else:
             audio_ipt = fdict['audio']
             if model_longhand == "musicgen-encoder":
                 print(f'--- extracting musicgen-encoder for {f} ---', file=logfile_handle)
 
                 rep_arr = get_musicgen_encoder_embeddings(model, proc, audio_ipt, meanpool = True, model_sr = model_sr, device=device)
-                emb_file[:,:] = rep_arr
-                emb_file.flush()
+                if memmap == True:
+                    emb_file[:,:] = rep_arr
+                    emb_file.flush()
+                else:
+                    um.save_npy(rep_arr, out_fname, cur_act_type, acts_folder = acts_folder, dataset=cur_dataset)
             else:
 
                 print(f'--- extracting musicgen_lm for {f} ---', file=logfile_handle)
                 rep_arr =  get_musicgen_lm_hidden_states(model, proc, audio_ipt, text="", meanpool = True, model_sr = model_sr, device=device)
-                emb_file[:,:] = rep_arr
-                emb_file.flush()
+                if memmap == True:
+                    emb_file[:,:] = rep_arr
+                    emb_file.flush()
+                else:
+                    um.save_npy(rep_arr, out_fname, cur_act_type, acts_folder = acts_folder, dataset=cur_dataset)
         fname = fdict['fname']
         print(f'{fname},1', file=recfile_handle)
 
 
 
 # note that these are 32bit
-def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile_handle=None, recfile_handle = None):
+def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile_handle=None, recfile_handle = None, memmap = True):
     cur_model_type = um.get_model_type(cur_act_type)
     model_sr = um.model_sr[cur_model_type]
     model_longhand = um.model_longhand[cur_act_type]
@@ -259,6 +280,11 @@ def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile
     text = ""
     wav_path = os.path.join(um.by_projpath('wav'), cur_dataset)
     cur_pathlist = None
+
+    out_ext = 'dat'
+    if memmap == False:
+        out_ext = 'npy'
+
     if using_hf == True:
         cur_pathlist = uhf.load_syntheory_train_dataset(cur_dataset)
     else:
@@ -267,7 +293,7 @@ def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile
     # original was 22050 but why not double
     sr = 44100
     for fidx,f in enumerate(cur_pathlist):
-        fdict = path_handler(f, model_sr = sr, wav_path = wav_path, normalize = normalize, dur = dur,model_type = 'baseline', using_hf = using_hf, logfile_handle=logfile_handle)
+        fdict = path_handler(f, model_sr = sr, wav_path = wav_path, normalize = normalize, dur = dur,model_type = 'baseline', using_hf = using_hf, logfile_handle=logfile_handle, out_ext = out_ext)
         #outpath = os.path.join(out_dir, outname)
         out_fname = fdict['out_fname']
         fpath = fdict['in_fpath']
@@ -281,9 +307,12 @@ def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile
         for _act in acts_to_get:
             want_feat = _act.split("_")[1]
             ft_vec = get_baseline_features(audio, sr=sr, feat_type=want_feat)
-            emb_file = um.get_embedding_file(want_feat, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = False, write=True, use_shape = ft_vec.shape)
-            emb_file[:,:] = ft_vec
-            emb_file.flush()
+            if memmap == True:
+                emb_file = um.get_embedding_file(want_feat, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = False, write=True, use_shape = ft_vec.shape)
+                emb_file[:,:] = ft_vec
+                emb_file.flush()
+            else:
+                um.save_npy(ft_vec, out_fname, cur_act_type, acts_folder = acts_folder, dataset=cur_dataset)
         fname = fdict['fname']
         print(f'{fname},1', file=recfile_handle)
 
@@ -307,15 +336,19 @@ if __name__ == '__main__':
     parser.add_argument("-lp", "--layers_per", type=int, default=4, help="layers per loop if doing all layers (for jukebox)")
     parser.add_argument("-l", "--layer_num", type=int, default=-1, help="1-indexed layer num (all if < 0, for jukebox)")
     parser.add_argument("-n", "--normalize", type=strtobool, default=True, help="normalize audio")
+    parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="save as memmap, else save as npy")
+    parser.add_argument("-db", "--debug", type=strtobool, default=False, help="debug mode")
 
 
     args = parser.parse_args()
     use_64bit = args.use_64bit
     lnum = args.layer_num
     lper = args.layers_per
+    memmap = args.memmap
     normalize = args.normalize
     act_type = args.activation_type
     dataset = args.dataset
+    debug = args.debug
     # exit if not a "real" dataset
     logdir = um.by_projpath(subpath='log', make_dir = True)
     timestamp = int(time.time() * 1000)
@@ -325,6 +358,8 @@ if __name__ == '__main__':
     rec_fname = get_print_name(dataset, act_type, is_csv = True, normalize = normalize, timestamp = timestamp)
     log_fpath = os.path.join(logdir, log_fname)
     rec_fpath = os.path.join(logdir, rec_fname)
+    if debug == True:
+        exit()
     if (dataset in um.all_datasets) == False:
         sys.exit('not a dataset')
     else:
@@ -332,8 +367,8 @@ if __name__ == '__main__':
         rf = open(rec_fpath, 'w')
         print(f'=== running extraction for {dataset} with {act_type} at {timestamp} ===', file=lf)
         if 'baseline' in act_type:
-            get_baselines(act_type, dataset, normalize=normalize, dur = dur, logfile_handle = lf, recfile_handle =rf)
+            get_baselines(act_type, dataset, normalize=normalize, dur = dur, logfile_handle = lf, recfile_handle =rf, memmap = memmap)
         else:
-            get_embeddings(act_type, dataset, layers_per = lper, layer_num = lnum, normalize = normalize, dur = dur, use_64bit = use_64bit, logfile_handle=lf, recfile_handle=rf)
+            get_embeddings(act_type, dataset, layers_per = lper, layer_num = lnum, normalize = normalize, dur = dur, use_64bit = use_64bit, logfile_handle=lf, recfile_handle=rf, memmap = memmap)
         lf.close()
         rf.close()
