@@ -110,6 +110,8 @@ pitched_inst_to_use = []
 # https://stackoverflow.com/questions/4934806/how-can-i-find-scripts-directory
 script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 
+
+
 def by_projpath(subpath=None,make_dir = False):
     cur_path = os.path.dirname(os.path.realpath(__file__))
     if subpath != None:
@@ -118,6 +120,31 @@ def by_projpath(subpath=None,make_dir = False):
             os.makedirs(cur_path)
     return cur_path
 
+def get_sorted_contents(cur_dir, is_relative = True):
+    file_dir = None
+    if is_relative == True:
+        #file_dir = os.path.join(script_dir, cur_dir)
+        file_dir = by_projpath(subpath=cur_dir, make_dir = False)
+    else:
+        file_dir = cur_dir
+    files = [os.path.join(file_dir, x) for x in os.listdir(file_dir)]
+    file_sort = sorted(files, key = os.path.getmtime)
+    return file_sort
+
+def remove_latest_file(cur_dir, is_relative = True):
+    file_sort = get_sorted_contents(cur_dir, is_relative=is_relative)
+    if len(file_sort) > 0:
+        os.remove(file_sort[-1])
+    return file_sort[:-1]
+
+def get_basename(file, with_ext = True):
+    if with_ext == True:
+        return os.path.basename(file)
+    else:
+        return os.path.splitext(os.path.basename(file))[0]
+
+
+
 def get_model_type(shorthand):
     return model_type[model_longhand[shorthand]]
 
@@ -125,6 +152,7 @@ def get_layer_dim(shorthand):
     model_lh = model_longhand[shorthand]
     return act_layer_dim[model_lh]
 
+    
 def get_embedding_num_layers(shorthand):
     longhand = model_longhand[shorthand]
     mtype = model_type[longhand]
@@ -151,23 +179,27 @@ def get_embedding_shape(shorthand):
     return shape
    
 
-
-def save_npy(save_arr, fname, model_shorthand, acts_folder = 'acts', dataset='polyrhythms'):
-    actpath = by_projpath(acts_folder)
-    datapath = os.path.join(actpath, dataset)
+def get_model_act_path(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', return_relative = False, make_dir = False):
+    datapath = None
+    if return_relative == False:
+        actpath = by_projpath(acts_folder,make_dir = make_dir)
+        datapath = os.path.join(actpath, dataset)
+    else:
+        datapath = acts_folder
     modelpath = os.path.join(datapath, model_shorthand)
+    if os.path.exists(modelpath) == False and make_dir == True:
+            os.makedirs(modelpath)
+    return modelpath
+
+
+def save_npy(save_arr, fname, model_shorthand, acts_folder = 'acts', dataset='polyrhythms', make_dir = True):
+    modelpath = get_model_act_path(model_shorthand, acts_folder = acts_folder, dataset = dataset, return_relative = False, make_dir = make_dir)
     fpath = os.path.join(modelpath, fname)
-    if os.path.exists(datapath) == False:
-            os.makedirs(datapath)
-    if os.path.exists(modelpath) == False:
-        os.makedirs(modelpath)
     np.save(fpath, save_arr, allow_pickle = True)
 
 # use_shape argument overrides shape getting (useful for baselines)
 def get_embedding_file(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', fname='', write = True, use_64bit = True, use_shape = None):
-    actpath = by_projpath(acts_folder)
-    datapath = os.path.join(actpath, dataset)
-    modelpath = os.path.join(datapath, model_shorthand)
+    modelpath = get_model_act_path(model_shorthand, acts_folder = acts_folder, dataset = dataset, return_relative = False, make_dir = write)
     fpath = os.path.join(modelpath, fname)
     fp = None
     dtype = 'float32'
@@ -180,13 +212,6 @@ def get_embedding_file(model_shorthand, acts_folder = 'acts', dataset='polyrhyth
     if use_64bit == True:
         dtype = 'float64'
     if write == True:
-        if os.path.exists(datapath) == False:
-            os.makedirs(datapath)
-        if os.path.exists(modelpath) == False:
-            os.makedirs(modelpath)
-
-
-
         if os.path.isfile(fpath) == True:
             mode = 'r+'
         else:

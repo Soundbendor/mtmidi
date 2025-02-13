@@ -165,7 +165,7 @@ def get_jukebox_layer_embeddings(fpath=None, audio = None, layers=list(range(1,7
     jml.lib.empty_cache()
     return np.array([acts[i] for i in layers])
 
-def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, normalize = True, dur = 4., use_64bit = True, logfile_handle=None, recfile_handle = None, memmap = True):
+def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, normalize = True, dur = 4., use_64bit = True, logfile_handle=None, recfile_handle = None, memmap = True, pickup = False):
     cur_model_type = um.get_model_type(cur_act_type)
     model_sr = um.model_sr[cur_model_type]
     model_longhand = um.model_longhand[cur_act_type]
@@ -205,7 +205,18 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
         model_sr = model.config.audio_encoder.sampling_rate
 
     #print('file,is_extracted', file=rf)
+
+    # existing files removing latest (since it may be partially written) and removing extension for each of checking
+    existing_name_set = None
+    if pickup == True:
+        _file_dir = um.get_model_act_path(cur_act_type, acts_folder = acts_folder, dataset=cur_dataset, return_relative = False, make_dir = False)
+        existing_files = um.remove_latest_file(_file_dir, is_relative = False)
+        existing_name_set = set([um.get_basename(_f, with_ext = False) for _f in existing_files])
     for fidx,f in enumerate(cur_pathlist):
+        if pickup == True:
+            cur_name = um.get_basename(f, with_ext = False)
+            if cur_name in existing_name_set:
+                continue
         fdict = path_handler(f, model_sr = model_sr, wav_path = wav_path, normalize = normalize, dur = dur,model_type = cur_model_type, using_hf = using_hf, logfile_handle=logfile_handle, out_ext = out_ext)
         #outpath = os.path.join(out_dir, outname)
         out_fname = fdict['out_fname']
@@ -266,7 +277,7 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
 
 
 # note that these are 32bit
-def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile_handle=None, recfile_handle = None, memmap = True):
+def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile_handle=None, recfile_handle = None, memmap = True, pickup = False):
     cur_model_type = um.get_model_type(cur_act_type)
     model_sr = um.model_sr[cur_model_type]
     model_longhand = um.model_longhand[cur_act_type]
@@ -292,7 +303,19 @@ def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile
     
     # original was 22050 but why not double
     sr = 44100
+
+    existing_name_set = None
+    if pickup == True:
+        _file_dir = um.get_model_act_path(cur_act_type, acts_folder = acts_folder, dataset=cur_dataset, return_relative = False, make_dir = False)
+        existing_files = um.remove_latest_file(_file_dir, is_relative = False)
+        existing_name_set = set([um.get_basename(_f, with_ext = False) for _f in existing_files])
+
     for fidx,f in enumerate(cur_pathlist):
+        if pickup == True:
+            cur_name = um.get_basename(f, with_ext = False)
+            if cur_name in existing_name_set:
+                continue
+
         fdict = path_handler(f, model_sr = sr, wav_path = wav_path, normalize = normalize, dur = dur,model_type = 'baseline', using_hf = using_hf, logfile_handle=logfile_handle, out_ext = out_ext)
         #outpath = os.path.join(out_dir, outname)
         out_fname = fdict['out_fname']
@@ -338,6 +361,7 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--normalize", type=strtobool, default=True, help="normalize audio")
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="save as memmap, else save as npy")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="debug mode")
+    parser.add_argument("-p", "--pickup", type=strtobool, default=False, help="pickup where script left off")
 
 
     args = parser.parse_args()
@@ -349,6 +373,7 @@ if __name__ == '__main__':
     act_type = args.activation_type
     dataset = args.dataset
     debug = args.debug
+    pickup = args.pickup
     # exit if not a "real" dataset
     logdir = um.by_projpath(subpath='log', make_dir = True)
     timestamp = int(time.time() * 1000)
@@ -367,8 +392,8 @@ if __name__ == '__main__':
         rf = open(rec_fpath, 'w')
         print(f'=== running extraction for {dataset} with {act_type} at {timestamp} ===', file=lf)
         if 'baseline' in act_type:
-            get_baselines(act_type, dataset, normalize=normalize, dur = dur, logfile_handle = lf, recfile_handle =rf, memmap = memmap)
+            get_baselines(act_type, dataset, normalize=normalize, dur = dur, logfile_handle = lf, recfile_handle =rf, memmap = memmap, pickup = pickup)
         else:
-            get_embeddings(act_type, dataset, layers_per = lper, layer_num = lnum, normalize = normalize, dur = dur, use_64bit = use_64bit, logfile_handle=lf, recfile_handle=rf, memmap = memmap)
+            get_embeddings(act_type, dataset, layers_per = lper, layer_num = lnum, normalize = normalize, dur = dur, use_64bit = use_64bit, logfile_handle=lf, recfile_handle=rf, memmap = memmap, pickup = pickup)
         lf.close()
         rf.close()
