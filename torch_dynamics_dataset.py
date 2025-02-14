@@ -26,8 +26,8 @@ class DynamicsData(TUD.Dataset):
         # map dyn_subcategory to idx
         self.data = cur_df.with_columns(
 
-                category_idx=pl.col('dyn_category').replace_strict(dyn_category_idx).cast(int),
-                subcategory_idx=pl.col('dyn_subcategory').replace_strict(dyn_subcategory_idx).cast(int))
+                category_idx=pl.col('dyn_category').replace_strict('dyn_category_idx').cast(int),
+                subcategory_idx=pl.col('dyn_subcategory').replace_strict('dyn_subcategory_idx').cast(int))
 
         self.all_dyn_pairs = self.data.select(['dyn_pair']).to_numpy().flatten()
         self.all_dyn_categories = self.data.select(['dyn_category']).to_numpy().flatten()

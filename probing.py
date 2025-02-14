@@ -212,7 +212,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     bs = trial.suggest_categorical('batch_size', [64,256])
     dropout = trial.suggest_categorical('dropout', [0.25, 0.5, 0.75])
     weight_decay = trial.suggest_categorical('l2_weight_decay', [-1, 1e-4, 1e-3])
-    num_epochs = trial.suggest_categorical('num_epochs', [50,100,250,500])
+    num_epochs = trial.suggest_categorical('num_epochs', [100,250])
     user_specify_layer_idx = layer_idx >= 0 
     lidx = None
     # -1 since 0-indexed
