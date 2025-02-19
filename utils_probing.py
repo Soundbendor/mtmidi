@@ -77,7 +77,8 @@ def get_df(dataset, exclude_arr):
     cur_data = exclude_col_vals_in_data(cur_data, exclude_arr)
     return cur_data
 
-def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_by_subcategory = False, save_confmat=True):
+def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_by_subcategory = False, save_confmat=True, file_basename = None):
+
     acc = SKM.accuracy_score(truths, preds)
     f1_macro = SKM.f1_score(truths, preds, average='macro')
     f1_micro = SKM.f1_score(truths, preds, average='micro')
@@ -105,15 +106,16 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
         fig, ax = plt.subplots(figsize=(figsize,figsize))
         cmd.plot(ax=ax)
         timestamp = int(time.time()*1000)
-
         cm_fname = f'{timestamp}-cm.png' 
+        if file_basename != None:
+            cm_fname = f'{file_basename}-cm.png'
         cm_path = os.path.join(res_dir, cm_fname)
         plt.savefig(cm_path)
         plt.clf()
     d = {'accuracy_score': acc, 'f1_macro': f1_macro, 'f1_micro': f1_micro, 'confmat': cm, 'confmat_path': cm_path}
     return d
 
-def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = 'polyrhythms',  held_out_classes = False, save_confmat = True, do_regression_classification = True):
+def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = 'polyrhythms',  held_out_classes = False, save_confmat = True, do_regression_classification = True, file_basename = None):
     mse = SKM.mean_squared_error(truths, preds)
     r2 = SKM.r2_score(truths, preds)
     mae = SKM.mean_absolute_error(truths, preds)
@@ -160,6 +162,8 @@ def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = '
         cmd.plot(ax=ax)
         timestamp = int(time.time()*1000)
         cm_fname = f'{timestamp}-cm.png' 
+        if file_basename != None:
+            cm_fname = f'{file_basename}-cm.png'
         cm_path = os.path.join(res_dir, cm_fname)
         plt.savefig(cm_path)
         plt.clf()
@@ -218,8 +222,12 @@ def print_metrics(results_dict, study_name, filehandle = None):
                 print(print_str, file=filehandle)
 
 
-
-     
+def save_results_to_study(study, results_dict):
+    for res_key, res_val in results_dict.items():
+        if res_key not in nep_dont_log:
+            study_key = f'test_{res_key}'
+            study.set_user_attr(study_key, res_val)
+                
 # log test results to neptune
 def neptune_log(nep, results_dict):
     for res_key, res_val in results_dict.items():
