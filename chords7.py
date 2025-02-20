@@ -24,6 +24,7 @@ chord_notes = {'major7': ['c4', 'e4', 'g4', 'b4'],
           'augminor7': ['c4', 'e4', 'gs4', 'bf4'],
           }
 
+num_chords = len(chord_notes.keys())
 chord_midi = {k:[mnc.note_to_midi(y) for y in v] for (k,v) in chord_notes.items()}
 
 quality_to_idx = {x:i for (i,x) in enumerate(chord_notes.keys())}

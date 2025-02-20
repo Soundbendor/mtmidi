@@ -334,6 +334,9 @@ if __name__ == "__main__":
             out_dim = DYN.num_subcategories
         else:
             out_dim = DYN.num_categories
+    
+    elif arg_dict['dataset'] == 'chords7':
+        out_dim = CH7.num_chords
 
     arg_dict.update({'thresh': _thresh, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
 

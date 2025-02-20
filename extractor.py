@@ -93,7 +93,7 @@ def get_baseline_features(audio, sr=22050, feat_type="concat"):
             else:
                 ft_vec = np.concatenate([ft_vec, copy.deepcopy(cur)])
     # make it a 1 x cur_dim vector for consistency (i think)
-    if ft_vec.shape < 2:
+    if len(ft_vec.shape) < 2:
         ft_vec = np.expand_dims(ft_vec,axis=0)
     return ft_vec
 
@@ -278,9 +278,9 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
 
 # note that these are 32bit
 def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile_handle=None, recfile_handle = None, memmap = True, pickup = False):
-    cur_model_type = um.get_model_type(cur_act_type)
-    model_sr = um.model_sr[cur_model_type]
-    model_longhand = um.model_longhand[cur_act_type]
+    #cur_model_type = um.get_model_type(cur_act_type)
+    #model_sr = um.model_sr[cur_model_type]
+    #model_longhand = um.model_longhand[cur_act_type]
     
     using_hf = cur_dataset in um.hf_datasets
     # musicgen stuff
@@ -324,8 +324,8 @@ def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile
         # store by 'baseline_mel','baseline_chroma','baseline_mfcc','baseline_concat'
         acts_to_get = set([])
         if cur_act_type == 'baseline_all':
-            acts_to_get = acts_to_get.union(UM.baseline_names)
-        elif cur_act_type in UM.baseline_names:
+            acts_to_get = acts_to_get.union(um.baseline_names)
+        elif cur_act_type in um.baseline_names:
             acts_to_get = acts_to_get.add(cur_act_type)
         for _act in acts_to_get:
             want_feat = _act.split("_")[1]
