@@ -55,13 +55,13 @@ def path_handler(f, using_hf=False, model_sr = 44100, wav_path = None, model_typ
 # concat = mel + chroma + mfcc
 def get_baseline_features(audio, sr=22050, feat_type="concat"):
     feat = []
-    if feat_type == "mel" or feat_type == "concat":
+    if feat_type == "baseline_mel" or feat_type == "baseline_concat":
         # mel spectrogram
         # https://librosa.org/doc/latest/generated/librosa.feature.melspectrogram.html
         cur_mel = lrf.melspectrogram(y=audio, sr=sr, n_fft=2048, hop_length = 512)
         # returns (N=1, n_mels, t)
         feat.append(cur_mel)
-    if feat_type == "chroma" or feat_type == "concat":
+    if feat_type == "baseline_chroma" or feat_type == "baseline_concat":
         # constant q chromagram
         # https://librosa.org/doc/0.10.2/generated/librosa.feature.chroma_cqt.html#librosa.feature.chroma_cqt
         # default fmin = 32.7
@@ -70,7 +70,7 @@ def get_baseline_features(audio, sr=22050, feat_type="concat"):
         cur_chroma = lrf.chroma_cqt(y=audio, sr=sr, hop_length=512)
         # returns (N=1, n_chroma, t)
         feat.append(cur_chroma)
-    if feat_type == "mfcc" or feat_type == "concat":
+    if feat_type == "baseline_mfcc" or feat_type == "baseline_concat":
         # mfcc
         # https://librosa.org/doc/0.10.2/generated/librosa.feature.mfcc.html#librosa.feature.mfcc
         # default 20 mfccs
@@ -281,7 +281,12 @@ def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile
     #cur_model_type = um.get_model_type(cur_act_type)
     #model_sr = um.model_sr[cur_model_type]
     #model_longhand = um.model_longhand[cur_act_type]
-    
+   
+    shape_path = um.get_baseline_shape_csv_path(cur_dataset)
+    shape_file  = open(shape_path, 'a')
+    is_shape_file_empty = um.is_file_empty(shape_file)
+    if is_shape_file_empty == True:
+        print('emb_type,fname,shape', file=shape_file)
     using_hf = cur_dataset in um.hf_datasets
     # musicgen stuff
     device = 'cpu'
@@ -328,16 +333,21 @@ def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile
         elif cur_act_type in um.baseline_names:
             acts_to_get = acts_to_get.add(cur_act_type)
         for _act in acts_to_get:
-            want_feat = _act.split("_")[1]
-            ft_vec = get_baseline_features(audio, sr=sr, feat_type=want_feat)
+            ft_vec = get_baseline_features(audio, sr=sr, feat_type=_act)
+            ft_shape = ft_vec.shape
+            ft_shape_str = um.get_shape_string(ft_shape, joiner='|')
             if memmap == True:
-                emb_file = um.get_embedding_file(want_feat, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = False, write=True, use_shape = ft_vec.shape)
+                emb_file = um.get_embedding_file(_act, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = False, write=True, use_shape = ft_shape)
                 emb_file[:,:] = ft_vec
                 emb_file.flush()
             else:
-                um.save_npy(ft_vec, out_fname, cur_act_type, acts_folder = acts_folder, dataset=cur_dataset)
+                um.save_npy(ft_vec, out_fname, _act, acts_folder = acts_folder, dataset=cur_dataset)
+
+            print(f'{_act},{out_fname},{ft_shape_str}', file=shape_file)
         fname = fdict['fname']
         print(f'{fname},1', file=recfile_handle)
+
+    shape_file.close()
 
 def get_print_name(dataset, act_type, is_csv = False, normalize = True, timestamp = 0):
     base_fname = f'{dataset}_{act_type}-{timestamp}'

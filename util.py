@@ -110,8 +110,6 @@ pitched_inst_to_use = []
 # https://stackoverflow.com/questions/4934806/how-can-i-find-scripts-directory
 script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 
-
-
 def by_projpath(subpath=None,make_dir = False):
     cur_path = os.path.dirname(os.path.realpath(__file__))
     if subpath != None:
@@ -119,6 +117,27 @@ def by_projpath(subpath=None,make_dir = False):
         if os.path.exists(cur_path) == False and make_dir == True:
             os.makedirs(cur_path)
     return cur_path
+
+emb_doc_dir = by_projpath(subpath='emb_doc', make_dir=True)
+
+def get_baseline_shape_csv_path(cur_dataset):
+    return os.path.join(emb_doc_dir, f'{cur_dataset}_baseline-shape.csv')
+
+# https://stackoverflow.com/questions/2507808/how-to-check-whether-a-file-is-empty-or-not
+def is_file_empty(file_handle):
+    is_empty = False
+    file_handle.seek(0, os.SEEK_END)
+    if file_handle.tell():
+        file_handle.seek(0)
+    else:
+        is_empty = True
+    return is_empty
+
+def get_shape_string(cur_shape, joiner='|'):
+    return joiner.join([str(x) for x in cur_shape])
+   
+def parse_shape_string(shape_str, joiner = '|'):
+    return tuple([int(x) for x in shape_str.split(joiner)])
 
 def get_sorted_contents(cur_dir, is_relative = True):
     file_dir = None
