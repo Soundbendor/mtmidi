@@ -28,7 +28,6 @@ global best_model_state_dict
 
 
 ### init stuff
-is_64bit = True # if embeddings are 64 bit
 train_pct = 0.7
 test_subpct = 0.5
 seed = 5
@@ -300,6 +299,10 @@ if __name__ == "__main__":
     
    
     #### some variable definitions
+
+    is_64bit = True # if embeddings are 64 bit
+    if arg_dict['embedding_type'] in UM.baseline_names:
+        is_64bit = False
     cur_ds = None
     label_arr = None
     train_on_middle = False 

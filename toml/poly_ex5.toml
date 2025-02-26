@@ -1,0 +1,3 @@
+[exclude]
+polydist = [7,8,9]
+offset_lvl = [1,2,3,4]
