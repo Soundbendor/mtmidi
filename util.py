@@ -171,7 +171,7 @@ def get_basename(file, with_ext = True):
 
 def get_model_type(shorthand):
     model_lh = model_longhand.get(shorthand, shorthand)
-    return model_type[model_lh]
+    return model_type.get(model_lh, model_lh)
 
 def get_layer_dim(shorthand):
     model_lh = model_longhand.get(shorthand, shorthand)
@@ -179,8 +179,8 @@ def get_layer_dim(shorthand):
 
     
 def get_embedding_num_layers(shorthand):
-    longhand = model_longhand[shorthand]
-    mtype = model_type[longhand]
+    longhand = model_longhand.get(shorthand, shorthand)
+    mtype = model_type.get(longhand, longhand)
     num_layers = None
     if shorthand != 'mg_audio':
         num_layers = model_num_layers[mtype]
