@@ -74,7 +74,8 @@ model_sr = {'jukebox': 44100, 'musicgen-encoder': 32000,
 # output of each hidden layer of decoder plus initial embedding outputs (so before decoder)
 # musicgen-medium/large: 48 + 1
 # musicgen-small: 24 + 1
-model_num_layers = {"musicgen-small": 25, "musicgen-medium": 49, "musicgen-large": 49, "musicgen-encoder": 1, "jukebox": 72}
+model_num_layers = {"musicgen-small": 25, "musicgen-medium": 49, "musicgen-large": 49, "musicgen-encoder": 1, "jukebox": 72,
+                    "baseline_mfcc": 1, "baseline_mel": 1, "baseline_chroma": 1, "baseline_concat": 1}
 #model_num_layers = {"musicgen-small": 24, "musicgen-medium": 48, "musicgen-large": 48, "musicgen-encoder": 1, "jukebox": 1, "jukebox36": 1, "jukebox38": "jukebox38"} #until we get all jukebox layers
 
 # because jukebox does a weird 1-indexing thing
@@ -86,6 +87,10 @@ act_layer_dim = {"musicgen-small_hidden": 1024, "musicgen-medium_hidden": 1536, 
                  "jukebox": 4800,
                  "jukebox36": 4800,
                  "jukebox38": 4800,
+                 "baseline_mfcc": 120,
+                 "baseline_mel": 768,
+                 "baseline_chroma": 72,
+                 "baseline_concat": 960
                  }
 
 act_folder = {'musicgen-encoder': 'mg_audio_mp',
@@ -165,10 +170,11 @@ def get_basename(file, with_ext = True):
 
 
 def get_model_type(shorthand):
-    return model_type[model_longhand[shorthand]]
+    model_lh = model_longhand.get(shorthand, shorthand)
+    return model_type[model_lh]
 
 def get_layer_dim(shorthand):
-    model_lh = model_longhand[shorthand]
+    model_lh = model_longhand.get(shorthand, shorthand)
     return act_layer_dim[model_lh]
 
     
@@ -191,7 +197,7 @@ def old_get_embedding_shape(shorthand):
     return shape
 
 def get_embedding_shape(shorthand):
-    longhand = model_longhand[shorthand]
+    longhand = model_longhand.get(shorthand, shorthand)
     num_layers = get_embedding_num_layers(shorthand)
     layer_dim = act_layer_dim[longhand]
     shape = (num_layers, layer_dim)
@@ -483,5 +489,11 @@ def profile_category(df, cat, ds='polyrhy_split1', profile_dir = 'dataprof', pro
         ser.write_csv(ocsv)
 
 
-
+def get_shape_from_df(cur_df, emb_type, fname=None):
+    ret = tuple()
+    match_shape = cur_df.filter(pl.col('emb_type').str.contains(emb_type) & pl.col('fname').str.contains(fname))['shape']
+    if len(match_shape.shape) > 0:
+        if match_shape.shape[0] > 0:         
+            ret = parse_shape_string(match_shape[0], joiner = '|')
+    return ret
 
