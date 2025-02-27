@@ -268,7 +268,7 @@ def log_results(filt_dict, study_name, folder='res_csv'):
     cur_folder = UM.by_projpath(folder,make_dir = True)
     out_path = os.path.join(cur_folder, f'{study_name}.csv')
     cur_header = list(filt_dict.keys())
-    f = open(outpath, 'w')
+    f = open(out_path, 'w')
     csvw = csv.DictWriter(f, fieldnames=cur_header)
     csvw.writeheader()
     csvw.writerow(filt_dict)

@@ -409,6 +409,8 @@ if __name__ == "__main__":
     layer_idx = arg_dict['layer_idx']
     bs = study.best_params['batch_size']
     best_value = study.best_value
+
+
     if user_specify_layer_idx == False:
         layer_idx = study.best_params['layer_idx']
 
@@ -421,12 +423,23 @@ if __name__ == "__main__":
     UP.print_metrics(test_metrics, study_name)
     UP.save_results_to_study(study, test_metrics)
 
-    # some final logging
+    # some final logging to neptune
     test_filt_nep = UP.filter_dict(test_metrics, replace_val = None, filter_nonstr = False)
     if to_nep == True:
-        UP.neptune_log(nep, test_filt_res)
+        UP.neptune_log(nep, test_filt_nep)
         TN.tidy(study, nep)
 
-    test_filt_res = UP.filter_dict(test_metrics, replace_val = 'None', filter_nonstr = True)
+    # some final logging to csv
+    rec_dict.update(test_metrics)
+    rec_dict['best_trial_obj_value'] = best_value
+    
+    rec_dict['best_trial_dropout'] = dropout
+    rec_dict['best_trial_layer_idx'] = layer_idx
+    rec_dict['best_trial_batch_size'] = bs
+
+    rec_dict['best_lr'] = study.best_params['learning_rate']
+    rec_dict['best_weight_decay'] = study.best_params['l2_weight_decay']
+    rec_dict['best_num_epochs'] = study.best_params['num_epochs']
+    test_filt_res = UP.filter_dict(rec_dict, replace_val = 'None', filter_nonstr = True)
     UP.log_results(test_filt_res, study_name)
 
