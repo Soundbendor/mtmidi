@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import util as UM
 import neptune
 import tempi as TP
-import os
+import os, csv
 import time
 import tomllib
 import polars as pl
@@ -228,24 +228,49 @@ def save_results_to_study(study, results_dict):
             study_key = f'test_{res_key}'
             study.set_user_attr(study_key, res_val)
                 
-# log test results to neptune
-def neptune_log(nep, results_dict):
+# filter out none or 0 len results from dict
+# if using replace_val, replace instead of filter out
+def filter_dict(results_dict, replace_val = None, filter_nonstr = False, keys_dont_log = nep_dont_log):
+    ret = {}
     for res_key, res_val in results_dict.items():
-        if res_key not in nep_dont_log:
+        if res_key not in keys_dont_log:
             to_log = True
             if hasattr(res_val, '__len__'):
                 if len(res_val) <= 0:
                     to_log = False
+                elif filter_nonstr == True:
+                    if type(res_val) != type(""):
+                        to_log = False
             else:
                 if not res_val:
                     to_log = False
-            if to_log == True:
-                if res_key in nep_paths:
-                    split_key = res_key.split("_")[0]
-                    nep_key = f"test/{split_key}"
-                    nep[nep_key].upload(res_val)
-                else:
-                    nep_key = f"test/{res_key}"
-                    nep[nep_key] = res_val
+        if to_log == True:
+            ret[res_key] = res_val
+        elif replace_val:
+            ret[res_key] = replace_val
+    return ret
 
-            
+
+# log test results to neptune
+def neptune_log(nep, filt_dict):
+    for res_key, res_val in filt_dict.items():
+        if res_key in nep_paths:
+            split_key = res_key.split("_")[0]
+            nep_key = f"test/{split_key}"
+            nep[nep_key].upload(res_val)
+        else:
+            nep_key = f"test/{res_key}"
+            nep[nep_key] = res_val
+
+
+# to work on: log to csv
+def log_results(filt_dict, study_name, folder='res_csv'):
+    cur_folder = UM.by_projpath(folder,make_dir = True)
+    out_path = os.path.join(cur_folder, f'{study_name}.csv')
+    cur_header = list(filt_dict.keys())
+    f = open(outpath, 'w')
+    csvw = csv.DictWriter(f, fieldnames=cur_header)
+    csvw.writeheader()
+    csvw.writerow(filt_dict)
+    f.close()
+    

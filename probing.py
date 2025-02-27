@@ -396,8 +396,10 @@ if __name__ == "__main__":
     num_trials = arg_dict['num_trials']
     nep = None
     nep_callback = None
+    nep_id = -1
     if to_nep == True:
         nep, nep_callback = TN.init(param_dict=rec_dict, plots_update_freq = plots_update_freq, log_plot_slice = log_plot_slice, log_plot_contour = log_plot_contour)
+        nep_id = nep['sys/id'].fetch()
         callbacks.append(nep_callback)
 
     study.optimize(objective, n_trials = num_trials, callbacks=callbacks)
@@ -406,6 +408,7 @@ if __name__ == "__main__":
     dropout = study.best_params['dropout']
     layer_idx = arg_dict['layer_idx']
     bs = study.best_params['batch_size']
+    best_value = study.best_value
     if user_specify_layer_idx == False:
         layer_idx = study.best_params['layer_idx']
 
@@ -417,8 +420,13 @@ if __name__ == "__main__":
     test_loss, test_metrics = valid_test_loop(model, test_ds, loss_fn = None, dataset = arg_dict['dataset'], is_classification = arg_dict['is_classification'], held_out_classes = held_out_classes, is_testing = True,  thresh = arg_dict['thresh'], classify_by_subcategory = arg_dict['classify_by_subcategory'], do_regression_classification = arg_dict['do_regression_classification'], batch_size = bs, file_basename = study_name)
     UP.print_metrics(test_metrics, study_name)
     UP.save_results_to_study(study, test_metrics)
+
+    # some final logging
+    test_filt_nep = UP.filter_dict(test_metrics, replace_val = None, filter_nonstr = False)
     if to_nep == True:
-        UP.neptune_log(nep, test_metrics)
+        UP.neptune_log(nep, test_filt_res)
         TN.tidy(study, nep)
 
+    test_filt_res = UP.filter_dict(test_metrics, replace_val = 'None', filter_nonstr = True)
+    UP.log_results(test_filt_res, study_name)
 
