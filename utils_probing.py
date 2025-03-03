@@ -233,8 +233,8 @@ def save_results_to_study(study, results_dict):
 def filter_dict(results_dict, replace_val = None, filter_nonstr = False, keys_dont_log = nep_dont_log):
     ret = {}
     for res_key, res_val in results_dict.items():
+        to_log = True
         if res_key not in keys_dont_log:
-            to_log = True
             if hasattr(res_val, '__len__'):
                 if len(res_val) <= 0:
                     to_log = False
@@ -244,6 +244,8 @@ def filter_dict(results_dict, replace_val = None, filter_nonstr = False, keys_do
             else:
                 if not res_val:
                     to_log = False
+        else:
+            to_log = False
         if to_log == True:
             ret[res_key] = res_val
         elif replace_val:
