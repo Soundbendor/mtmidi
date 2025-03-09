@@ -254,17 +254,19 @@ def embedding_file_to_torch(model_shorthand, acts_folder = 'acts', dataset='poly
     v = torch.from_numpy(cur).to(device)
     return v
 
-def npy_to_torch(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', fname='', layer_idx = -1, use_64bit = True, device = 'cpu'):
+def npy_to_torch(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', fname='', layer_idx = -1, use_64bit = False, device = 'cpu'):
     actpath = by_projpath(acts_folder)
     datapath = os.path.join(actpath, dataset)
     modelpath = os.path.join(datapath, model_shorthand)
     fpath = os.path.join(modelpath, fname)
-    arr = np.load(fpath, allow_pickle == True)
+    #arr = np.load(fpath, allow_pickle == True)
+    arr = np.load(fpath)
+    #print(arr.shape, layer_idx)
     cur = None
-    if layer_idx >= 0:
-        cur = emb_file[layer_idx,:]
+    if layer_idx >= 0 and len(arr.shape) > 1:
+        cur = arr[layer_idx,:]
     else:
-        cur = emb_file
+        cur = arr
     if cur.dtype == np.float32:
         if use_64bit == True:
             cur = cur.astype(np.float64)

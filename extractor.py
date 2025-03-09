@@ -231,7 +231,8 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
             print(f'--- extracting jukebox for {f} with {layers_per} layers at a time ---', file=logfile_handle)
             # note that layers are 1-indexed in jukebox
             # so let's 0-idx and then add 1 when feeding into jukebox fn
-            layer_gen = (list(range(l, min(um.model_num_layers['jukebox'], l + layers_per))) for l in range(0,um.model_num_layers['jukebox'], layers_per)) 
+            layer_gen = (list(range(l, min(um.model_num_layers['jukebox'], l + layers_per))) for l in range(0,um.model_num_layers['jukebox'], layers_per))
+            has_last_layer = False
             if memmap == False:
                 np_shape = um.get_embedding_shape(cur_act_type)
                 np_arr = np.zeros(np_shape)
@@ -241,6 +242,7 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
             for layer_arr in layer_gen:
                 # 1-idx for passing into fn
                 j_idx = [l+1 for l in layer_arr]
+                has_last_layer = um.model_num_layers['jukebox'] in j_idx
                 print(f'extracting layers {j_idx}', file=logfile_handle)
                 rep_arr = get_jukebox_layer_embeddings(fpath=fpath, audio = audio, layers=j_idx)
                 if memmap == True:
@@ -249,7 +251,7 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
                 else:
                     np_arr[layer_arr,:] = rep_arr
                     # should be the last layer to save
-                    if um.model_num_layers['jukebox'] in layer_gen:
+                    if has_last_layer == True:
                         um.save_npy(np_arr, out_fname, cur_act_type, acts_folder = acts_folder, dataset=cur_dataset)
         else:
             audio_ipt = fdict['audio']
