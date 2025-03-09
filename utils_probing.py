@@ -5,6 +5,7 @@ import numpy as np
 import polyrhythms as PL
 import dynamics as DYN
 import chords7 as CH7
+import hf_chords as HFC
 import matplotlib.pyplot as plt
 import util as UM
 import neptune
@@ -97,6 +98,10 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
     elif dataset == 'chords7':
         class_truths = [CH7.idx_to_quality[x] for x in truths]
         class_preds = [CH7.idx_to_quality[x] for x in preds]
+    elif dataset == 'chords':
+        class_truths = [HFC.idx_to_quality[x] for x in truths]
+        class_preds = [HFC.idx_to_quality[x] for x in preds]
+
 
     cm = []
     cm_path = []

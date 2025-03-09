@@ -14,11 +14,13 @@ import torch_nep as TN
 import polyrhythms as PL
 import dynamics as DYN
 import chords7 as CH7
+import hf_chords as HFC
 import tempi as TP
 from torch_polyrhythms_dataset import PolyrhythmsData
 from torch_dynamics_dataset import DynamicsData
 from torch_chords7_dataset import Chords7Data
 from hf_tempi_dataset import STHFTempiData
+from hf_chords_dataset import STHFChordsData
 
 # global declarations (hacky) to save model state dicts
 global trial_model_state_dict
@@ -341,6 +343,9 @@ if __name__ == "__main__":
     elif arg_dict['dataset'] == 'chords7':
         out_dim = CH7.num_chords
 
+    elif arg_dict['dataset'] == 'chords':
+        out_dim = HFC.num_chords
+
     arg_dict.update({'thresh': _thresh, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
 
     save_ext = None
@@ -365,6 +370,10 @@ if __name__ == "__main__":
     elif arg_dict['dataset'] == 'chords7':
         cur_ds = Chords7Data(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,save_ext = save_ext)
         label_arr = cur_ds.all_quality
+    elif arg_dict['dataset'] == 'chords':
+        cur_ds = STHFChordsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,save_ext = save_ext)
+        label_arr = cur_ds.all_quality
+
 
     train_ds, valid_ds, test_ds = UP.get_train_valid_test_subsets(cur_ds, label_arr, train_on_middle = arg_dict['train_on_middle'], train_pct = train_pct, test_subpct = test_subpct, seed = seed)
     rec_dict = {k:v for (k,v) in arg_dict.items()}
