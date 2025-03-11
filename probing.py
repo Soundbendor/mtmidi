@@ -209,11 +209,21 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     global trial_model_state_dict
     global best_model_state_dict
     # suggested params
-    lr = trial.suggest_categorical('learning_rate', [1e-3, 1e-4, 1e-5])
-    bs = trial.suggest_categorical('batch_size', [64,256])
-    dropout = trial.suggest_categorical('dropout', [0.25, 0.5, 0.75])
-    weight_decay = trial.suggest_categorical('l2_weight_decay', [-1, 1e-4, 1e-3])
-    num_epochs = trial.suggest_categorical('num_epochs', [100,250])
+    lr_exp = trial.suggest_int('learning_rate_exp',-5,-3)
+    lr = 10**lr_exp
+    #lr = trial.suggest_categorical('learning_rate', [1e-3, 1e-4, 1e-5])
+    batch_size_lo = 64
+    batch_size_hi = 256
+    batch_size_step = batch_size_hi - batch_size_lo
+    bs = trial.suggest_int('batch_size', batch_size_lo, batch_size_hi, step=batch_size_step)
+    dropout = trial.suggest_float('dropout', 0.25, 0.75, step=0.25)
+    weight_decay_exp = trial.suggest_int('l2_weight_decay_exp', -4,-2)
+    weight_decay = 10**weight_decay_exp
+    num_epochs_lo = 100
+    num_epochs_step = 150
+    num_epochs_num_steps = 1
+    num_epochs_hi = num_epochs_lo + (num_epochs_step * num_epochs_num_steps)
+    num_epochs = trial.suggest_int('num_epochs', num_epochs_lo, num_epochs_hi, step=num_epochs_step)
     user_specify_layer_idx = layer_idx >= 0 
     lidx = None
     # -1 since 0-indexed
@@ -231,7 +241,8 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
 
     # optimizer and loss init
     opt_fn = None
-    if weight_decay > 0:
+    # count weight decay 10^-2 and bigger as off
+    if weight_decay_exp < -2:
         opt_fn = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     else:
         opt_fn = torch.optim.Adam(model.parameters(), lr=lr)
@@ -446,8 +457,8 @@ if __name__ == "__main__":
     rec_dict['best_trial_layer_idx'] = layer_idx
     rec_dict['best_trial_batch_size'] = bs
 
-    rec_dict['best_lr'] = study.best_params['learning_rate']
-    rec_dict['best_weight_decay'] = study.best_params['l2_weight_decay']
+    rec_dict['best_lr_exp'] = study.best_params['learning_rate_exp']
+    rec_dict['best_weight_decay_exp'] = study.best_params['l2_weight_decay_exp']
     rec_dict['best_num_epochs'] = study.best_params['num_epochs']
     test_filt_res = UP.filter_dict(rec_dict, replace_val = 'None', filter_nonstr = True)
     UP.log_results(test_filt_res, study_name)
