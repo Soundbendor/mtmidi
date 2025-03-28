@@ -28,7 +28,7 @@ default_midinote = 60
 
 reverb_lvl = {0:0, 1: 63, 2:127}
 # datasets in the original dataset (for debugging)
-hf_datasets = set(['tempos', 'time_signatures', 'chords', 'notes', 'scales', 'intervals', 'chord_progressions'])
+hf_datasets = set(['tempos', 'time_signatures', 'chords', 'notes', 'scales', 'intervals', 'simple_progressions'])
 
 # datasets this project is introducing
 new_datasets = set(['polyrhythms', 'dynamics', 'chords7'])

@@ -209,16 +209,37 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     global trial_model_state_dict
     global best_model_state_dict
     # suggested params
-    lr_exp = trial.suggest_int('learning_rate_exp',-5,-3)
+    lr_exp = None
+    param_search = 'baseline' in embedding_type or 'audio' in embedding_type
+    if param_search == True:
+        lr_exp = trial.suggest_int('learning_rate_exp',-5,-3)
+    else:
+        lr_exp = trial.suggest_int('learning_rate_exp', -3, -3)
     lr = 10**lr_exp
-    #lr = trial.suggest_categorical('learning_rate', [1e-3, 1e-4, 1e-5])
+
     batch_size_lo = 64
     batch_size_hi = 256
     batch_size_step = batch_size_hi - batch_size_lo
-    bs = trial.suggest_int('batch_size', batch_size_lo, batch_size_hi, step=batch_size_step)
-    dropout = trial.suggest_float('dropout', 0.25, 0.75, step=0.25)
-    weight_decay_exp = trial.suggest_int('l2_weight_decay_exp', -4,-2)
+
+    bs = None
+    if param_search == True:
+        bs = trial.suggest_int('batch_size', batch_size_lo, batch_size_hi, step=batch_size_step)
+    else:
+        bs = trial.suggest_int('batch_size', batch_size_lo, batch_size_lo, step=batch_size_step)
+
+    dropout = None
+    if param_search == True:
+        dropout = trial.suggest_float('dropout', 0.25, 0.75, step=0.25)
+    else:
+        dropout = trial.suggest_float('dropout', 0.5, 0.5, step=0.25)
+        
+    weight_decay_exp = None
+    if param_search == True:
+        weight_decay_exp = trial.suggest_int('l2_weight_decay_exp', -4,-2)
+    else:
+        weight_decay_exp = trial.suggest_int('l2_weight_decay_exp', -2,-2)
     weight_decay = 10**weight_decay_exp
+
     num_epochs_lo = 100
     num_epochs_step = 150
     num_epochs_num_steps = 1
@@ -231,7 +252,9 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     if user_specify_layer_idx == True:
         lidx = min(max_layer_idx, layer_idx)
     else:
-        lidx = trial.suggest_int('layer_idx', 0, max_layer_idx, step=1)
+        lidxs = list(range(0, max_layer_idx + 1))
+        lidx = trial.suggest_categorical('layer_idx', lidxs)
+        #lidx = trial.suggest_int('layer_idx', 0, max_layer_idx, step=1)
 
     train_ds.dataset.set_layer_idx(lidx)
     valid_ds.dataset.set_layer_idx(lidx)
@@ -313,7 +336,7 @@ if __name__ == "__main__":
    
     #### some variable definitions
 
-    is_64bit = True # if embeddings are 64 bit
+    is_64bit = False # if embeddings are 64 bit
     if arg_dict['embedding_type'] in UM.baseline_names:
         is_64bit = False
     cur_ds = None
