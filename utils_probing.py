@@ -6,6 +6,7 @@ import polyrhythms as PL
 import dynamics as DYN
 import chords7 as CH7
 import hf_chords as HFC
+import hf_timesig as HTS
 import matplotlib.pyplot as plt
 import util as UM
 import neptune
@@ -101,6 +102,10 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
     elif dataset == 'chords':
         class_truths = [HFC.idx_to_quality[x] for x in truths]
         class_preds = [HFC.idx_to_quality[x] for x in preds]
+    elif dataset == 'time_signatures':
+        class_truths = [HTS.idx_to_timesig[x] for x in truths]
+        class_preds = [HTS.idx_to_timesig[x] for x in preds]
+
 
 
     cm = []
