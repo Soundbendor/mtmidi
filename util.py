@@ -31,7 +31,7 @@ reverb_lvl = {0:0, 1: 63, 2:127}
 hf_datasets = set(['tempos', 'time_signatures', 'chords', 'notes', 'scales', 'intervals', 'simple_progressions'])
 
 # datasets this project is introducing
-new_datasets = set(['polyrhythms', 'dynamics', 'chords7'])
+new_datasets = set(['polyrhythms', 'dynamics', 'chords7', 'modemix_chordprog'])
 
 baseline_names = set(['baseline_mel', 'baseline_chroma', 'baseline_mfcc', 'baseline_concat'])
 all_datasets = hf_datasets.union(new_datasets)
