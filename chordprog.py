@@ -21,7 +21,7 @@ def progtup_to_progstr(progtup, is_modemix=False):
             arr_str.append('mm1')
     else:
         arr_str.append(scaletype)
-    degstr = ''.join([int(deg) for deg in progtup[1:]])
+    degstr = ''.join([str(deg) for deg in progtup[1:]])
     arr_str.append(degstr)
     retstr = '-'.join(arr_str)
     return retstr
