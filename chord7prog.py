@@ -31,6 +31,11 @@ def get_dom_scale_deg(scaledeg):
         ret -= 7
     return ret
 
+# shorthand for substitution types
+sub_types = {'orig': 'N', 'secondary_dominant': 'S', 'tritone_sub': 'T'}
+
+sub_type_to_idx= {'N': 0, 'S': 1, 'T': 2}
+idx_to_sub_type = {0: 'N', 1: 'S',  2: 'T'}
 #offsets are in sharp so looks weird but convert all flats to enharmonic sharps
 
 # keycenter: pitch
@@ -39,7 +44,7 @@ def get_dom_scale_deg(scaledeg):
 # sub_type = none, secondary_dominant, tritone_sub
 # main_prog = base progression str (without the sub_type suffix)
 # cur_prog = progression str with sub_type suffix
-second_fieldnames = ['name', 'inst', 'key_center', 'scale_type', 'sub_type', 'main_prog', 'cur_prog', 'bpm']
+second_fieldnames = ['name', 'inst', 'key_center', 'scale_type', 'sub_type', 'base_prog', 'sub_prog', 'bpm']
 maj_diatonic = {1: ('c4', 'major7'),
                 2: ('d4', 'minor7'),
                 3: ('e4', 'minor7'),
@@ -54,9 +59,9 @@ min_diatonic = {1: ('c4', 'minor7'),
                 2: ('d4', 'halfdim7'),
                 3: ('ds4', 'major7'),
                 4: ('f4', 'minor7'),
-                5: ('g4', 'minormajor7'),
+                5: ('g4', 'majorminor7'),
                 6: ('gs4', 'major7'),
-                7: ('as4', 'minormajor7')}
+                7: ('as4', 'majorminor7')}
 
 # fifth_above in scale degrees
 fifth_above = lambda x: ((x -1) % 7) + 1
@@ -117,9 +122,10 @@ for progtup in chordprog_arr:
         chordprog_dict[cur_key] = {'orig': orig_prog_dict, 'secondary_dominant': second_prog_dict, 'tritone_sub': tritone_prog_dict, 'scale_type': scale_type, 'tup_str': main_str}
 
 
-def modemix_get_outname(progstr, inv_idx, short_inst, cur_root, ext = ""):
+# progstr should be the entire thing (with sub_type suffix)
+def second_get_outname(progstr, inv_idx, short_inst, cur_root, scale_type, ext = ""):
     ret = None
-    outname = f'{short_inst}-{cur_root}-{progstr}_inv{inv_idx}'
+    outname = f'{short_inst}-{cur_root}-{scale_type}-{progstr}_inv{inv_idx}'
     if len(ext) > 0:
         ret = f'{outname}.{ext}'
     else:

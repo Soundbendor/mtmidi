@@ -14,6 +14,8 @@ midi_upper_limit = mnc.note_to_midi('fs4')
 offsets = {0: 'c4', 1: 'cs4', 2: 'd4', 3: 'ds4', 4: 'e4',
           5: 'f4', 6: 'fs4', 7: 'g4', 8: 'gs4', 9: 'a4',
           10: 'as4', 11: 'b4'}
+
+note_offsets = {y:x for (x,y) in offsets.items()}
 chord_notes = {'major7': ['c4', 'e4', 'g4', 'b4'],
           'minor7': ['c4', 'ef4', 'g4', 'bf4'],
           'majorminor7': ['c4', 'e4', 'g4', 'bf4'],
