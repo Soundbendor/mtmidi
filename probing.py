@@ -206,7 +206,7 @@ def get_optimization_metric(metric_dict, is_classification = True):
 def has_held_out_classes(dataset, is_classification):
     return (dataset in ["polyrhythms", "tempos"]) and is_classification == False
 
-def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, do_regression_classification =True):
+def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, num_epochs = -1, do_regression_classification =True):
 
     global trial_model_state_dict
     global best_model_state_dict
@@ -216,7 +216,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     if param_search == True:
         lr_exp = trial.suggest_int('learning_rate_exp',-5,-3)
     else:
-        lr_exp = trial.suggest_int('learning_rate_exp', -3, -3)
+        lr_exp = -3 
     lr = 10**lr_exp
 
     batch_size_lo = 64
@@ -227,26 +227,30 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     if param_search == True:
         bs = trial.suggest_int('batch_size', batch_size_lo, batch_size_hi, step=batch_size_step)
     else:
-        bs = trial.suggest_int('batch_size', batch_size_lo, batch_size_lo, step=batch_size_step)
+        bs = 64 
 
     dropout = None
     if param_search == True:
         dropout = trial.suggest_float('dropout', 0.25, 0.75, step=0.25)
     else:
-        dropout = trial.suggest_float('dropout', 0.5, 0.5, step=0.25)
+        #dropout = trial.suggest_float('dropout', 0.5, 0.5, step=0.25)
+        dropout = 0.5
         
     weight_decay_exp = None
     if param_search == True:
         weight_decay_exp = trial.suggest_int('l2_weight_decay_exp', -4,-2)
     else:
-        weight_decay_exp = trial.suggest_int('l2_weight_decay_exp', -2,-2)
+        weight_decay_exp =  -2 
     weight_decay = 10**weight_decay_exp
 
-    num_epochs_lo = 100
+    #num_epochs_lo = 100
     num_epochs_step = 150
-    num_epochs_num_steps = 1
+    num_epochs_lo = 100
+    num_epochs_num_steps = 2
     num_epochs_hi = num_epochs_lo + (num_epochs_step * num_epochs_num_steps)
-    num_epochs = trial.suggest_int('num_epochs', num_epochs_lo, num_epochs_hi, step=num_epochs_step)
+    num_epochs_train = num_epochs
+    if num_epochs < 0:
+        num_epochs_train = trial.suggest_int('num_epochs', num_epochs_lo, num_epochs_hi, step=num_epochs_step)
     user_specify_layer_idx = layer_idx >= 0 
     lidx = None
     # -1 since 0-indexed
@@ -255,8 +259,8 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
         lidx = min(max_layer_idx, layer_idx)
     else:
         lidxs = list(range(0, max_layer_idx + 1))
-        lidx = trial.suggest_categorical('layer_idx', lidxs)
-        #lidx = trial.suggest_int('layer_idx', 0, max_layer_idx, step=1)
+        #lidx = trial.suggest_categorical('layer_idx', lidxs)
+        lidx = trial.suggest_int('layer_idx', 0, max_layer_idx, step=1)
 
     train_ds.dataset.set_layer_idx(lidx)
     valid_ds.dataset.set_layer_idx(lidx)
@@ -267,7 +271,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     # optimizer and loss init
     opt_fn = None
     # count weight decay 10^-2 and bigger as off
-    if weight_decay_exp < -2:
+    if weight_decay_exp == -4 or weight_decay_exp == -3:
         opt_fn = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     else:
         opt_fn = torch.optim.Adam(model.parameters(), lr=lr)
@@ -278,7 +282,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
         loss_fn = nn.MSELoss(reduction='mean')
 
     # polyrhythm and tempi regression has held out classes for "classification"
-    held_out_classes = (dataset in ["polyrhythms", "tempos"]) and is_classification == False
+    #held_out_classes = (dataset in ["polyrhythms", "tempos"]) and is_classification == False
    
     last_score = None
     for epoch_idx in range(num_epochs):
@@ -286,10 +290,10 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
         valid_loss, valid_metrics = valid_test_loop(model,valid_ds, loss_fn = loss_fn, dataset = dataset, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = False, thresh = thresh, batch_size = bs, classify_by_subcategory = classify_by_subcategory, do_regression_classification = do_regression_classification)
         cur_score = get_optimization_metric(valid_metrics, is_classification = is_classification)
         # https://optuna.readthedocs.io/en/v2.0.0/tutorial/pruning.html
-        trial.report(cur_score, epoch_idx)
+        #trial.report(cur_score, epoch_idx)
 
-        if trial.should_prune() == True:
-            raise optuna.TrialPruned()
+        #if trial.should_prune() == True and prune == True:
+        #raise optuna.TrialPruned()
         last_score = cur_score
     #trial.set_user_attr(key='best_state_dict', value=model.state_dict())
 
@@ -312,15 +316,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-ds", "--dataset", type=str, default="polyrhythms", help="dataset")
     parser.add_argument("-et", "--embedding_type", type=str, default="jukebox", help="mg_{small/med/large}_{h/at} / mg_audio / jukebox")
-    parser.add_argument("-nt", "--num_trials", type=int, default=1000, help="number of optuna trials")
+    parser.add_argument("-nt", "--num_trials", type=int, default=3000, help="number of optuna trials")
     parser.add_argument("-li", "--layer_idx", type=int, default=-1, help="< 0 to optimize by optuna, else specifies layer_idx 0-indexed")
     parser.add_argument("-cls", "--is_classification", type=strtobool, default=True, help="is classification")
-    parser.add_argument("-tom", "--train_on_middle", type=strtobool, default=True, help="train on middle")
-    parser.add_argument("-rc", "--do_regression_classification", type=strtobool, default=True, help="do regression classification")
+    parser.add_argument("-tom", "--train_on_middle", type=strtobool, default=False, help="train on middle")
+    parser.add_argument("-rc", "--do_regression_classification", type=strtobool, default=False, help="do regression classification")
     parser.add_argument("-nep", "--to_nep", type=strtobool, default=True, help="log on neptune")
     parser.add_argument("-tos", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory (for dynamics)")
     parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
+    parser.add_argument("-epc", "--num_epochs", type=int, default=-1, help="number of epochs")
+    parser.add_argument("-pr", "--prune", type=strtobool, default=False, help="do pruning")
     parser.add_argument("-m", "--memmap", type=strtobool, default=False, help="load embeddings as memmap, else npy")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
 
@@ -432,7 +438,8 @@ if __name__ == "__main__":
     study_name = f"{cur_time}-{args.dataset}-{args.embedding_type}-{args.num_trials}"
     rdb_string_url = "sqlite:///" + os.path.join(os.path.dirname(__file__), 'db', f'{study_name}.db')
 
-    study = optuna.create_study(study_name=study_name, storage=rdb_string_url, direction='maximize')
+    #study = optuna.create_study(study_name=study_name, storage=rdb_string_url, direction='maximize')
+    study = optuna.create_study(sampler = optuna.samplers.BruteForceSampler(), study_name=study_name, storage=rdb_string_url, direction='maximize')
     if using_toml == True:
         flat_toml_dict = UP.flatten_toml_dict(toml_dict)
         rec_dict.update(flat_toml_dict)
@@ -459,14 +466,14 @@ if __name__ == "__main__":
     study.optimize(objective, n_trials = num_trials, callbacks=callbacks)
 
     #### final testing on best trial
-    dropout = study.best_params['dropout']
-    layer_idx = arg_dict['layer_idx']
-    bs = study.best_params['batch_size']
+    dropout = study.best_params.get('dropout', 0.5)
+    layer_idx = arg_dict.get('layer_idx', 0)
+    bs = study.best_params.get('batch_size', 64)
     best_value = study.best_value
 
 
     if user_specify_layer_idx == False:
-        layer_idx = study.best_params['layer_idx']
+        layer_idx = study.best_params.get('layer_idx', 0)
 
     ## model loading and running 
     model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
