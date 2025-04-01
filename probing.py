@@ -303,6 +303,7 @@ if __name__ == "__main__":
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
     parser.add_argument("-epc", "--num_epochs", type=int, default=-1, help="number of epochs")
     parser.add_argument("-pr", "--prune", type=strtobool, default=False, help="do pruning")
+    parser.add_argument("-ps", "--param_search", type=strtobool, default=True, help="force param search")
     parser.add_argument("-m", "--memmap", type=strtobool, default=False, help="load embeddings as memmap, else npy")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
 
@@ -319,7 +320,7 @@ if __name__ == "__main__":
    
     # defining grid search
     emb_type = arg_dict['embedding_type']
-    param_search = 'baseline' in emb_type or 'audio' in emb_type
+    param_search = ('baseline' in emb_type or 'audio' in emb_type) or (arg_dict['param_search'] == True)
     arg_dict['param_search'] = param_search
 
     search_space = None
@@ -364,7 +365,10 @@ if __name__ == "__main__":
     out_dim = 1
     pl_classdict = None
     if arg_dict['dataset'] == 'polyrhythms':
+        # hacky way of initing globals for metrics (but don't overwrite cur_df) now
+        UP.pl_init(cur_df, arg_dict['is_classification'])
         cur_df = PL.init(cur_df, arg_dict['is_classification'])
+
         if arg_dict['is_classification'] == True:
             out_dim = PL.num_poly
 
@@ -432,6 +436,7 @@ if __name__ == "__main__":
     study_base_name = f'{args.dataset}-{args.embedding_type}'
     study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.GridSampler(search_space),  maximize = True, num_trials=3000, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'samplers', db_dir = 'db') 
     study = study_dict['study']
+    study_name = study_dict['study_name']
     study_sampler_path = study_dict['sampler_fpath']
     if using_toml == True:
         flat_toml_dict = UP.flatten_toml_dict(toml_dict)

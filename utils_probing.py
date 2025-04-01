@@ -27,6 +27,9 @@ nep_paths = set(['confmat_path'])
 def init(class_binsize):
     TP.init(class_binsize)
 
+def pl_init(cur_df, is_classification):
+    _ = PL.init(cur_df,is_classification) 
+
 def read_toml_file(cur_fname):
     data = None
     with open(os.path.join(UM.by_projpath('toml'), f'{cur_fname}.toml'), 'rb') as f:
@@ -86,25 +89,32 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
     f1_micro = SKM.f1_score(truths, preds, average='micro')
     class_truths = []
     class_preds = []
+    class_arr = None
     if dataset == 'polyrhythms':
         class_truths = [PL.rev_polystr_to_idx[x] for x in truths]
         class_preds = [PL.rev_polystr_to_idx[x] for x in preds]
+        class_arr = PL.class_arr
     elif dataset == 'dynamics':
         if classify_by_subcategory == True:
             class_truths = [DYN.dyn_idx_to_subcategory[x] for x in truths]
             class_preds = [DYN.dyn_idx_to_subcategory[x] for x in preds]
+            class_arr = DYN.dyn_subcategories
         else:
             class_truths = [DYN.dyn_idx_to_category[x] for x in truths]
             class_preds = [DYN.dyn_idx_to_category[x] for x in preds]
+            class_arr = DYN.dyn_categories
     elif dataset == 'chords7':
         class_truths = [CH7.idx_to_quality[x] for x in truths]
         class_preds = [CH7.idx_to_quality[x] for x in preds]
+        class_arr = CH7.class_arr
     elif dataset == 'chords':
         class_truths = [HFC.idx_to_quality[x] for x in truths]
         class_preds = [HFC.idx_to_quality[x] for x in preds]
+        class_arr = HFC.class_arr
     elif dataset == 'time_signatures':
         class_truths = [HTS.idx_to_timesig[x] for x in truths]
         class_preds = [HTS.idx_to_timesig[x] for x in preds]
+        class_arr = HTS.class_arr
 
 
 
@@ -112,7 +122,7 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
     cm_path = []
     if save_confmat == True:
         cm = SKM.confusion_matrix(class_truths, class_preds)
-        cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=PL.class_arr)
+        cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_arr)
         fig, ax = plt.subplots(figsize=(figsize,figsize))
         cmd.plot(ax=ax)
         timestamp = int(time.time()*1000)

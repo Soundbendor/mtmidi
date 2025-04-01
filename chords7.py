@@ -30,6 +30,7 @@ num_chords = len(chord_notes.keys())
 chord_midi = {k:[mnc.note_to_midi(y) for y in v] for (k,v) in chord_notes.items()}
 
 quality_to_idx = {x:i for (i,x) in enumerate(chord_notes.keys())}
+class_arr = [k for (k,v) in quality_to_idx.items()]
 idx_to_quality = {i:x for (x,i) in quality_to_idx.items()}
 
 def make_inversion(cur_midinotes, inv):
