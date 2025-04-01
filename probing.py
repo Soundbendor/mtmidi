@@ -206,61 +206,29 @@ def get_optimization_metric(metric_dict, is_classification = True):
 def has_held_out_classes(dataset, is_classification):
     return (dataset in ["polyrhythms", "tempos"]) and is_classification == False
 
-def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, num_epochs = -1, do_regression_classification =True):
+def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, do_regression_classification =True):
 
     global trial_model_state_dict
     global best_model_state_dict
+    model = None
     # suggested params
-    lr_exp = None
-    param_search = 'baseline' in embedding_type or 'audio' in embedding_type
-    if param_search == True:
-        lr_exp = trial.suggest_int('learning_rate_exp',-5,-3)
-    else:
-        lr_exp = -3 
+    lr_exp = trial.suggest_int('learning_rate_exp',-5,-3, step=1)
     lr = 10**lr_exp
-
     batch_size_lo = 64
     batch_size_hi = 256
     batch_size_step = batch_size_hi - batch_size_lo
 
-    bs = None
-    if param_search == True:
-        bs = trial.suggest_int('batch_size', batch_size_lo, batch_size_hi, step=batch_size_step)
-    else:
-        bs = 64 
+    bs = trial.suggest_int('batch_size', batch_size_lo, batch_size_hi, step=batch_size_step)
 
-    dropout = None
-    if param_search == True:
-        dropout = trial.suggest_float('dropout', 0.25, 0.75, step=0.25)
-    else:
-        #dropout = trial.suggest_float('dropout', 0.5, 0.5, step=0.25)
-        dropout = 0.5
+    dropout = trial.suggest_float('dropout', 0.25, 0.75, step=0.25)
         
-    weight_decay_exp = None
-    if param_search == True:
-        weight_decay_exp = trial.suggest_int('l2_weight_decay_exp', -4,-2)
-    else:
-        weight_decay_exp =  -2 
+    weight_decay_exp = trial.suggest_int('l2_weight_decay_exp', -4,-3,step=1)
     weight_decay = 10**weight_decay_exp
 
     #num_epochs_lo = 100
-    num_epochs_step = 150
-    num_epochs_lo = 100
-    num_epochs_num_steps = 2
-    num_epochs_hi = num_epochs_lo + (num_epochs_step * num_epochs_num_steps)
-    num_epochs_train = num_epochs
-    if num_epochs < 0:
-        num_epochs_train = trial.suggest_int('num_epochs', num_epochs_lo, num_epochs_hi, step=num_epochs_step)
-    user_specify_layer_idx = layer_idx >= 0 
-    lidx = None
+    num_epochs_train = trial.suggest_int('num_epochs', 100, 1000, step=50)
     # -1 since 0-indexed
-    max_layer_idx = UM.get_embedding_num_layers(embedding_type) - 1
-    if user_specify_layer_idx == True:
-        lidx = min(max_layer_idx, layer_idx)
-    else:
-        lidxs = list(range(0, max_layer_idx + 1))
-        #lidx = trial.suggest_categorical('layer_idx', lidxs)
-        lidx = trial.suggest_int('layer_idx', 0, max_layer_idx, step=1)
+    lidx = trial.suggest_int('layer_idx', 0, 71, step=1)
 
     train_ds.dataset.set_layer_idx(lidx)
     valid_ds.dataset.set_layer_idx(lidx)
@@ -271,7 +239,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     # optimizer and loss init
     opt_fn = None
     # count weight decay 10^-2 and bigger as off
-    if weight_decay_exp == -4 or weight_decay_exp == -3:
+    if weight_decay_exp < -2:
         opt_fn = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     else:
         opt_fn = torch.optim.Adam(model.parameters(), lr=lr)
@@ -285,15 +253,15 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     #held_out_classes = (dataset in ["polyrhythms", "tempos"]) and is_classification == False
    
     last_score = None
-    for epoch_idx in range(num_epochs):
+    for epoch_idx in range(num_epochs_train):
         train_loss = train_loop(model, opt_fn, loss_fn, train_ds, batch_size = bs, is_classification = is_classification)
         valid_loss, valid_metrics = valid_test_loop(model,valid_ds, loss_fn = loss_fn, dataset = dataset, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = False, thresh = thresh, batch_size = bs, classify_by_subcategory = classify_by_subcategory, do_regression_classification = do_regression_classification)
         cur_score = get_optimization_metric(valid_metrics, is_classification = is_classification)
         # https://optuna.readthedocs.io/en/v2.0.0/tutorial/pruning.html
-        #trial.report(cur_score, epoch_idx)
+        trial.report(cur_score, epoch_idx)
 
-        #if trial.should_prune() == True and prune == True:
-        #raise optuna.TrialPruned()
+        if trial.should_prune() == True and prune == True:
+            raise optuna.TrialPruned()
         last_score = cur_score
     #trial.set_user_attr(key='best_state_dict', value=model.state_dict())
 
@@ -333,15 +301,34 @@ if __name__ == "__main__":
     # obj_dict is for passing to objective function, is arg_dict without drop_keys
     # rec_dict is for passing to neptune and study (has drop keys)
     # arg_dict just has everything
-    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'debug', 'memmap', 'slurm_job'])
+    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'debug', 'memmap', 'slurm_job','num_epochs', 'param_search'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
-    # model type is slightly distinct from embedding_type (which is also shorthand) because musicgen-encoder uses musicgen-large
+    # model type is slightly distinct from embedding_type (which is also shorthand) because musicgen-enocoder uses musicgen-large
     model_type = UM.get_model_type(arg_dict['embedding_type'])  
     model_layer_dim = UM.get_layer_dim(arg_dict['embedding_type'])
-    
    
+    # defining grid search
+    emb_type = arg_dict['embedding_type']
+    param_search = 'baseline' in emb_type or 'audio' in emb_type
+    arg_dict['param_search'] = param_search
+
+    search_space = None
+    if param_search == True:
+        search_space = {'learning_rate_exp': [-5, -4, -3], 'batch_size': [64, 256], 'dropout': [0.25, 0.5, 0.75], 'l2_weight_decay_exp': [-4, -3, -2]}
+    else:
+        search_space = {'learning_rate_exp': [-3], 'batch_size': [64], 'dropout': [0.5], 'l2_weight_decay_exp': [-2]}
+    
+    if arg_dict['layer_idx']  < 0:
+        cur_num_layers = UM.get_embedding_num_layers(emb_type)
+        search_space['layer_idx'] = list(range(cur_num_layers))
+    else:
+        search_space['layer_idx'] = [arg_dict['layer_idx']]
+    if arg_dict['num_epochs'] < 0:
+        search_space['num_epochs'] = [100,250, 500]
+    else:
+        search_space['num_epochs'] = [arg_dict['num_epochs']]
     #### some variable definitions
 
     is_64bit = False # if embeddings are 64 bit
@@ -439,7 +426,7 @@ if __name__ == "__main__":
     rdb_string_url = "sqlite:///" + os.path.join(os.path.dirname(__file__), 'db', f'{study_name}.db')
 
     #study = optuna.create_study(study_name=study_name, storage=rdb_string_url, direction='maximize')
-    study = optuna.create_study(sampler = optuna.samplers.BruteForceSampler(), study_name=study_name, storage=rdb_string_url, direction='maximize')
+    study = optuna.create_study(sampler=optuna.samplers.GridSampler(search_space), study_name=study_name, storage=rdb_string_url, direction='maximize')
     if using_toml == True:
         flat_toml_dict = UP.flatten_toml_dict(toml_dict)
         rec_dict.update(flat_toml_dict)
