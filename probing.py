@@ -5,11 +5,13 @@ from distutils.util import strtobool
 from functools import partial
 import optuna
 import torch
+import pickle
 import numpy as np
 from torch import nn
 import torch.utils.data as TUD
 import util as UM
 import utils_probing as UP
+import optuna_utils as OU
 import torch_nep as TN
 import polyrhythms as PL
 import dynamics as DYN
@@ -27,7 +29,7 @@ from hf_timesig_dataset import STHFTimeSignaturesData
 # global declarations (hacky) to save model state dicts
 global trial_model_state_dict
 global best_model_state_dict
-
+global study_sampler_path
 
 
 
@@ -258,9 +260,10 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
         valid_loss, valid_metrics = valid_test_loop(model,valid_ds, loss_fn = loss_fn, dataset = dataset, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = False, thresh = thresh, batch_size = bs, classify_by_subcategory = classify_by_subcategory, do_regression_classification = do_regression_classification)
         cur_score = get_optimization_metric(valid_metrics, is_classification = is_classification)
         # https://optuna.readthedocs.io/en/v2.0.0/tutorial/pruning.html
-        trial.report(cur_score, epoch_idx)
 
         if trial.should_prune() == True and prune == True:
+        
+            trial.report(cur_score, epoch_idx)
             raise optuna.TrialPruned()
         last_score = cur_score
     #trial.set_user_attr(key='best_state_dict', value=model.state_dict())
@@ -274,6 +277,10 @@ def study_callback(study, trial):
 
     global trial_model_state_dict
     global best_model_state_dict
+
+    global study_sampler_path
+    with open(study_sampler_path, 'wb') as f:
+        pickle.dump(study.sampler, f)
     if study.best_trial.number == trial.number:
         # turns out state dicts are not json serializable (so doesn't work)
         #trial.set_user_attr(key='best_state_dict', value=copy.deepcopy(trial.user_attrs['best_state_dict']))
@@ -291,6 +298,7 @@ if __name__ == "__main__":
     parser.add_argument("-rc", "--do_regression_classification", type=strtobool, default=False, help="do regression classification")
     parser.add_argument("-nep", "--to_nep", type=strtobool, default=True, help="log on neptune")
     parser.add_argument("-tos", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory (for dynamics)")
+    parser.add_argument("-pf", "--prefix", type=int, default=-1, help="specify a prefix > 0 for save files (db, etc.) for potential reloading (if file exists)")
     parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
     parser.add_argument("-epc", "--num_epochs", type=int, default=-1, help="number of epochs")
@@ -301,7 +309,7 @@ if __name__ == "__main__":
     # obj_dict is for passing to objective function, is arg_dict without drop_keys
     # rec_dict is for passing to neptune and study (has drop keys)
     # arg_dict just has everything
-    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'debug', 'memmap', 'slurm_job','num_epochs', 'param_search'])
+    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'debug', 'memmap', 'slurm_job','num_epochs', 'param_search', 'prefix'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -318,7 +326,7 @@ if __name__ == "__main__":
     if param_search == True:
         search_space = {'learning_rate_exp': [-5, -4, -3], 'batch_size': [64, 256], 'dropout': [0.25, 0.5, 0.75], 'l2_weight_decay_exp': [-4, -3, -2]}
     else:
-        search_space = {'learning_rate_exp': [-3], 'batch_size': [64], 'dropout': [0.5], 'l2_weight_decay_exp': [-2]}
+        search_space = {'learning_rate_exp': [-5], 'batch_size': [64], 'dropout': [0.25], 'l2_weight_decay_exp': [-3]}
     
     if arg_dict['layer_idx']  < 0:
         cur_num_layers = UM.get_embedding_num_layers(emb_type)
@@ -421,12 +429,10 @@ if __name__ == "__main__":
     if arg_dict['debug'] == True:
         exit()
     #### running the optuna study
-    cur_time = int(time.time() * 1000)
-    study_name = f"{cur_time}-{args.dataset}-{args.embedding_type}-{args.num_trials}"
-    rdb_string_url = "sqlite:///" + os.path.join(os.path.dirname(__file__), 'db', f'{study_name}.db')
-
-    #study = optuna.create_study(study_name=study_name, storage=rdb_string_url, direction='maximize')
-    study = optuna.create_study(sampler=optuna.samplers.GridSampler(search_space), study_name=study_name, storage=rdb_string_url, direction='maximize')
+    study_base_name = f'{args.dataset}-{args.embedding_type}'
+    study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.GridSampler(search_space),  maximize = True, num_trials=3000, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'samplers', db_dir = 'db') 
+    study = study_dict['study']
+    study_sampler_path = study_dict['sampler_fpath']
     if using_toml == True:
         flat_toml_dict = UP.flatten_toml_dict(toml_dict)
         rec_dict.update(flat_toml_dict)
