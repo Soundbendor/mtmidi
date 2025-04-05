@@ -87,40 +87,41 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
     acc = SKM.accuracy_score(truths, preds)
     f1_macro = SKM.f1_score(truths, preds, average='macro')
     f1_micro = SKM.f1_score(truths, preds, average='micro')
-    class_truths = []
-    class_preds = []
-    class_arr = None
-    if dataset == 'polyrhythms':
-        class_truths = [PL.rev_polystr_to_idx[x] for x in truths]
-        class_preds = [PL.rev_polystr_to_idx[x] for x in preds]
-        class_arr = PL.class_arr
-    elif dataset == 'dynamics':
-        if classify_by_subcategory == True:
-            class_truths = [DYN.dyn_idx_to_subcategory[x] for x in truths]
-            class_preds = [DYN.dyn_idx_to_subcategory[x] for x in preds]
-            class_arr = DYN.dyn_subcategories
-        else:
-            class_truths = [DYN.dyn_idx_to_category[x] for x in truths]
-            class_preds = [DYN.dyn_idx_to_category[x] for x in preds]
-            class_arr = DYN.dyn_categories
-    elif dataset == 'chords7':
-        class_truths = [CH7.idx_to_quality[x] for x in truths]
-        class_preds = [CH7.idx_to_quality[x] for x in preds]
-        class_arr = CH7.class_arr
-    elif dataset == 'chords':
-        class_truths = [HFC.idx_to_quality[x] for x in truths]
-        class_preds = [HFC.idx_to_quality[x] for x in preds]
-        class_arr = HFC.class_arr
-    elif dataset == 'time_signatures':
-        class_truths = [HTS.idx_to_timesig[x] for x in truths]
-        class_preds = [HTS.idx_to_timesig[x] for x in preds]
-        class_arr = HTS.class_arr
-
+    
 
 
     cm = []
     cm_path = []
     if save_confmat == True:
+        class_truths = []
+        class_preds = []
+        class_arr = None
+        if dataset == 'polyrhythms':
+            class_truths = [PL.rev_polystr_to_idx[x] for x in truths]
+            class_preds = [PL.rev_polystr_to_idx[x] for x in preds]
+            class_arr = PL.class_arr
+        elif dataset == 'dynamics':
+            if classify_by_subcategory == True:
+                class_truths = [DYN.dyn_idx_to_subcategory[x] for x in truths]
+                class_preds = [DYN.dyn_idx_to_subcategory[x] for x in preds]
+                class_arr = DYN.dyn_subcategories
+            else:
+                class_truths = [DYN.dyn_idx_to_category[x] for x in truths]
+                class_preds = [DYN.dyn_idx_to_category[x] for x in preds]
+                class_arr = DYN.dyn_categories
+        elif dataset == 'chords7':
+            class_truths = [CH7.idx_to_quality[x] for x in truths]
+            class_preds = [CH7.idx_to_quality[x] for x in preds]
+            class_arr = CH7.class_arr
+        elif dataset == 'chords':
+            class_truths = [HFC.idx_to_quality[x] for x in truths]
+            class_preds = [HFC.idx_to_quality[x] for x in preds]
+            class_arr = HFC.class_arr
+        elif dataset == 'time_signatures':
+            class_truths = [HTS.idx_to_timesig[x] for x in truths]
+            class_preds = [HTS.idx_to_timesig[x] for x in preds]
+            class_arr = HTS.class_arr
+
         cm = SKM.confusion_matrix(class_truths, class_preds)
         cmd = SKM.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_arr)
         fig, ax = plt.subplots(figsize=(figsize,figsize))

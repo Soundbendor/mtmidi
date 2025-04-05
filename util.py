@@ -33,6 +33,11 @@ hf_datasets = set(['tempos', 'time_signatures', 'chords', 'notes', 'scales', 'in
 # datasets this project is introducing
 new_datasets = set(['polyrhythms', 'dynamics', 'chords7', 'modemix_chordprog'])
 
+
+#datasets that are regression
+reg_datasets = set(['tempos'])
+# datasets to train on middle on
+tom_datasets = set(['tempos'])
 baseline_names = set(['baseline_mel', 'baseline_chroma', 'baseline_mfcc', 'baseline_concat'])
 all_datasets = hf_datasets.union(new_datasets)
 
