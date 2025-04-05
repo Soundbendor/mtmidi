@@ -14,7 +14,7 @@ def init(param_dict=None, plots_update_freq = "never", log_plot_slice = False, l
         api_token=nep_tok,
         capture_hardware_metrics = False,
         capture_stderr = False,
-        capture_stdout=False
+        capture_stdout=False,
         capture_traceback=False,
         git_ref=False,
         source_files=[]
