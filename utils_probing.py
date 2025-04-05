@@ -69,7 +69,10 @@ def flatten_toml_dict(toml_dict):
     for big_k,k_dict in toml_dict.items():
         for k,v in k_dict.items():
             rec_str = f'{big_k}_{k}'
-            ret[rec_str] = v
+            if type(v) == type([]):
+                ret[rec_str] = ",".join([str(cur) for cur in v])
+            else:
+                ret[rec_str] = v
     return ret
 
 def get_df(dataset, exclude_arr):

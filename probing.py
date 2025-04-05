@@ -41,8 +41,8 @@ torch.manual_seed(seed)
 shuffle = True
 # neptune stuff
 plots_update_freq = 10
-log_plot_slice = True
-log_plot_contour = True
+log_plot_slice = False
+log_plot_contour = False
 # hacky way of initialize tempo things with a class_binsize for "classification" from regression
 TEMPOS_CLASS_BINSIZE=4
 THRESH = 0.1
