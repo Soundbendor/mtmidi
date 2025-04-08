@@ -71,12 +71,12 @@ chordprog_arr = [('maj', 1,4,5,1),
         ('maj', 5,4,1,5),
         ('maj', 5,6,4,1),
         ('maj', 6,4,1,5),
-        ('min', 1,2,5,1),
-        ('min', 1,3,4,1),
+        #('min', 1,2,5,1),
+        #('min', 1,3,4,1),
         #('min', 1,4,5,1),
-        ('min', 1,6,7,1),
-        ('min', 1,7,1,1),
-        ('min', 6,7,6,1),
+        #('min', 1,6,7,1),
+        #('min', 1,7,1,1),
+        #('min', 6,7,6,1),
         ]
 
 # keyed by progtups (ie: ('maj', 1,4,5,1)) and has both original and modemix versions
