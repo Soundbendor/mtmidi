@@ -208,7 +208,7 @@ def get_optimization_metric(metric_dict, is_classification = True):
 def has_held_out_classes(dataset, is_classification):
     return (dataset in UM.tom_datasets) and is_classification == False
 
-def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, num_epochs=250):
+def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, batch_size = 64, num_epochs=250):
 
     global trial_model_state_dict
     global best_model_state_dict
@@ -216,12 +216,13 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     # suggested params
     lr_exp = trial.suggest_int('learning_rate_exp',-5,-3, step=1)
     lr = 10**lr_exp
-    batch_size_lo = 64
-    batch_size_hi = 256
-    batch_size_step = batch_size_hi - batch_size_lo
+    #batch_size_lo = 64
+    #batch_size_hi = 256
+    #batch_size_step = batch_size_hi - batch_size_lo
 
-    bs = trial.suggest_int('batch_size', batch_size_lo, batch_size_hi, step=batch_size_step)
-
+    #bs = trial.suggest_int('batch_size', batch_size_lo, batch_size_hi, step=batch_size_step)
+    
+    #batch_size = bs
     dropout = trial.suggest_float('dropout', 0.25, 0.75, step=0.25)
         
     weight_decay_exp = trial.suggest_int('l2_weight_decay_exp', -4,-2,step=1)
@@ -253,8 +254,8 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
    
     last_score = None
     for epoch_idx in range(num_epochs):
-        train_loss = train_loop(model, opt_fn, loss_fn, train_ds, batch_size = bs, is_classification = is_classification)
-        valid_loss, valid_metrics = valid_test_loop(model,valid_ds, loss_fn = loss_fn, dataset = dataset, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = False, thresh = thresh, batch_size = bs, classify_by_subcategory = classify_by_subcategory)
+        train_loss = train_loop(model, opt_fn, loss_fn, train_ds, batch_size = batch_size, is_classification = is_classification)
+        valid_loss, valid_metrics = valid_test_loop(model,valid_ds, loss_fn = loss_fn, dataset = dataset, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = False, thresh = thresh, batch_size = batch_size, classify_by_subcategory = classify_by_subcategory)
         cur_score = get_optimization_metric(valid_metrics, is_classification = is_classification)
         # https://optuna.readthedocs.io/en/v2.0.0/tutorial/pruning.html
 
@@ -300,6 +301,7 @@ if __name__ == "__main__":
     parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
     parser.add_argument("-epc", "--num_epochs", type=int, default=250, help="number of epochs")
+    parser.add_argument("-bs", "--batch_size", type=int, default=64, help="batch size")
     parser.add_argument("-pr", "--prune", type=strtobool, default=False, help="do pruning")
     parser.add_argument("-ps", "--param_search", type=strtobool, default=True, help="force param search")
     parser.add_argument("-m", "--memmap", type=strtobool, default=False, help="load embeddings as memmap, else npy")
@@ -323,9 +325,9 @@ if __name__ == "__main__":
 
     search_space = None
     if param_search == True:
-        search_space = {'learning_rate_exp': [-5, -4, -3], 'batch_size': [64, 256], 'dropout': [0.25, 0.5, 0.75], 'l2_weight_decay_exp': [-4, -3, -2]}
+        search_space = {'learning_rate_exp': [-5, -4, -3], 'dropout': [0.25, 0.5, 0.75], 'l2_weight_decay_exp': [-4, -3, -2]}
     else:
-        search_space = {'learning_rate_exp': [-5], 'batch_size': [64], 'dropout': [0.25], 'l2_weight_decay_exp': [-3]}
+        search_space = {'learning_rate_exp': [-5], 'dropout': [0.25], 'l2_weight_decay_exp': [-3]}
     
     if arg_dict['layer_idx']  < 0:
         cur_num_layers = UM.get_embedding_num_layers(emb_type)
@@ -462,7 +464,8 @@ if __name__ == "__main__":
     #### final testing on best trial
     dropout = study.best_params.get('dropout', 0.5)
     layer_idx = arg_dict.get('layer_idx', 0)
-    bs = study.best_params.get('batch_size', 64)
+    #bs = study.best_params.get('batch_size', 64)
+    bs = arg_dict['batch_size']
     best_value = study.best_value
 
 
@@ -490,7 +493,7 @@ if __name__ == "__main__":
     
     rec_dict['best_trial_dropout'] = dropout
     rec_dict['best_trial_layer_idx'] = layer_idx
-    rec_dict['best_trial_batch_size'] = bs
+    #rec_dict['best_trial_batch_size'] = bs
 
     rec_dict['best_lr_exp'] = study.best_params['learning_rate_exp']
     rec_dict['best_weight_decay_exp'] = study.best_params['l2_weight_decay_exp']
