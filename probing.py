@@ -302,15 +302,15 @@ if __name__ == "__main__":
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
     parser.add_argument("-epc", "--num_epochs", type=int, default=250, help="number of epochs")
     parser.add_argument("-bs", "--batch_size", type=int, default=64, help="batch size")
-    parser.add_argument("-pr", "--prune", type=strtobool, default=False, help="do pruning")
-    parser.add_argument("-ps", "--param_search", type=strtobool, default=True, help="force param search")
+    parser.add_argument("-pr", "--prune", type=strtobool, default=True, help="do pruning")
+    parser.add_argument("-gr", "--grid_search", type=strtobool, default=False, help="grid search")
     parser.add_argument("-m", "--memmap", type=strtobool, default=False, help="load embeddings as memmap, else npy")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
 
     # obj_dict is for passing to objective function, is arg_dict without drop_keys
     # rec_dict is for passing to neptune and study (has drop keys)
     # arg_dict just has everything
-    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','param_search', 'prefix'])
+    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'prefix'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -320,20 +320,7 @@ if __name__ == "__main__":
    
     # defining grid search
     emb_type = arg_dict['embedding_type']
-    param_search = ('baseline' in emb_type or 'audio' in emb_type) or (arg_dict['param_search'] == True)
-    arg_dict['param_search'] = param_search
 
-    search_space = None
-    if param_search == True:
-        search_space = {'learning_rate_exp': [-5, -4, -3], 'dropout': [0.25, 0.5, 0.75], 'l2_weight_decay_exp': [-4, -3, -2]}
-    else:
-        search_space = {'learning_rate_exp': [-5], 'dropout': [0.25], 'l2_weight_decay_exp': [-3]}
-    
-    if arg_dict['layer_idx']  < 0:
-        cur_num_layers = UM.get_embedding_num_layers(emb_type)
-        search_space['layer_idx'] = list(range(cur_num_layers))
-    else:
-        search_space['layer_idx'] = [arg_dict['layer_idx']]
     #### some variable definitions
 
     is_64bit = False # if embeddings are 64 bit
@@ -432,7 +419,25 @@ if __name__ == "__main__":
         exit()
     #### running the optuna study
     study_base_name = f'{args.dataset}-{args.embedding_type}'
-    study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.GridSampler(search_space),  maximize = True, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'samplers', db_dir = 'db') 
+    study_dict = None
+    if arg_dict['grid_search'] == True:
+ 
+        search_space = None
+        if param_search == True:
+            search_space = {'learning_rate_exp': [-5, -4, -3], 'dropout': [0.25, 0.5, 0.75], 'l2_weight_decay_exp': [-4, -3, -2]}
+        else:
+            search_space = {'learning_rate_exp': [-5], 'dropout': [0.25], 'l2_weight_decay_exp': [-3]}
+        
+        if arg_dict['layer_idx']  < 0:
+            cur_num_layers = UM.get_embedding_num_layers(emb_type)
+            search_space['layer_idx'] = list(range(cur_num_layers))
+        else:
+            search_space['layer_idx'] = [arg_dict['layer_idx']]
+
+        study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.GridSampler(search_space),  maximize = True, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'grid_samplers', db_dir = 'db') 
+    else:
+        
+        study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.TPESampler(),  maximize = True, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'tpe_samplers', db_dir = 'db') 
     study = study_dict['study']
     study_name = study_dict['study_name']
     study_sampler_path = study_dict['sampler_fpath']

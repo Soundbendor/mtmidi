@@ -31,7 +31,7 @@ reverb_lvl = {0:0, 1: 63, 2:127}
 hf_datasets = set(['tempos', 'time_signatures', 'chords', 'notes', 'scales', 'intervals', 'simple_progressions'])
 
 # datasets this project is introducing
-new_datasets = set(['polyrhythms', 'dynamics', 'chords7', 'modemix_chordprog'])
+new_datasets = set(['polyrhythms', 'dynamics', 'chords7', 'secondary_dominant', 'modemix_chordprog'])
 
 
 #datasets that are regression
