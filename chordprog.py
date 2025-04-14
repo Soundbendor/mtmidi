@@ -27,7 +27,7 @@ def progtup_to_progstr(progtup, is_modemix=False):
     return retstr
 
 #offsets are in sharp so looks weird but convert all flats to enharmonic sharps
-
+progtypes = ['orig', 'mm']
 # keycenter: pitch
 # scale_type: maj, min, mm1 (maj to min), mm2 (picardy 3rd)
 # orig_prog example: maj-1625 (modemix and original share same)
@@ -79,6 +79,11 @@ chordprog_arr = [('maj', 1,4,5,1),
         #('min', 6,7,6,1),
         ]
 
+modemixprog_arr = [tuple([x]+list(y)) for y in chordprog_arr for x in progtypes]
+mmp_to_idx = {i:x for (i,x) in enumerate(modemixrog_arr)}
+idx_to_mmp = {x:i for (i,x) in mmp_to_idx.items()}
+progtype_to_idx = {i:x for (i,x) in enumerate(progtypes)}
+idx_to_progtype = {x:i for (i,x) in progtype_to_idx.items()}
 # keyed by progtups (ie: ('maj', 1,4,5,1)) and has both original and modemix versions
 # organized by 'orig' and 'mm' which have their own progressions (2-tuples with root,qual) and tup_str (the prog-specific tuple in string form)
 chordprog_dict = {}
