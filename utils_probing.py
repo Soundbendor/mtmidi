@@ -112,6 +112,27 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
                 class_truths = [DYN.dyn_idx_to_category[x] for x in truths]
                 class_preds = [DYN.dyn_idx_to_category[x] for x in preds]
                 class_arr = DYN.dyn_categories
+        elif dataset == 'modemix_chordprog':
+            if classify_by_subcategory == True:
+                class_truths = [CHP.idx_to_subp[x] for x in truths]
+                class_preds = [CHP.idx_to_subp[x] for x in preds]
+                class_arr = CHP.subp_arr
+            else:
+                class_truths = [CHP.idx_to_imm[x] for x in truths]
+                class_preds = [CHP.idx_to_imm[x] for x in preds]
+                class_arr = CHP.is_modemix_arr
+
+        elif dataset == 'secondary_dominant':
+            if classify_by_subcategory == True:
+                class_truths = [CH7.idx_to_subp[x] for x in truths]
+                class_preds = [CH7.idx_to_subp[x] for x in preds]
+                class_arr = CH7.mmp_arr
+            else:
+                class_truths = [CH7.idx_to_sub_type[x] for x in truths]
+                class_preds = [CH7.idx_to_sub_type[x] for x in preds]
+                class_arr = CH7.is_modemix_arr
+
+
         elif dataset == 'chords7':
             class_truths = [CH7.idx_to_quality[x] for x in truths]
             class_preds = [CH7.idx_to_quality[x] for x in preds]

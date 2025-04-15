@@ -42,7 +42,7 @@ for cur_inst in UM.pitched_inst_to_use:
                 for inv_idx in range(CH.num_inversions):
                     outname = CDP.modemix_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "mid")
                     name = CDP.modemix_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "")
-                    cur_row = {'name': name, 'inst': short_inst, 'key_center': key_center, 'scale_type': cur_scaletype, 'is_modemix': is_modemix, 'orig_prog': orig_progstr, 'mm_prog': cur_progstr, 'bpm': cur_bpm}
+                    cur_row = {'name': name, 'inst': short_inst, 'key_center': key_center, 'scale_type': cur_scaletype, 'is_modemix': is_modemix, 'orig_prog': orig_progstr, 'sub_prog': cur_progstr, 'inv': inv_idx, 'bpm': cur_bpm}
                     csvw.writerow(cur_row)
                     mid = mido.MidiFile(type=1, ticks_per_beat=ticks_per_beat)
                     mid.tracks.append(mido.MidiTrack())

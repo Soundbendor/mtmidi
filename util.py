@@ -33,6 +33,7 @@ hf_datasets = set(['tempos', 'time_signatures', 'chords', 'notes', 'scales', 'in
 # datasets this project is introducing
 new_datasets = set(['polyrhythms', 'dynamics', 'chords7', 'secondary_dominant', 'modemix_chordprog'])
 
+chordprog_datasets = set(['secondary_dominant', 'modemix_chordprog'])
 
 #datasets that are regression
 reg_datasets = set(['tempos'])

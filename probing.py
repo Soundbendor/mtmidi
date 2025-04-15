@@ -19,9 +19,11 @@ import chords7 as CH7
 import hf_chords as HFC
 import hf_timesig as HTS
 import tempi as TP
+import chords as CHP
 from torch_polyrhythms_dataset import PolyrhythmsData
 from torch_dynamics_dataset import DynamicsData
 from torch_chords7_dataset import Chords7Data
+from torch_modemix_chordprog_dataset import ModemixChordprogData
 from hf_tempi_dataset import STHFTempiData
 from hf_chords_dataset import STHFChordsData
 from hf_timesig_dataset import STHFTimeSignaturesData
@@ -296,7 +298,7 @@ if __name__ == "__main__":
     parser.add_argument("-tom", "--train_on_middle", type=strtobool, default=False, help="train on middle")
     parser.add_argument("-rc", "--do_regression_classification", type=strtobool, default=False, help="do regression classification")
     parser.add_argument("-nep", "--to_nep", type=strtobool, default=True, help="log on neptune")
-    parser.add_argument("-tos", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory (for dynamics)")
+    parser.add_argument("-tos", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory for dynamics, by progression for chord progression datasets")
     parser.add_argument("-pf", "--prefix", type=int, default=-1, help="specify a prefix > 0 for save files (db, etc.) for potential reloading (if file exists)")
     parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
@@ -341,9 +343,19 @@ if __name__ == "__main__":
         toml_params = UP.get_toml_params(toml_dict)
         _thresh = toml_params.get('thresh', THRESH)
 
+    cur_df = None
+    # exclude all intervals besides root position
+    if arg_dict['dataset'] in UM.chordprog_datasets: 
+        exclude_arr = []
+        if arg_dict['dataset'] == 'secondary_dominant':
+            exclude_arr.append(('inv', [1,2,3]))
+        if arg_dict['dataset'] == 'modemix_chordprog':
+            exclude_arr.append(('inv', [1,2]))
 
-    # get dataframe from csv file
-    cur_df=UP.get_df(arg_dict['dataset'], exclude)
+        cur_df=UP.get_df(arg_dict['dataset'], exclude_arr)
+    else:
+        # get dataframe from csv file
+        cur_df=UP.get_df(arg_dict['dataset'], exclude)
    
 
     is_classification = arg_dict['dataset'] not in UM.reg_datasets
@@ -374,6 +386,19 @@ if __name__ == "__main__":
 
     elif arg_dict['dataset'] == 'time_signatures':
         out_dim = HTS.num_timesig
+    
+    elif arg_dict['dataset'] == 'modemix_chordprog':
+        if arg_dict['classify_by_subcategory'] == True:
+            out_dim = CHP.num_subprog
+        else:
+            out_dim = CHP.num_ismodemix
+    elif arg_dict['dataset'] == 'secondary_dominant':
+        if arg_dict['classify_by_subcategory'] == True:
+            out_dim = CH7.num_subprog
+        else:
+            out_dim = CH7.num_subtypes
+
+
 
 
     arg_dict.update({'thresh': _thresh, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
@@ -406,6 +431,19 @@ if __name__ == "__main__":
     elif arg_dict['dataset'] == 'time_signatures':
         cur_ds = STHFTimeSignaturesData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,save_ext = save_ext)
         label_arr = cur_ds.all_timesig
+    elif arg_dict['dataset'] == 'modemix_chordprog':
+        cur_ds = ModemixChordprogData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, save_ext = save_ext)
+        if arg_dict['classify_by_subcategory'] == True:
+            label_arr = cur_ds.all_subprog
+        else:
+            label_arr = cur_ds.all_imm
+    elif arg_dict['dataset'] == 'secondary_dominant':
+        cur_ds = SecondaryDominantData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, save_ext = save_ext)
+        if arg_dict['classify_by_subcategory'] == True:
+            label_arr = cur_ds.all_subprog
+        else:
+            label_arr = cur_ds.all_subtypes
+
 
 
 

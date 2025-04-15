@@ -14,11 +14,14 @@ import chords as CH
 # 'N' to specify no substitution
 # 'S' to specify secondary dominant
 # 'T' to specify tritone sub
-def progtup_to_progstr(progtup, sub_type='N'):
+def progtup_to_progstr(progtup, scale_type='', sub_type='N'):
     arr_str = []
     cur_elt = progtup[0]
     degstr = ''.join([str(deg) for deg in progtup[1:]])
-    ret_str = f'e_{cur_elt}-{degstr}'
+    ret_str = ''
+    if len(scale_type) > 0:
+        ret_str = f'{scale_type}_'
+    ret_str = ret_str + f'e_{cur_elt}-{degstr}'
     if len(sub_type) > 0:
         ret_str = ret_str + f'-s_{sub_type}'
     return ret_str
@@ -34,8 +37,11 @@ def get_dom_scale_deg(scaledeg):
 # shorthand for substitution types
 sub_types = {'orig': 'N', 'secondary_dominant': 'S', 'tritone_sub': 'T'}
 
-sub_type_to_idx= {'N': 0, 'S': 1, 'T': 2}
-idx_to_sub_type = {0: 'N', 1: 'S',  2: 'T'}
+sub_type_arr = ['N', 'S', 'T']
+sub_type_to_idx= {x:i for (i,x) in enumerate(sub_type_arr)}
+idx_to_sub_type = {i:x for (x,i) in sub_type_to_idx.items()}
+
+
 #offsets are in sharp so looks weird but convert all flats to enharmonic sharps
 
 # keycenter: pitch
@@ -44,7 +50,7 @@ idx_to_sub_type = {0: 'N', 1: 'S',  2: 'T'}
 # sub_type = none, secondary_dominant, tritone_sub
 # main_prog = base progression str (without the sub_type suffix)
 # cur_prog = progression str with sub_type suffix
-second_fieldnames = ['name', 'inst', 'key_center', 'scale_type', 'sub_type', 'base_prog', 'sub_prog', 'bpm']
+second_fieldnames = ['name', 'inst', 'key_center', 'scale_type', 'sub_type', 'base_prog', 'inv', 'sub_prog', 'bpm']
 maj_diatonic = {1: ('c4', 'major7'),
                 2: ('d4', 'minor7'),
                 3: ('e4', 'minor7'),
@@ -69,16 +75,27 @@ prepend_tup = lambda x,y: tuple([x] + list(y))
 
 # first element of tuple refers to which elt of seq to transform into a secondary dominant (1-indexed)
 # applies to both major and minor
+scale_type_arr = ['maj', 'min']
 chordprog_arr = [(2, 1,6,2,5), (2, 1,1,4,5), (2,1,2,5,1), (2,1,3,6,5)]
 
+subp_arr = []
+for scale_type in scale_type_arr:
+    for sub_type in sub_type_arr:
+        for chordprog in chordprog_arr:
+            cur_str = progtup_to_progstr(chordprog, scale_type=scale_type, sub_type=sub_type)
+            subp_arr.append(cur_str)
+subp_to_idx = {i:x for (i,x) in enumerate(subp_arr)}
+idx_to_subp = {x:i for (i,x) in subp_to_idx.items()}
 
+num_subprog = len(subp_arr)
+num_subtypes = len(sub_type_arr)
 # keyed by progtups (ie: ('maj', 1,4,5,1)) and has both original and modemix versions
 # organized by 'orig' and 'mm' which have their own progressions (2-tuples with root,qual) and tup_str (the prog-specific tuple in string form)
 chordprog_dict = {}
 
 for progtup in chordprog_arr:
     change_elt = progtup[0]
-    for scale_type in ['maj', 'min']:
+    for scale_type in scale_type_arr:
         # to disambiguate, key chordprog_dict by adding 'maj' or 'min to beginning
         cur_key = prepend_tup(scale_type, progtup)
         chord_dict = None
@@ -112,10 +129,10 @@ for progtup in chordprog_arr:
                 secondary_arr.append(deg_tup)
                 tritonesub_arr.append(deg_tup)
 
-        main_str = progtup_to_progstr(progtup,  sub_type='')
-        none_str = progtup_to_progstr(progtup,  sub_type='N')
-        second_str = progtup_to_progstr(progtup,  sub_type='S')
-        tritone_str = progtup_to_progstr(progtup,  sub_type='T')
+        main_str = progtup_to_progstr(progtup,  scale_type='', sub_type='')
+        none_str = progtup_to_progstr(progtup,  scale_type=scale_type, sub_type='N')
+        second_str = progtup_to_progstr(progtup, scale_type=scale_type, sub_type='S')
+        tritone_str = progtup_to_progstr(progtup,  scale_type=scale_type, sub_type='T')
         orig_prog_dict = {'prog': orig_arr, 'tup_str': none_str}
         second_prog_dict = {'prog': secondary_arr, 'tup_str': second_str}
         tritone_prog_dict = {'prog': tritonesub_arr, 'tup_str': tritone_str}
@@ -123,9 +140,9 @@ for progtup in chordprog_arr:
 
 
 # progstr should be the entire thing (with sub_type suffix)
-def second_get_outname(progstr, inv_idx, short_inst, cur_root, scale_type, ext = ""):
+def second_get_outname(progstr, inv_idx, short_inst, cur_root, ext = ""):
     ret = None
-    outname = f'{short_inst}-{cur_root}-{scale_type}-{progstr}_inv{inv_idx}'
+    outname = f'{short_inst}-{cur_root}-{progstr}_inv{inv_idx}'
     if len(ext) > 0:
         ret = f'{outname}.{ext}'
     else:

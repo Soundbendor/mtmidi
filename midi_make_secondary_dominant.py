@@ -40,9 +40,9 @@ for cur_inst in UM.pitched_inst_to_use:
             # key_offset is offseting the key center from c4:
             for key_offset, key_center in CHS.offsets.items():
                 for inv_idx in range(CHS.num_inversions):
-                    outname = CSP.second_get_outname(cur_progstr, inv_idx, short_inst, key_center, cur_scaletype, ext = "mid")
-                    name = CSP.second_get_outname(cur_progstr, inv_idx, short_inst, key_center, cur_scaletype, ext = "")
-                    cur_row = {'name': name, 'inst': short_inst, 'key_center': key_center, 'scale_type': cur_scaletype, 'sub_type': cur_sub_type, 'base_prog': base_progstr, 'sub_prog': cur_progstr, 'bpm': cur_bpm}
+                    outname = CSP.second_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "mid")
+                    name = CSP.second_get_outname(cur_progstr, inv_idx, short_inst, key_center,  ext = "")
+                    cur_row = {'name': name, 'inst': short_inst, 'key_center': key_center, 'scale_type': cur_scaletype, 'sub_type': cur_sub_type, 'base_prog': base_progstr, 'sub_prog': cur_progstr, 'bpm': cur_bpm, 'inv': inv_idx}
                     csvw.writerow(cur_row)
                     mid = mido.MidiFile(type=1, ticks_per_beat=ticks_per_beat)
                     mid.tracks.append(mido.MidiTrack())

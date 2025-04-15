@@ -10,7 +10,7 @@ import chords as CH
 
 
 # gets orig_prog strings as defined above if is_modemix = False
-# else gets mm_prog strings as defined above if is_modemix = True
+# else gets sub_prog strings as defined above if is_modemix = True
 def progtup_to_progstr(progtup, is_modemix=False):
     arr_str = []
     scaletype = progtup[0]
@@ -27,13 +27,13 @@ def progtup_to_progstr(progtup, is_modemix=False):
     return retstr
 
 #offsets are in sharp so looks weird but convert all flats to enharmonic sharps
-progtypes = ['orig', 'mm']
+is_modemix_arr = [False, True]
 # keycenter: pitch
 # scale_type: maj, min, mm1 (maj to min), mm2 (picardy 3rd)
 # orig_prog example: maj-1625 (modemix and original share same)
-# mm_prog example: mm1-1625 (still the same as orig_prog for non-modemix progs
+# sub_prog example: mm1-1625 (still the same as orig_prog for non-modemix progs
 # (all scale degrees single digit so can merge with no separator)
-modemix_fieldnames = ['name', 'inst', 'key_center', 'scale_type', 'is_modemix', 'orig_prog', 'mm_prog', 'bpm']
+modemix_fieldnames = ['name', 'inst', 'key_center', 'scale_type', 'is_modemix', 'orig_prog', 'sub_prog', 'inv', 'bpm']
 maj_diatonic = {1: ('c4', 'maj'),
                 2: ('d4', 'min'),
                 3: ('e4', 'min'),
@@ -79,11 +79,15 @@ chordprog_arr = [('maj', 1,4,5,1),
         #('min', 6,7,6,1),
         ]
 
-modemixprog_arr = [tuple([x]+list(y)) for y in chordprog_arr for x in progtypes]
-mmp_to_idx = {i:x for (i,x) in enumerate(modemixrog_arr)}
-idx_to_mmp = {x:i for (i,x) in mmp_to_idx.items()}
-progtype_to_idx = {i:x for (i,x) in enumerate(progtypes)}
-idx_to_progtype = {x:i for (i,x) in progtype_to_idx.items()}
+
+subp_arr = [progtup_to_progstr(y,is_modemix=x) for y in chordprog_arr for x in is_modemix_arr]
+subp_to_idx = {i:x for (i,x) in enumerate(subp_arr)}
+idx_to_subp = {x:i for (i,x) in subp_to_idx.items()}
+imm_to_idx = {x:int(x) for x in is_modemix_arr}
+idx_to_imm = {x:i for (i,x) in imm_to_idx.items()}
+
+num_ismodemix = len(is_modemix_arr)
+num_sub_prog = len(subp_arr)
 # keyed by progtups (ie: ('maj', 1,4,5,1)) and has both original and modemix versions
 # organized by 'orig' and 'mm' which have their own progressions (2-tuples with root,qual) and tup_str (the prog-specific tuple in string form)
 chordprog_dict = {}
@@ -113,8 +117,8 @@ for progtup in chordprog_arr:
     orig_str = progtup_to_progstr(progtup, is_modemix=False)
     mm_str = progtup_to_progstr(progtup, is_modemix=True)
     orig_prog_dict = {'prog': orig_arr, 'tup_str': orig_str}
-    mm_prog_dict = {'prog': modemix_arr, 'tup_str': mm_str}
-    chordprog_dict[progtup] = {'orig': orig_prog_dict, 'mm': mm_prog_dict, 'scale_type': scale_type}
+    sub_prog_dict = {'prog': modemix_arr, 'tup_str': mm_str}
+    chordprog_dict[progtup] = {'orig': orig_prog_dict, 'mm': sub_prog_dict, 'scale_type': scale_type}
 
 
 def modemix_get_outname(progstr, inv_idx, short_inst, cur_root, ext = ""):
