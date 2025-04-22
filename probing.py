@@ -308,7 +308,7 @@ if __name__ == "__main__":
     parser.add_argument("-tom", "--train_on_middle", type=strtobool, default=False, help="train on middle")
     parser.add_argument("-rc", "--do_regression_classification", type=strtobool, default=False, help="do regression classification")
     parser.add_argument("-nep", "--to_nep", type=strtobool, default=True, help="log on neptune")
-    parser.add_argument("-tos", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory for dynamics, by progression for chord progression datasets")
+    parser.add_argument("-cbs", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory for dynamics, by progression for chord progression datasets")
     parser.add_argument("-pf", "--prefix", type=int, default=-1, help="specify a prefix > 0 for save files (db, etc.) for potential reloading (if file exists)")
     parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
