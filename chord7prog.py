@@ -20,7 +20,7 @@ def progtup_to_progstr(progtup, scale_type='', sub_type='N'):
     degstr = ''.join([str(deg) for deg in progtup[1:]])
     ret_str = ''
     if len(scale_type) > 0:
-        ret_str = f'{scale_type}_'
+        ret_str = f'{scale_type}-'
     ret_str = ret_str + f'e_{cur_elt}-{degstr}'
     if len(sub_type) > 0:
         ret_str = ret_str + f'-s_{sub_type}'
