@@ -19,11 +19,15 @@ import chords7 as CH7
 import hf_chords as HFC
 import hf_timesig as HTS
 import tempi as TP
-import chords as CHP
+import chords as CHS
+import chordprog as CHP
+import chord7prog as CSP
 from torch_polyrhythms_dataset import PolyrhythmsData
 from torch_dynamics_dataset import DynamicsData
-from torch_chords7_dataset import Chords7Data
 from torch_modemix_chordprog_dataset import ModemixChordprogData
+from torch_secondary_dominant_dataset import SecondaryDominantData
+from torch_chords7_dataset import Chords7Data
+
 from hf_tempi_dataset import STHFTempiData
 from hf_chords_dataset import STHFChordsData
 from hf_timesig_dataset import STHFTimeSignaturesData
@@ -210,7 +214,7 @@ def get_optimization_metric(metric_dict, is_classification = True):
 def has_held_out_classes(dataset, is_classification):
     return (dataset in UM.tom_datasets) and is_classification == False
 
-def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, batch_size = 64, num_epochs=250):
+def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, num_layers = -1, batch_size = 64, num_epochs=250):
 
     global trial_model_state_dict
     global best_model_state_dict
@@ -230,7 +234,13 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     weight_decay_exp = trial.suggest_int('l2_weight_decay_exp', -4,-2,step=1)
     weight_decay = 10**weight_decay_exp
 
-    lidx = trial.suggest_int('layer_idx', 0, 71, step=1)
+    lidx = None
+    if layer_idx >= 0:
+        lidx = layer_idx
+    elif num_layers > 0:
+        lidx = trial.suggest_int('layer_idx', 0, num_layers - 1, step=1)
+    else:
+        lidx = 0
 
     train_ds.dataset.set_layer_idx(lidx)
     valid_ds.dataset.set_layer_idx(lidx)
@@ -343,6 +353,8 @@ if __name__ == "__main__":
         toml_params = UP.get_toml_params(toml_dict)
         _thresh = toml_params.get('thresh', THRESH)
 
+
+    # get dataframe from csv file
     cur_df = None
     # exclude all intervals besides root position
     if arg_dict['dataset'] in UM.chordprog_datasets: 
@@ -357,6 +369,7 @@ if __name__ == "__main__":
         # get dataframe from csv file
         cur_df=UP.get_df(arg_dict['dataset'], exclude)
    
+
 
     is_classification = arg_dict['dataset'] not in UM.reg_datasets
     out_dim = 1
@@ -386,7 +399,6 @@ if __name__ == "__main__":
 
     elif arg_dict['dataset'] == 'time_signatures':
         out_dim = HTS.num_timesig
-    
     elif arg_dict['dataset'] == 'modemix_chordprog':
         if arg_dict['classify_by_subcategory'] == True:
             out_dim = CHP.num_subprog
@@ -394,9 +406,9 @@ if __name__ == "__main__":
             out_dim = CHP.num_ismodemix
     elif arg_dict['dataset'] == 'secondary_dominant':
         if arg_dict['classify_by_subcategory'] == True:
-            out_dim = CH7.num_subprog
+            out_dim = CSP.num_subprog
         else:
-            out_dim = CH7.num_subtypes
+            out_dim = CSP.num_subtypes
 
 
 
@@ -447,7 +459,6 @@ if __name__ == "__main__":
 
 
 
-
     train_ds, valid_ds, test_ds = UP.get_train_valid_test_subsets(cur_ds, label_arr, train_on_middle = train_on_middle, train_pct = train_pct, test_subpct = test_subpct, seed = seed)
     rec_dict = {k:v for (k,v) in arg_dict.items()}
     rec_dict['slurm_job'] = arg_dict['slurm_job']
@@ -458,6 +469,7 @@ if __name__ == "__main__":
     #### running the optuna study
     study_base_name = f'{args.dataset}-{args.embedding_type}'
     study_dict = None
+    num_layers = UM.get_embedding_num_layers(emb_type)
     if arg_dict['grid_search'] == True:
  
         search_space = None
@@ -467,14 +479,13 @@ if __name__ == "__main__":
             search_space = {'learning_rate_exp': [-5], 'dropout': [0.25], 'l2_weight_decay_exp': [-3]}
         
         if arg_dict['layer_idx']  < 0:
-            cur_num_layers = UM.get_embedding_num_layers(emb_type)
-            search_space['layer_idx'] = list(range(cur_num_layers))
+            search_space['layer_idx'] = list(range(num_layers))
         else:
             search_space['layer_idx'] = [arg_dict['layer_idx']]
 
         study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.GridSampler(search_space),  maximize = True, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'grid_samplers', db_dir = 'db') 
     else:
-        
+        arg_dict['num_layers'] = num_layers
         study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.TPESampler(),  maximize = True, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'tpe_samplers', db_dir = 'db') 
     study = study_dict['study']
     study_name = study_dict['study_name']

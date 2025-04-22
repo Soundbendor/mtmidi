@@ -5,6 +5,8 @@ import numpy as np
 import polyrhythms as PL
 import dynamics as DYN
 import chords7 as CH7
+import chordprog as CHP
+import chord7prog as CSP
 import hf_chords as HFC
 import hf_timesig as HTS
 import matplotlib.pyplot as plt
@@ -124,13 +126,13 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
 
         elif dataset == 'secondary_dominant':
             if classify_by_subcategory == True:
-                class_truths = [CH7.idx_to_subp[x] for x in truths]
-                class_preds = [CH7.idx_to_subp[x] for x in preds]
-                class_arr = CH7.mmp_arr
+                class_truths = [CSP.idx_to_subp[x] for x in truths]
+                class_preds = [CSP.idx_to_subp[x] for x in preds]
+                class_arr = CSP.subp_arr
             else:
-                class_truths = [CH7.idx_to_sub_type[x] for x in truths]
-                class_preds = [CH7.idx_to_sub_type[x] for x in preds]
-                class_arr = CH7.is_modemix_arr
+                class_truths = [CSP.idx_to_sub_type[x] for x in truths]
+                class_preds = [CSP.idx_to_sub_type[x] for x in preds]
+                class_arr = CSP.sub_type_arr
 
 
         elif dataset == 'chords7':

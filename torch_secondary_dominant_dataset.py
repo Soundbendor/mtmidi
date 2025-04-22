@@ -13,7 +13,7 @@ import utils_probing as UP
 
 # classify by subcategory = classify by individual progression (else classify by none,secondary,tritone)
 # inv, if >= 0, filter by this inversion
-class SecondaryDominantDataset(TUD.Dataset):
+class SecondaryDominantData(TUD.Dataset):
     def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=-1, classify_by_subcategory = True, is_64bit = True, save_ext = 'dat'):
         self.device = device
         self.is_64bit = is_64bit
@@ -23,8 +23,8 @@ class SecondaryDominantDataset(TUD.Dataset):
         self.classify_by_subcategory = classify_by_subcategory
         self.data = cur_df.with_columns(
 
-                sub_prog_idx=pl.col('sub_prog').replace_strict(CHS.subp_to_idx).cast(int),
-                sub_type_idx=pl.col('sub_type').replace_strict(CHS.sub_type_to_idx).cast(int))
+                sub_prog_idx=pl.col('sub_prog').replace_strict(CSP.subp_to_idx).cast(int),
+                sub_type_idx=pl.col('sub_type').replace_strict(CSP.sub_type_to_idx).cast(int))
 
 
 
