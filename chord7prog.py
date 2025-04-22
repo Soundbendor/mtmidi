@@ -84,8 +84,8 @@ for scale_type in scale_type_arr:
         for chordprog in chordprog_arr:
             cur_str = progtup_to_progstr(chordprog, scale_type=scale_type, sub_type=sub_type)
             subp_arr.append(cur_str)
-subp_to_idx = {i:x for (i,x) in enumerate(subp_arr)}
-idx_to_subp = {x:i for (i,x) in subp_to_idx.items()}
+subp_to_idx = {x:i for (i,x) in enumerate(subp_arr)}
+idx_to_subp = {i:x for (x,i) in subp_to_idx.items()}
 
 num_subprog = len(subp_arr)
 num_subtypes = len(sub_type_arr)

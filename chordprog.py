@@ -81,8 +81,8 @@ chordprog_arr = [('maj', 1,4,5,1),
 
 
 subp_arr = [progtup_to_progstr(y,is_modemix=x) for y in chordprog_arr for x in is_modemix_arr]
-subp_to_idx = {i:x for (i,x) in enumerate(subp_arr)}
-idx_to_subp = {x:i for (i,x) in subp_to_idx.items()}
+subp_to_idx = {x:i for (i,x) in enumerate(subp_arr)}
+idx_to_subp = {i:x for (x,i) in subp_to_idx.items()}
 imm_to_idx = {x:int(x) for x in is_modemix_arr}
 idx_to_imm = {x:i for (i,x) in imm_to_idx.items()}
 
