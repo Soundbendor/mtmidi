@@ -87,7 +87,7 @@ imm_to_idx = {x:int(x) for x in is_modemix_arr}
 idx_to_imm = {x:i for (i,x) in imm_to_idx.items()}
 
 num_ismodemix = len(is_modemix_arr)
-num_sub_prog = len(subp_arr)
+num_subprog = len(subp_arr)
 # keyed by progtups (ie: ('maj', 1,4,5,1)) and has both original and modemix versions
 # organized by 'orig' and 'mm' which have their own progressions (2-tuples with root,qual) and tup_str (the prog-specific tuple in string form)
 chordprog_dict = {}

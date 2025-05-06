@@ -42,7 +42,7 @@ global study_sampler_path
 ### init stuff
 train_pct = 0.7
 test_subpct = 0.5
-seed = 5
+seed = 333
 torch.manual_seed(seed)
 shuffle = True
 # neptune stuff
@@ -238,7 +238,9 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     if layer_idx >= 0:
         lidx = layer_idx
     elif num_layers > 0:
-        lidx = trial.suggest_int('layer_idx', 0, num_layers - 1, step=1)
+        lidx_list = list(range(num_layers))
+        lidx = trial.suggest_categorical('layer_idx', lidx_list)
+        #lidx = trial.suggest_int('layer_idx', 0, num_layers - 1, step=1)
     else:
         lidx = 0
 
@@ -513,7 +515,10 @@ if __name__ == "__main__":
         nep_id = nep['sys/id'].fetch()
         callbacks.append(nep_callback)
 
-    study.optimize(objective, timeout = None, n_trials = None, n_jobs=1, gc_after_trial = True, callbacks=callbacks)
+    if num_trials >= 0:
+        study.optimize(objective, timeout = None, n_trials = num_trials, n_jobs=1, gc_after_trial = True, callbacks=callbacks)
+    else:
+        study.optimize(objective, timeout = None, n_trials = None, n_jobs=1, gc_after_trial = True, callbacks=callbacks)
 
     #### final testing on best trial
     dropout = study.best_params.get('dropout', 0.5)
