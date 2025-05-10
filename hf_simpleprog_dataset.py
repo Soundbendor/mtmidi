@@ -23,7 +23,7 @@ class STHFSimpleProgressionsData(TUD.Dataset):
         self.data = cur_df.with_columns(
 
                 orig_prog_idx=pl.col('orig_prog').replace_strict(HFSP.prog_to_idx).cast(int),
-                is_major_idx=pl.col('is_major').replace_strict(HSSP.major_to_idx).cast(int))
+                is_major_idx=pl.col('is_major').replace_strict(HFSP.major_to_idx).cast(int))
 
 
 
