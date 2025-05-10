@@ -9,6 +9,7 @@ import chordprog as CHP
 import chord7prog as CSP
 import hf_chords as HFC
 import hf_timesig as HTS
+import hf_simpleprog as HFSP
 import matplotlib.pyplot as plt
 import util as UM
 import neptune
@@ -133,6 +134,16 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
                 class_truths = [CSP.idx_to_sub_type[x] for x in truths]
                 class_preds = [CSP.idx_to_sub_type[x] for x in preds]
                 class_arr = CSP.sub_type_arr
+        
+        elif dataset == 'simple_progressions':
+            if classify_by_subcategory == True:
+                class_truths = [HFSP.idx_to_prog[x] for x in truths]
+                class_preds = [HFSP.idx_to_prog[x] for x in preds]
+                class_arr = HFSP.prog_arr
+            else:
+                class_truths = [HFSP.idx_to_major[x] for x in truths]
+                class_preds = [HFSP.idx_to_major[x] for x in preds]
+                class_arr = HFSP.major_arr
 
 
         elif dataset == 'chords7':

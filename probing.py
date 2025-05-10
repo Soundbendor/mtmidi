@@ -18,6 +18,7 @@ import dynamics as DYN
 import chords7 as CH7
 import hf_chords as HFC
 import hf_timesig as HTS
+import hf_simpleprog as HFSP
 import tempi as TP
 import chords as CHS
 import chordprog as CHP
@@ -31,6 +32,7 @@ from torch_chords7_dataset import Chords7Data
 from hf_tempi_dataset import STHFTempiData
 from hf_chords_dataset import STHFChordsData
 from hf_timesig_dataset import STHFTimeSignaturesData
+from hf_simpleprog_dataset import STHFSimpleProgressionsData
 
 # global declarations (hacky) to save model state dicts
 global trial_model_state_dict
@@ -401,6 +403,14 @@ if __name__ == "__main__":
 
     elif arg_dict['dataset'] == 'time_signatures':
         out_dim = HTS.num_timesig
+    
+    elif arg_dict['dataset'] == 'simple_progressions':
+        if arg_dict['classify_by_subcategory'] == True:
+            out_dim = HFSP.num_progs
+        else:
+            out_dim = HFSP.num_types
+
+
     elif arg_dict['dataset'] == 'modemix_chordprog':
         if arg_dict['classify_by_subcategory'] == True:
             out_dim = CHP.num_subprog
@@ -411,7 +421,7 @@ if __name__ == "__main__":
             out_dim = CSP.num_subprog
         else:
             out_dim = CSP.num_subtypes
-
+   
 
 
 
@@ -445,6 +455,13 @@ if __name__ == "__main__":
     elif arg_dict['dataset'] == 'time_signatures':
         cur_ds = STHFTimeSignaturesData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,save_ext = save_ext)
         label_arr = cur_ds.all_timesig
+    elif arg_dict['dataset'] == 'simple_progressions':
+        cur_ds = STHFSimpleProgressionsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, save_ext = save_ext)
+        if arg_dict['classify_by_subcategory'] == True:
+            label_arr = cur_ds.all_prog
+        else:
+            label_arr = cur_ds.all_types
+
     elif arg_dict['dataset'] == 'modemix_chordprog':
         cur_ds = ModemixChordprogData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, save_ext = save_ext)
         if arg_dict['classify_by_subcategory'] == True:
