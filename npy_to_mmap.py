@@ -3,7 +3,7 @@ import os
 import util as UM
 import sys
 
-basedir = '/home/dxk/osu/mtmidi/acts2/'
+basedir = '/nfs/guille/eecs_research/soundbendor/kwand/mtmidi/acts2/'
 acts_folder = 'acts'
 cur_dataset = sys.argv[1]
 cdir = os.path.join(basedir, cur_dataset)
@@ -20,10 +20,10 @@ for actdir in acts:
             #print('64bit')
         print(actpath, cur_num_layers)
         new_fname = UM.ext_replace(f, 'dat')
-        print('cur_np', cur_np.dtype)
+        print(f'processing {new_fname} in {actdir}')
         cur_f = cur_np.astype(np.float32)
         shape = cur_f.shape
-        emb_file = UM.get_embedding_file(actdir, acts_folder=acts_folder, dataset=cur_dataset, fname=new_fname, use_64bit = use_64bit, write=False, use_shape = shape)
+        emb_file = UM.get_embedding_file(actdir, acts_folder=acts_folder, dataset=cur_dataset, fname=new_fname, use_64bit = use_64bit, write=True, use_shape = shape)
         emb_file[:] = cur_f[:]
         print('cur_f', cur_f.dtype)
 

@@ -320,7 +320,7 @@ if __name__ == "__main__":
     parser.add_argument("-bs", "--batch_size", type=int, default=64, help="batch size")
     parser.add_argument("-pr", "--prune", type=strtobool, default=True, help="do pruning")
     parser.add_argument("-gr", "--grid_search", type=strtobool, default=False, help="grid search")
-    parser.add_argument("-m", "--memmap", type=strtobool, default=False, help="load embeddings as memmap, else npy")
+    parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
 
     # obj_dict is for passing to objective function, is arg_dict without drop_keys
@@ -428,10 +428,10 @@ if __name__ == "__main__":
     arg_dict.update({'thresh': _thresh, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
 
     save_ext = None
-    #if arg_dict['memmap'] == True:
-    #    save_ext = 'dat'
-    #else:
-    save_ext = 'npy'
+    if arg_dict['memmap'] == True:
+        save_ext = 'dat'
+    else:
+        save_ext = 'npy'
     #### load dataset(s)
     if arg_dict['dataset'] == "polyrhythms":
 
