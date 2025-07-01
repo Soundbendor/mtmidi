@@ -10,6 +10,7 @@ import chord7prog as CSP
 import numpy as np
 from sklearn.model_selection import train_test_split
 import utils_probing as UP
+import util_data as UD
 
 # classify by subcategory = classify by individual progression (else classify by none,secondary,tritone)
 # inv, if >= 0, filter by this inversion
@@ -28,10 +29,8 @@ class SecondaryDominantData(TUD.Dataset):
 
 
 
-        self.all_subprog = self.data.select(['sub_prog']).to_numpy().flatten()
         self.all_subprog_idx = self.data.select(['sub_prog_idx']).to_numpy().flatten()
 
-        self.all_subtypes = self.data.select(['sub_type']).to_numpy().flatten()
         self.all_subtypes_idx = self.data.select(['sub_type_idx']).to_numpy().flatten()
         self.total_num = self.data['name'].count()
         self.coldict = {x:i for (i,x) in enumerate(self.data.columns)}
@@ -54,13 +53,7 @@ class SecondaryDominantData(TUD.Dataset):
             cur_truth = cur_row[self.coldict['sub_prog_idx']]
         else:
             cur_truth = cur_row[self.coldict['sub_type_idx']]
-        cur_arr = None
-        if self.save_ext == 'dat':
-            cur_fname = f'{cur_name}.dat'
-            cur_arr =  UM.embedding_file_to_torch(self.embedding_type, acts_folder = 'acts', dataset='secondary_dominant', fname=cur_fname, layer_idx = self.layer_idx, device = self.device, use_64bit = self.is_64bit)
-        else:
-            cur_fname = f'{cur_name}.npy'
-            cur_arr = UM.npy_to_torch(self.embedding_type, acts_folder = 'acts', dataset='secondary_dominant', fname=cur_fname, layer_idx = self.layer_idx, use_64bit = self.is_64bit, device = self.device)
+        cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, save_ext = self.save_ext, acts_folder = 'acts', dataset = 'secondary_dominant', to_torch = True, use_64bit = self.is_64bit, device = self.device)
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
         return cur_arr, cur_truth
 

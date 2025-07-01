@@ -22,7 +22,6 @@ class STHFChordsData(TUD.Dataset):
         self.data =  cur_df.with_columns(quality_idx=pl.col('chord_type').replace_strict(HFC.quality_to_idx).cast(int))
 
 
-        self.all_quality = self.data.select(['chord_type']).to_numpy().flatten()
         self.all_quality_idx = self.data.select(['quality_idx']).to_numpy().flatten()
         self.total_num = self.data['name'].count()
         self.coldict = {x:i for (i,x) in enumerate(self.data.columns)}
@@ -40,13 +39,7 @@ class STHFChordsData(TUD.Dataset):
         cur_row = self.data.row(idx)
         cur_name = cur_row[self.coldict['name']]
         cur_truth = cur_row[self.coldict['quality_idx']]
-        cur_arr = None
-        if self.save_ext == 'dat':
-            cur_fname = f'{cur_name}.dat'
-            cur_arr =  UM.embedding_file_to_torch(self.embedding_type, acts_folder = 'acts', dataset='chords', fname=cur_fname, layer_idx = self.layer_idx, device = self.device, use_64bit = self.is_64bit)
-        else:
-            cur_fname = f'{cur_name}.npy'
-            cur_arr = UM.npy_to_torch(self.embedding_type, acts_folder = 'acts', dataset='chords', fname=cur_fname, layer_idx = self.layer_idx, use_64bit = self.is_64bit, device = self.device)
+        cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, save_ext = self.save_ext, acts_folder = 'acts', dataset = 'chords', to_torch = True, use_64bit = self.is_64bit, device = self.device)
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
         return cur_arr, cur_truth
 

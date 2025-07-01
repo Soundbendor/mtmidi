@@ -1,6 +1,6 @@
 import sklearn.metrics as SKM
 import torch.utils.data as TUD
-from sklearn.model_selection import train_test_split
+import util_data as UD
 import numpy as np
 import polyrhythms as PL
 import dynamics as DYN
@@ -30,63 +30,9 @@ nep_paths = set(['confmat_path'])
 def init(class_binsize):
     TP.init(class_binsize)
 
-def pl_init(cur_df, is_classification):
-    _ = PL.init(cur_df,is_classification) 
-
-def read_toml_file(cur_fname):
-    data = None
-    with open(os.path.join(UM.by_projpath('toml'), f'{cur_fname}.toml'), 'rb') as f:
-        data = tomllib.load(f)
-    return data
-
-def get_exclude_col_vals(toml_dict):
-    ret = []
-    if 'exclude' in toml_dict.keys():
-        for x_key, x_arr in toml_dict['exclude'].items():
-            cur_col = (x_key, x_arr)
-            ret.append(cur_col)
-    return ret
-
-def exclude_col_vals_in_data(dframe, exclude):
-    if len(exclude) < 1:
-        return dframe
-    else:
-        for cur_col, exclude_arr in exclude:
-            all_col_vals = dframe.select([cur_col]).to_numpy().flatten()
-            dframe = dframe.filter((pl.col(cur_col).is_in(np.setdiff1d(all_col_vals, exclude_arr))))
-        return dframe
-
-
-def get_toml_params(toml_dict):
-    ret = {}
-    if 'params' in toml_dict.keys():
-        ret = toml_dict['params']
-    return ret
-
 def record_dict_in_study(study, flat_dict):
     for k,v in flat_dict.items():
         study.set_user_attr(k,v)
-
-def flatten_toml_dict(toml_dict):
-    ret = {}
-    for big_k,k_dict in toml_dict.items():
-        for k,v in k_dict.items():
-            rec_str = f'{big_k}_{k}'
-            if type(v) == type([]):
-                ret[rec_str] = ",".join([str(cur) for cur in v])
-            else:
-                ret[rec_str] = v
-    return ret
-
-def get_df(dataset, exclude_arr):
-    csvpath = None
-    if dataset in UM.new_datasets:
-        csvpath = os.path.join(UM.by_projpath('csv', make_dir = False), f'{dataset}.csv')
-    elif dataset in UM.hf_datasets:
-        csvpath = os.path.join(UM.by_projpath('hf_csv', make_dir = False), f'{dataset}.csv')
-    cur_data = pl.read_csv(csvpath)
-    cur_data = exclude_col_vals_in_data(cur_data, exclude_arr)
-    return cur_data
 
 def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_by_subcategory = False, save_confmat=True, file_basename = None):
 
@@ -236,36 +182,6 @@ def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = '
 
 
 
-
-# train_pct refers to entire dataset, test_subpct refers to length after split
-def get_train_valid_test_subsets(dataset_obj, dataset_label_arr, train_on_middle = True, train_pct = 0.7, test_subpct = 0.5, seed = 5):
-    test_valid_pct = 1. - train_pct
-    valid_pct = (1. - test_subpct) * test_valid_pct
-    test_pct = test_subpct * test_valid_pct
-    train_idx = None
-    test_valid_idx = None
-    total_num = len(dataset_obj)
-    all_idx = np.arange(0, total_num)
-    if train_on_middle == False:
-        _train_idx, _test_valid_idx = train_test_split(all_idx, random_state = seed, shuffle = True, stratify=dataset_label_arr)
-        train_idx = np.array(_train_idx, dtype=int)
-        test_valid_idx = np.array(_test_valid_idx, dtype=int)
-    else:
-        # getting start index of train, starting with valid_pct arbitrarily
-        train_start = int(valid_pct * total_num)
-        train_end = int((1. - test_pct) * total_num)
-        train_idx =  all_idx[train_start:train_end]
-        test_valid_idx = np.concatenate((all_idx[:train_start],all_idx[train_end:]))
-    leftover_labels = dataset_label_arr[test_valid_idx]
-    # returns indices of our index lists so we have to convert to regular indices
-    test_idx, valid_idx = train_test_split(test_valid_idx, random_state = seed, shuffle= True, stratify=leftover_labels)
-    #test_idx = test_valid_idx[_test_idx]
-    #valid_idx = test_valid_idx[_valid_idx]
-    train_subset = TUD.Subset(dataset_obj, train_idx)
-    valid_subset = TUD.Subset(dataset_obj, valid_idx)
-    test_subset = TUD.Subset(dataset_obj, test_idx)
-    return train_subset, valid_subset, test_subset
-
 def print_metrics(results_dict, study_name, filehandle = None):
     if filehandle != None:
         print(study_name)
@@ -309,6 +225,19 @@ def filter_dict(results_dict, replace_val = None, filter_nonstr = False, keys_do
         elif replace_val:
             ret[res_key] = replace_val
     return ret
+
+def torch_get_train_test_subsets(dataset_obj, dataset_label_arr, train_on_middle = True, train_pct = 0.7, test_subpct = 0.5, seed = 5):
+    idxs = UD.get_train_test_subsets(dataset_label_arr, train_on_middle = train_on_middle, train_pct = train_pct, test_subpct = test_subpct, seed = seed)
+    valid_subset = None
+    test_subset = None
+    train_subset = TUD.Subset(dataset_obj, idxs['train'])
+    if len(idxs['valid']) > 0:
+        valid_subset = TUD.Subset(dataset_obj, idxs['valid'])
+    if len(idxs['test']) > 0:
+        test_subset = TUD.Subset(dataset_obj, idxs['test'])
+    subsets = {'train': train_subset, 'test': test_subset, 'valid': valid_subset}
+    return subsets
+
 
 
 # log test results to neptune

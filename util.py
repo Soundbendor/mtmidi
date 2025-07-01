@@ -250,38 +250,6 @@ def get_embedding_file(model_shorthand, acts_folder = 'acts', dataset='polyrhyth
     fp = np.memmap(fpath, dtype = dtype, mode=mode, order='C', shape=shape)
     return fp
 
-def embedding_file_to_torch(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', fname='', layer_idx = -1, use_64bit = True, device = 'cpu'):
-    emb_file = get_embedding_file(model_shorthand, acts_folder = acts_folder, dataset=dataset, fname=fname, write = False, use_64bit = use_64bit)
-    cur = None
-    if layer_idx >= 0:
-        cur = emb_file[layer_idx,:].copy()
-    else:
-        cur = emb_file.copy()
-    v = torch.from_numpy(cur).to(device)
-    return v
-
-def npy_to_torch(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', fname='', layer_idx = -1, use_64bit = False, device = 'cpu'):
-    actpath = by_projpath(acts_folder)
-    datapath = os.path.join(actpath, dataset)
-    modelpath = os.path.join(datapath, model_shorthand)
-    fpath = os.path.join(modelpath, fname)
-    #arr = np.load(fpath, allow_pickle == True)
-    arr = np.load(fpath)
-    #print(arr.shape, layer_idx)
-    cur = None
-    if layer_idx >= 0 and len(arr.shape) > 1:
-        cur = arr[layer_idx,:]
-    else:
-        cur = arr
-    if cur.dtype == np.float32:
-        if use_64bit == True:
-            cur = cur.astype(np.float64)
-    elif cur.dtype == np.float64:
-        if use_64bit == False:
-            cur = cur.astype(np.float32)
-    return torch.from_numpy(cur).to(device)
-
-
 with open(by_projpath('inst_list.csv'), 'r') as f:
     csvr = csv.reader(f, delimiter=',')
     for i,row in enumerate(csvr):

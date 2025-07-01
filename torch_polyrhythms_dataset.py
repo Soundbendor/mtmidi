@@ -9,6 +9,7 @@ import polyrhythms as PL
 import numpy as np
 from sklearn.model_selection import train_test_split
 import utils_probing as UP
+import util_data as UD
 
 # exclude_polys should be in pstr format
 class PolyrhythmsData(TUD.Dataset):
@@ -24,7 +25,6 @@ class PolyrhythmsData(TUD.Dataset):
 
         self.data = cur_df.sort('norm_ratio', descending=False)
         self.all_pstr = self.data.select(['poly']).to_numpy().flatten()
-        self.all_idx = self.data.select(['label_idx']).to_numpy().flatten()
         self.all_offset_lvls = self.data.select(['offset_lvl']).to_numpy().flatten()
         self.total_num = self.data['name'].count()
         #self.data_folder = os.path.join(UM.by_projpath('acts'), 'polyrhythms', embedding_type)
@@ -46,19 +46,12 @@ class PolyrhythmsData(TUD.Dataset):
         cur_reg = None
         cur_label = cur_row[self.coldict['poly']]
         cur_truth = self.classdict[cur_label]
-        cur_arr = None
         if self.classification == False:
             if self.norm_labels == True:
                 cur_reg = cur_row[self.coldict['norm_ratio']]
             else:
                 cur_reg = cur_row[self.coldict['ratio']]
-        if self.save_ext == "dat":
-            cur_fname = f'{cur_name}.dat'
-            cur_arr =  UM.embedding_file_to_torch(self.embedding_type, acts_folder = 'acts', dataset='polyrhythms', fname=cur_fname, layer_idx = self.layer_idx, device = self.device, use_64bit = self.is_64bit)
-        else:
-            cur_fname = f'{cur_name}.npy'
-            cur_arr = UM.npy_to_torch(self.embedding_type, acts_folder = 'acts', dataset='polyrhythms', fname=cur_fname, layer_idx = self.layer_idx, use_64bit = self.is_64bit, device = self.device)
-
+        cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, save_ext = self.save_ext, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = True, use_64bit = self.is_64bit, device = self.device)
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
         if self.classification == True:
             return cur_arr, cur_truth

@@ -11,6 +11,7 @@ from torch import nn
 import torch.utils.data as TUD
 import util as UM
 import utils_probing as UP
+import util_data as UD
 import optuna_utils as OU
 import torch_nep as TN
 import polyrhythms as PL
@@ -53,7 +54,6 @@ log_plot_slice = False
 log_plot_contour = False
 # hacky way of initialize tempo things with a class_binsize for "classification" from regression
 TEMPOS_CLASS_BINSIZE=4
-THRESH = 0.1
 
 TP.init(TEMPOS_CLASS_BINSIZE)
 UP.init(TEMPOS_CLASS_BINSIZE)
@@ -250,7 +250,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     valid_ds.dataset.set_layer_idx(lidx)
 
     held_out_classes = has_held_out_classes(dataset, is_classification)     
-    model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
+    model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=num_classes, dropout = dropout, initial_dropout = True)
 
     # optimizer and loss init
     opt_fn = None
@@ -344,151 +344,69 @@ if __name__ == "__main__":
         is_64bit = False
     cur_ds = None
     label_arr = None
-    train_on_middle = arg_dict['dataset'] in UM.tom_datasets
+    cur_dsname = arg_dict['dataset']
+    train_on_middle = cur_dsname in UM.tom_datasets
     user_specify_layer_idx = arg_dict['layer_idx'] >= 0 
-    exclude = []
-    _thresh = THRESH
-    using_toml = False
-    toml_dict = None
-    if len(arg_dict['toml_file']) > 0:
-        using_toml = True
-        toml_dict = UP.read_toml_file(arg_dict['toml_file'])
-        exclude = UP.get_exclude_col_vals(toml_dict)
-        toml_params = UP.get_toml_params(toml_dict)
-        _thresh = toml_params.get('thresh', THRESH)
-
-
-    # get dataframe from csv file
-    cur_df = None
-    # exclude all intervals besides root position
-    if arg_dict['dataset'] in UM.chordprog_datasets: 
-        exclude_arr = []
-        if arg_dict['dataset'] == 'secondary_dominant':
-            exclude_arr.append(('inv', [1,2,3]))
-        if arg_dict['dataset'] == 'modemix_chordprog':
-            exclude_arr.append(('inv', [1,2]))
-
-        cur_df=UP.get_df(arg_dict['dataset'], exclude_arr)
-    else:
-        # get dataframe from csv file
-        cur_df=UP.get_df(arg_dict['dataset'], exclude)
-   
-
-
-    is_classification = arg_dict['dataset'] not in UM.reg_datasets
-    out_dim = 1
-    pl_classdict = None
-    if arg_dict['dataset'] == 'polyrhythms':
-        # hacky way of initing globals for metrics (but don't overwrite cur_df) now
-        UP.pl_init(cur_df, is_classification)
-        cur_df = PL.init(cur_df, is_classification)
-
-        if is_classification == True:
-            out_dim = PL.num_poly
-
-            pl_classdict = PL.polystr_to_idx
-        else:
-            pl_classdict = PL.reg_polystr_to_idx
-    elif arg_dict['dataset'] == 'dynamics':
-        if arg_dict['classify_by_subcategory'] == True:
-            out_dim = DYN.num_subcategories
-        else:
-            out_dim = DYN.num_categories
+    tomlfile_str = arg_dict['toml_file'] 
     
-    elif arg_dict['dataset'] == 'chords7':
-        out_dim = CH7.num_chords
-
-    elif arg_dict['dataset'] == 'chords':
-        out_dim = HFC.num_chords
-
-    elif arg_dict['dataset'] == 'time_signatures':
-        out_dim = HTS.num_timesig
-    
-    elif arg_dict['dataset'] == 'simple_progressions':
-        if arg_dict['classify_by_subcategory'] == True:
-            out_dim = HFSP.num_progs
-        else:
-            out_dim = HFSP.num_types
+    _classify_by_subcategory = arg_dict['classify_by_subcategory'] 
 
 
-    elif arg_dict['dataset'] == 'modemix_chordprog':
-        if arg_dict['classify_by_subcategory'] == True:
-            out_dim = CHP.num_subprog
-        else:
-            out_dim = CHP.num_ismodemix
-    elif arg_dict['dataset'] == 'secondary_dominant':
-        if arg_dict['classify_by_subcategory'] == True:
-            out_dim = CSP.num_subprog
-        else:
-            out_dim = CSP.num_subtypes
-   
 
-
+    datadict  = UD.load_data_dict(cur_dsname, classify_by_subcategory = _classify_by_subcategory, tomlfile_str = tomlfile_str)
+    out_dim = datadict['num_classes']
+    cur_df = datadict['df']
+    label_arr = datadict['label_arr']
+    _thresh = datadict['thresh']
+    using_toml = datadict['using_toml']
+    toml_dict = datadict['toml_dict']
+    pl_classdict = datadict['pl_classdict']
+    is_classification = datadict['is_classification']
 
     arg_dict.update({'thresh': _thresh, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
 
-    save_ext = None
-    if arg_dict['memmap'] == True:
-        save_ext = 'dat'
-    else:
-        save_ext = 'npy'
+    is_memmap = arg_dict['memmap']
+    save_ext = UD.get_save_ext(is_memmap)
     #### load dataset(s)
-    if arg_dict['dataset'] == "polyrhythms":
+    if cur_dsname == "polyrhythms":
 
         cur_ds = PolyrhythmsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, classification = is_classification, classdict = pl_classdict, norm_labels = True, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit, save_ext = save_ext)
-        label_arr = cur_ds.all_idx
-    elif arg_dict['dataset'] == 'tempos':
+    elif cur_dsname == 'tempos':
         cur_ds = STHFTempiData(cur_df, embedding_type= arg_dict['embedding_type'], device=device, norm_labels = True, layer_idx= arg_dict['layer_idx'], class_binsize = TEMPOS_CLASS_BINSIZE, num_classes = TP.num_classes, bpm_class_mapper = TP.bpm_class_mapper, is_64bit = is_64bit, save_ext = save_ext)
-        label_arr = cur_ds.all_classes
-    elif arg_dict['dataset'] == 'dynamics':
+    elif cur_dsname == 'dynamics':
         cur_ds = DynamicsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, save_ext = save_ext)
-        if arg_dict['classify_by_subcategory'] == True:
-            label_arr = cur_ds.all_dyn_subcategories
-        else:
-            label_arr = cur_ds.all_dyn_categories
-    elif arg_dict['dataset'] == 'chords7':
+    elif cur_dsname == 'chords7':
         cur_ds = Chords7Data(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,save_ext = save_ext)
-        label_arr = cur_ds.all_quality
-    elif arg_dict['dataset'] == 'chords':
+    elif cur_dsname == 'chords':
         cur_ds = STHFChordsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,save_ext = save_ext)
-        label_arr = cur_ds.all_quality
-    elif arg_dict['dataset'] == 'time_signatures':
+    elif cur_dsname == 'time_signatures':
         cur_ds = STHFTimeSignaturesData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,save_ext = save_ext)
-        label_arr = cur_ds.all_timesig
-    elif arg_dict['dataset'] == 'simple_progressions':
+    elif cur_dsname == 'simple_progressions':
         cur_ds = STHFSimpleProgressionsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, save_ext = save_ext)
-        if arg_dict['classify_by_subcategory'] == True:
-            label_arr = cur_ds.all_prog
-        else:
-            label_arr = cur_ds.all_types
-
-    elif arg_dict['dataset'] == 'modemix_chordprog':
+        
+    elif cur_dsname == 'modemix_chordprog':
         cur_ds = ModemixChordprogData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, save_ext = save_ext)
-        if arg_dict['classify_by_subcategory'] == True:
-            label_arr = cur_ds.all_subprog
-        else:
-            label_arr = cur_ds.all_imm
-    elif arg_dict['dataset'] == 'secondary_dominant':
+    elif cur_dsname == 'secondary_dominant':
         cur_ds = SecondaryDominantData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, save_ext = save_ext)
-        if arg_dict['classify_by_subcategory'] == True:
-            label_arr = cur_ds.all_subprog
-        else:
-            label_arr = cur_ds.all_subtypes
+        
 
 
-
-
-    train_ds, valid_ds, test_ds = UP.get_train_valid_test_subsets(cur_ds, label_arr, train_on_middle = train_on_middle, train_pct = train_pct, test_subpct = test_subpct, seed = seed)
+    cur_subsets = UP.torch_get_train_test_subsets(cur_ds, label_arr, train_on_middle = train_on_middle, train_pct = train_pct, test_subpct = test_subpct,seed = seed)
+    train_ds = cur_subsets['train']
+    valid_ds = cur_subsets['valid']
+    test_ds = cur_subsets['test']
     rec_dict = {k:v for (k,v) in arg_dict.items()}
     rec_dict['slurm_job'] = arg_dict['slurm_job']
     arg_dict.update({'train_ds': train_ds, 'valid_ds': valid_ds})
 
+    num_layers = UM.get_embedding_num_layers(emb_type)
+
     if arg_dict['debug'] == True:
         exit()
+
     #### running the optuna study
     study_base_name = f'{args.dataset}-{args.embedding_type}'
     study_dict = None
-    num_layers = UM.get_embedding_num_layers(emb_type)
     if arg_dict['grid_search'] == True:
  
         search_space = None
@@ -510,7 +428,7 @@ if __name__ == "__main__":
     study_name = study_dict['study_name']
     study_sampler_path = study_dict['sampler_fpath']
     if using_toml == True:
-        flat_toml_dict = UP.flatten_toml_dict(toml_dict)
+        flat_toml_dict = UD.flatten_toml_dict(toml_dict)
         rec_dict.update(flat_toml_dict)
         UP.record_dict_in_study(study, rec_dict)
 
@@ -551,9 +469,9 @@ if __name__ == "__main__":
     ## model loading and running 
     model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
     model.load_state_dict(best_model_state_dict)
-    held_out_classes = has_held_out_classes(arg_dict['dataset'], is_classification)
+    held_out_classes = has_held_out_classes(cur_dsname, is_classification)
     test_ds.dataset.set_layer_idx(layer_idx)
-    test_loss, test_metrics = valid_test_loop(model, test_ds, loss_fn = None, dataset = arg_dict['dataset'], is_classification = is_classification, held_out_classes = held_out_classes, is_testing = True,  thresh = arg_dict['thresh'], classify_by_subcategory = arg_dict['classify_by_subcategory'], batch_size = bs, file_basename = study_name)
+    test_loss, test_metrics = valid_test_loop(model, test_ds, loss_fn = None, dataset = cur_dsname, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = True,  thresh = arg_dict['thresh'], classify_by_subcategory = arg_dict['classify_by_subcategory'], batch_size = bs, file_basename = study_name)
     UP.print_metrics(test_metrics, study_name)
     UP.save_results_to_study(study, test_metrics)
 
