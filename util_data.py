@@ -230,8 +230,14 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
     ret['label_arr'] = label_arr
     return ret
 
-def collate_data_at_idx(layer_idx, emb_type,save_ext = 'dat', acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, device = 'cpu'):
-    pass
+
+def collate_data_at_idx(cur_df,layer_idx, emb_type,save_ext = 'dat', acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, device = 'cpu'):
+    actpath = UM.by_projpath(acts_folder)
+    datapath = os.path.join(actpath, dataset)
+    modelpath = os.path.join(datapath, emb_type)
+    for f in cur_df['name']:
+
+
 
 def get_data_vec_at_idx(fname, layer_idx, emb_type, save_ext = 'dat', acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, device = 'cpu'):
     cur = None
