@@ -155,67 +155,69 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
    
     is_classification = cur_dsname not in UM.reg_datasets
     pl_classdict = None
+    label_col = None
     if cur_dsname == 'polyrhythms':
         # hacky way of initing globals for metrics (but don't overwrite cur_df) now
         pl_init(cur_df, is_classification)
         cur_df = PL.init(cur_df, is_classification)
 
-        label_arr = cur_df.select(['label_idx']).to_numpy().flatten()
         if is_classification == True:
             num_classes = PL.num_poly
 
             pl_classdict = PL.polystr_to_idx
         else:
             pl_classdict = PL.reg_polystr_to_idx
+        label_col = 'poly'
     elif cur_dsname == 'tempos':
-        label_arr = cur_df['bpm_class'].to_numpy().flatten()
+        label_col = 'bpm_class'
 
     elif cur_dsname == 'dynamics':
         if classify_by_subcategory == True:
             num_classes = DYN.num_subcategories
-
-            label_arr = cur_df.select(['dyn_subcategory']).to_numpy().flatten()
+            label_col = 'dyn_subcategory'
+        
         else:
             num_classes = DYN.num_categories
-            label_arr = cur_df.select(['dyn_category']).to_numpy().flatten()
+            label_col = 'dyn_category'
     
     elif cur_dsname == 'chords7':
-        label_arr = cur_df.select(['quality']).to_numpy().flatten()
         num_classes = CH7.num_chords
+        label_col = 'quality'
 
     elif cur_dsname == 'chords':
         num_classes = HFC.num_chords
-        label_arr = cur_df.select(['chord_type']).to_numpy().flatten()
+        label_col = 'chord_type'
 
     elif cur_dsname == 'time_signatures':
         num_classes = HTS.num_timesig
-        label_arr = cur_df.select(['time_signature']).to_numpy().flatten()
+        label_col = 'time_signature'
     
     elif cur_dsname == 'simple_progressions':
         if classify_by_subcategory == True:
             num_classes = HFSP.num_progs
-            label_arr = cur_df.select(['orig_prog']).to_numpy().flatten()
+            label_col = 'orig_prog'
         else:
             num_classes = HFSP.num_types
-            label_arr = cur_df.select(['is_major']).to_numpy().flatten()
+            label_col = 'is_major'
 
 
     elif cur_dsname == 'modemix_chordprog':
         if classify_by_subcategory == True:
             num_classes = CHP.num_subprog
             label_arr = cur_ds.all_subprog
-            label_arr = cur_df.select(['sub_prog']).to_numpy().flatten()
+            label_col = 'sub_prog'
         else:
             num_classes = CHP.num_ismodemix
-            label_arr = cur_df.select(['is_modemix']).to_numpy().flatten()
+            label_col = 'is_modemix'
 
     elif cur_dsname == 'secondary_dominant':
         if classify_by_subcategory == True:
             num_classes = CSP.num_subprog
-            label_arr = cur_df.select(['sub_prog']).to_numpy().flatten()
+            label_col = 'sub_prog'
         else:
             num_classes = CSP.num_subtypes
-            label_arr = cur_df.select(['sub_type']).to_numpy().flatten()
+            label_col = 'sub_type'
+    label_arr = cur_df.select([label_col]).to_numpy().flatten()
 
 
  
@@ -226,22 +228,21 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
     ret['pl_classdict'] = pl_classdict
     ret['is_classification'] = is_classification
     ret['thresh'] = thresh
+    ret['label_col'] = label_col
     ret['using_toml'] = using_toml
     ret['label_arr'] = label_arr
     return ret
 
 
-def collate_data_at_idx(cur_df,layer_idx, emb_type,save_ext = 'dat', acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, device = 'cpu'):
-    actpath = UM.by_projpath(acts_folder)
-    datapath = os.path.join(actpath, dataset)
-    modelpath = os.path.join(datapath, emb_type)
-    for f in cur_df['name']:
+def collate_data_at_idx(cur_df,layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, device = 'cpu'):
+    cur_names = cur_df['name']
+    cur_acts = [get_data_vec_at_idx(cur_name, layer_idx, emb_type, is_memmap = is_memmap, acts_folder = acts_folder, dataset = dataset, to_torch = to_torch, use_64bit = use_64bit, device = device) for cur_name in cur_names]
+    return cur_acts
 
 
-
-def get_data_vec_at_idx(fname, layer_idx, emb_type, save_ext = 'dat', acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, device = 'cpu'):
+def get_data_vec_at_idx(fname, layer_idx, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, device = 'cpu'):
     cur = None
-    if save_ext == "dat":
+    if is_memmap == True:
         cur_fname = f'{cur_name}.dat'
         emb_file = UM.get_embedding_file(emb_type, acts_folder = acts_folder, dataset=dataset, fname=cur_fname, write = False, use_64bit = use_64bit)
         if layer_idx >= 0:

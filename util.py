@@ -1,6 +1,5 @@
 # delegating all random stuff here since I'm setting the seed here
 
-import torch
 import sys
 import mido
 import csv
