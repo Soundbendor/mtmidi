@@ -240,7 +240,7 @@ def collate_data_at_idx(cur_df,layer_idx, emb_type, is_memmap = True, acts_folde
     return cur_acts
 
 
-def get_data_vec_at_idx(fname, layer_idx, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, device = 'cpu'):
+def get_data_vec_at_idx(fname, layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, device = 'cpu'):
     cur = None
     if is_memmap == True:
         cur_fname = f'{cur_name}.dat'
