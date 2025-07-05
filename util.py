@@ -128,6 +128,16 @@ def by_projpath(subpath=None,make_dir = False):
             os.makedirs(cur_path)
     return cur_path
 
+# handle multiple paths
+def by_projpath2(subpaths=[],make_dir = False):
+    cur_path = os.path.dirname(os.path.realpath(__file__))
+    for subpath in subpaths:
+        cur_path = os.path.join(cur_path, subpath)
+        if os.path.exists(cur_path) == False and make_dir == True:
+            os.makedirs(cur_path)
+    return cur_path
+
+
 emb_doc_dir = by_projpath(subpath='emb_doc', make_dir=True)
 
 def get_baseline_shape_csv_path(cur_dataset):

@@ -4,24 +4,36 @@ import util_data as UD
 import polars as pl
 import argparse
 import sklearn.cluster as SKC
-
+import util as UM
+import os
 
 seed = 5
 
-def get_cluster_composition(cur_ds,cur_df,cur_labelcol, num_clusters,cur_clustering):
+def get_cluster_composition(cur_df,cur_labelcol, num_clusters,cur_clustering, out_folder):
     unique_labels = cur_df[cur_labelcol].unique().to_numpy().flatten()
-    default_props = {k: 0.0 for k in unique_labels}
+    #default_props = {k: 0.0 for k in unique_labels}
     cluster_series = pl.Series('cluster', cur_clustering)
     cur_df.insert_column(-1, cluster_series)
     res = [None for x in range(num_clusters)]
+    c_idxs = []
+    max_labels = []
+    max_proportions = []
     for c_idx in range(num_clusters):
         cur_props = cur_df.filter(pl.col('cluster') == 0)[cur_labelcol].value_counts(normalize=True,sort=True)
         cur_max = cur_props[0]
         max_label = cur_max[cur_labelcol]
         max_prop = cur_max['proportion']
-        cur_res = default_props | cur_props.rows_by_key(key=[cur_labelcol],unique=True)
-        res[c_idx] = cur_res | {'max_label': max_label, 'max_proportion': max_prop}
-    return res
+        #cur_res = default_props | cur_props.rows_by_key(key=[cur_labelcol],unique=True)
+        c_idxs.append(c_idx)
+        max_labels.append(max_label)
+        max_proportions.append(max_prop)
+        #res[c_idx] = cur_res | {'max_label': max_label, 'max_proportion': max_prop}
+        c_fname = os.path.join(out_folder, f'cluster_{idx}-res.csv')
+        cur_props.write_csv(c_fname, separator = ",")
+    overall_res = {'cluster': c_idxs, 'max_label': max_labels, 'max_proportion': max_proportions}
+    overall_df = pl.DataFrame(overall_res, schema=[('cluster', pl.Int64), ('max_label', pl.String), ('max_proportion', pl.Float32)])
+    o_fname = os.path.join(out_folder, f'overall-res.csv')
+    overall_df.write_csv(o_fname, separator = ",")
 
     
 
@@ -71,6 +83,9 @@ if __name__ == "__main__":
     cur_km = SKC.KMeans(n_clusters = num_classes, random_state=seed, n_init = 'auto').fit(cur_data)
     cur_clustering = cur_km.labels_
 
+    res_folder = UM.by_projpath2(subpaths=['res_kmeans',cur_dsname, cur_embtype, f'layer_idx-{layer_idx}'], make_dir = True)
+
+    get_cluster_composition(cur_df,cur_label_col, num_classes,cur_clustering, res_folder)
 
 
 
