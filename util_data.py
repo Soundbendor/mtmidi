@@ -243,14 +243,14 @@ def collate_data_at_idx(cur_df,layer_idx, emb_type, is_memmap = True, acts_folde
 def get_data_vec_at_idx(fname, layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, device = 'cpu'):
     cur = None
     if is_memmap == True:
-        cur_fname = f'{cur_name}.dat'
+        cur_fname = f'{fname}.dat'
         emb_file = UM.get_embedding_file(emb_type, acts_folder = acts_folder, dataset=dataset, fname=cur_fname, write = False, use_64bit = use_64bit)
         if layer_idx >= 0:
             cur = emb_file[layer_idx,:].copy()
         else:
             cur = emb_file.copy()
     else: 
-        cur_fname = f'{cur_name}.npy'
+        cur_fname = f'{fname}.npy'
         actpath = UM.by_projpath(acts_folder)
         datapath = os.path.join(actpath, dataset)
         modelpath = os.path.join(datapath, emb_type)
