@@ -434,7 +434,7 @@ if __name__ == "__main__":
 
     rec_dict['study_name'] = study_name
     study.set_user_attr('classify_by_subcategory', arg_dict['classify_by_subcategory'])
-    study.set_user_attr('thresh', THRESH)
+    study.set_user_attr('thresh', _thresh)
     obj_dict = {k:v for (k,v) in arg_dict.items() if k not in drop_keys}
     objective = partial(_objective, **obj_dict)
     callbacks = [study_callback]
