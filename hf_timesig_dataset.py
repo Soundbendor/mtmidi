@@ -40,7 +40,7 @@ class STHFTimeSignaturesData(TUD.Dataset):
         cur_row = self.data.row(idx)
         cur_name = cur_row[self.coldict['name']]
         cur_truth = cur_row[self.coldict['timesig_idx']]
-        cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, save_ext = self.save_ext, acts_folder = 'acts', dataset = 'time_signatures', to_torch = True, use_64bit = self.is_64bit, device = self.device)
+        cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, is_memmap = self.is_memmap, acts_folder = 'acts', dataset = 'time_signatures', to_torch = True, use_64bit = self.is_64bit, device = self.device)
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
         return cur_arr, cur_truth
 

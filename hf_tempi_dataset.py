@@ -55,7 +55,7 @@ class STHFTempiData(torch.utils.data.Dataset):
             cur_reg = cur_row[self.coldict['norm_bpm']]
         else:
             cur_reg = cur_row[self.coldict['bpm']]
-        cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, save_ext = self.save_ext, acts_folder = 'acts', dataset = 'tempos', to_torch = True, use_64bit = self.is_64bit, device = self.device)
+        cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, is_memmap = self.is_memmap, acts_folder = 'acts', dataset = 'tempos', to_torch = True, use_64bit = self.is_64bit, device = self.device)
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
         return cur_arr, cur_reg, cur_truth
 
