@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 import utils_probing as UP
 
 class STHFChordsData(TUD.Dataset):
-    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=-1, is_64bit = True, save_ext = 'dat'):
+    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=-1, is_64bit = True, is_memmap = True):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
@@ -26,7 +26,7 @@ class STHFChordsData(TUD.Dataset):
         self.total_num = self.data['name'].count()
         self.coldict = {x:i for (i,x) in enumerate(self.data.columns)}
         self.layer_idx = layer_idx
-        self.save_ext = save_ext
+        self.is_memmap = is_memmap
     def __len__(self):
         return self.data['name'].count()
 

@@ -13,7 +13,7 @@ import util_data as UD
 
 # exclude_polys should be in pstr format
 class PolyrhythmsData(TUD.Dataset):
-    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', classification = True, classdict={}, norm_labels = True, layer_idx=-1, is_64bit = True, save_ext = 'dat'):
+    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', classification = True, classdict={}, norm_labels = True, layer_idx=-1, is_64bit = True, is_memmap = True):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
@@ -32,7 +32,7 @@ class PolyrhythmsData(TUD.Dataset):
         self.classification = classification
         self.norm_labels = norm_labels
         self.classdict = classdict
-        self.save_ext = save_ext
+        self.is_memmap = is_memmap
     def __len__(self):
         return self.data['name'].count()
 

@@ -15,7 +15,7 @@ import util_data as UD
 
 # class_binsize = bpms within int(bpm/10) go within this bin
 class STHFTempiData(torch.utils.data.Dataset):
-    def __init__(self, cur_df, embedding_type='mg_small_h', device='cpu', norm_labels = True, layer_idx=-1, class_binsize = 10, is_64bit = True, num_classes = -1, bpm_class_mapper = None, save_ext = 'dat'):
+    def __init__(self, cur_df, embedding_type='mg_small_h', device='cpu', norm_labels = True, layer_idx=-1, class_binsize = 10, is_64bit = True, num_classes = -1, bpm_class_mapper = None, is_memmap = True):
         self.seed = 5
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
@@ -38,7 +38,7 @@ class STHFTempiData(torch.utils.data.Dataset):
         self.norm_labels = norm_labels
         #self.data_folder = os.path.join(UM.by_projpath('acts'),'tempi', embedding_type)
         self.layer_idx = layer_idx 
-        self.save_ext = save_ext
+        self.is_memmap = is_memmap
     def __len__(self):
         return self.data['path'].count()
 
