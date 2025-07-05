@@ -250,7 +250,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     valid_ds.dataset.set_layer_idx(lidx)
 
     held_out_classes = has_held_out_classes(dataset, is_classification)     
-    model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=num_classes, dropout = dropout, initial_dropout = True)
+    model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
 
     # optimizer and loss init
     opt_fn = None
