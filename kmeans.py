@@ -19,16 +19,16 @@ def get_cluster_composition(cur_df,cur_labelcol, num_clusters,cur_clustering, ou
     max_labels = []
     max_proportions = []
     for c_idx in range(num_clusters):
-        cur_props = cur_df.filter(pl.col('cluster') == 0)[cur_labelcol].value_counts(normalize=True,sort=True)
+        cur_props = cur_df.filter(pl.col('cluster') == c_idx)[cur_labelcol].value_counts(normalize=True,sort=True)
         cur_max = cur_props[0]
-        max_label = cur_max[cur_labelcol]
-        max_prop = cur_max['proportion']
+        max_label = cur_max[cur_labelcol][0]
+        max_prop = cur_max['proportion'][0]
         #cur_res = default_props | cur_props.rows_by_key(key=[cur_labelcol],unique=True)
         c_idxs.append(c_idx)
         max_labels.append(max_label)
         max_proportions.append(max_prop)
         #res[c_idx] = cur_res | {'max_label': max_label, 'max_proportion': max_prop}
-        c_fname = os.path.join(out_folder, f'cluster_{idx}-res.csv')
+        c_fname = os.path.join(out_folder, f'cluster_{c_idx}-res.csv')
         cur_props.write_csv(c_fname, separator = ",")
     overall_res = {'cluster': c_idxs, 'max_label': max_labels, 'max_proportion': max_proportions}
     overall_df = pl.DataFrame(overall_res, schema=[('cluster', pl.Int64), ('max_label', pl.String), ('max_proportion', pl.Float32)])
@@ -51,6 +51,7 @@ if __name__ == "__main__":
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
+    parser.add_argument("-mi", "--max_iter", type=int, default=10000, help="maximum number of iterations")
     
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -62,6 +63,7 @@ if __name__ == "__main__":
     cls_subcat = arg_dict['classify_by_subcategory']
     cur_tom = arg_dict['train_on_middle']
     cur_mm = arg_dict['memmap']
+    cur_mi = arg_dict['max_iter']
     save_ext = 'npy'
     if cur_mm == True:
         save_ext = 'dat'
@@ -80,7 +82,7 @@ if __name__ == "__main__":
     
     cur_data = UD.collate_data_at_idx(cur_df,layer_idx, cur_embtype,is_memmap = cur_mm, acts_folder = 'acts', dataset = cur_dsname, to_torch = False, use_64bit = False, device = '')
     
-    cur_km = SKC.KMeans(n_clusters = num_classes, random_state=seed, n_init = 'auto').fit(cur_data)
+    cur_km = SKC.KMeans(n_clusters = num_classes, random_state=seed, max_iter = cur_mi,  n_init = 'auto').fit(cur_data)
     cur_clustering = cur_km.labels_
 
     res_folder = UM.by_projpath2(subpaths=['res_kmeans',cur_dsname, cur_embtype, f'layer_idx-{layer_idx}'], make_dir = True)
