@@ -235,17 +235,17 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
     return ret
 
 
-def collate_data_at_idx(cur_df,layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, device = 'cpu'):
+def collate_data_at_idx(cur_df,layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, use_shape = None, device = 'cpu'):
     cur_names = cur_df['name']
-    cur_acts = [get_data_vec_at_idx(cur_name, layer_idx, emb_type, is_memmap = is_memmap, acts_folder = acts_folder, dataset = dataset, to_torch = to_torch, use_64bit = use_64bit, device = device) for cur_name in cur_names]
+    cur_acts = [get_data_vec_at_idx(cur_name, layer_idx, emb_type, is_memmap = is_memmap, acts_folder = acts_folder, dataset = dataset, to_torch = to_torch, use_64bit = use_64bit, use_shape = use_shape, device = device) for cur_name in cur_names]
     return cur_acts
 
 
-def get_data_vec_at_idx(fname, layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, device = 'cpu'):
+def get_data_vec_at_idx(fname, layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, use_shape = None, device = 'cpu'):
     cur = None
     if is_memmap == True:
         cur_fname = f'{fname}.dat'
-        emb_file = UM.get_embedding_file(emb_type, acts_folder = acts_folder, dataset=dataset, fname=cur_fname, write = False, use_64bit = use_64bit)
+        emb_file = UM.get_embedding_file(emb_type, acts_folder = acts_folder, dataset=dataset, fname=cur_fname, write = False, use_64bit = use_64bit, use_shape = use_shape)
         if layer_idx >= 0:
             cur = emb_file[layer_idx,:].copy()
         else:

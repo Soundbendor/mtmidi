@@ -34,6 +34,8 @@ new_datasets = set(['polyrhythms', 'dynamics', 'chords7', 'secondary_dominant', 
 
 chordprog_datasets = set(['secondary_dominant', 'modemix_chordprog'])
 
+test_datasets = set (['test'])
+
 #datasets that are regression
 reg_datasets = set(['tempos'])
 # datasets to train on middle on
