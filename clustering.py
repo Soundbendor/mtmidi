@@ -46,7 +46,7 @@ def get_cluster_metrics(cur_df,cur_labelcol, num_clusters,cur_clustering, out_fo
                    'adj_mi': lambda x,y: SKM.adjusted_mutual_info_score(x,y,average_method='arithmetic'),
                    'hg_score': SKM.homogeneity_score,
                    'complete_score': SKM.completeness_score,
-                   'v_meas': lambda x,y: SKM.v_measure(x,y,beta=1.0),
+                   'v_meas': lambda x,y: SKM.v_measure_score(x,y,beta=1.0),
                    'fm_score': SKM.fowlkes_mallows_score}
     real_idx = cur_df['label_idx'].to_numpy().flatten()
     calc_metrics = {k:fn(real_idx, cur_clustering) for (k,fn) in use_metrics.items()}

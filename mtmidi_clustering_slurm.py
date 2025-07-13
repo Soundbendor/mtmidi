@@ -67,13 +67,13 @@ if __name__ == "__main__":
                         script_idx += 1
                         script_path = os.path.join(script_dir, script_fname)
                         script_str = "\n".join(slurm_strarr)
-                        print(f"=== {dataset} | {cluster_type} | {embedding_type} | CM: {cluster_mult} | LI {layer_idx} ===")
-                        print(f"Creating {script_path}")
+                        print(f"===== {dataset} | {cluster_type} | {embedding_type} | CM: {cluster_mult} | LI {layer_idx} =====")
+                        print(f"Creating {script_fname}")
                         with open(script_path, 'w') as f:
                             f.write(script_str)
                         subprocess.run(f"chmod u+x {script_path}", shell=True)
                         if args.debug == False:
-                            print(f"Running {script_path}")
+                            print(f"Running {script_fname}")
                             subprocess.run(f"sbatch -W {script_path}", shell=True)
 
 
