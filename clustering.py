@@ -78,6 +78,7 @@ if __name__ == "__main__":
     arg_dict = vars(args)
 
     cur_clmult = arg_dict['cluster_mult']
+    cur_cltype = arg_dict['cluster_type']
     cur_embtype = arg_dict['embedding_type']
     layer_idx = arg_dict['layer_idx']
     cur_dsname = arg_dict['dataset']
@@ -131,9 +132,15 @@ if __name__ == "__main__":
         cur_emb = UM.get_embedding_file(cur_embtype, acts_folder = test_act_folder, dataset=test_dataset, fname=cur_dat_file, write = False, use_64bit = False, use_shape = cur_shape)
         cur_data = cur_emb.copy()
     cur_nc = int(cur_clmult * num_classes)
-    cur_km = SKC.KMeans(n_clusters = cur_nc, random_state=seed, max_iter = cur_mi,  n_init = 'auto').fit(cur_data)
-    cur_clustering = cur_km.labels_
+    cur_clustering = None
+    
+    cur_algo = None
+    if cur_cltype == 'kmeans':
+        cur_algo = SKC.KMeans(n_clusters = cur_nc, random_state=seed, max_iter = cur_mi,  n_init = 'auto').fit(cur_data)
+    elif cur_cltype == 'spectral':
+        cur_algo = SKC.SpectralClustering(n_clusters, cur_nc, random_state = seed, eigen_solver = 'amg', assign_labels = 'kmeans', n_init = 10).fit(cur_data)
 
+    cur_clustering = cur_algo.labels_
     res_folder = UM.by_projpath2(subpaths=['res_kmeans',cur_dsname, cur_embtype, f'layer_idx-{layer_idx}'], make_dir = True)
 
     get_cluster_composition(cur_df,cur_label_col, cur_nc,cur_clustering, res_folder)

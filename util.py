@@ -43,12 +43,29 @@ tom_datasets = set(['tempos'])
 baseline_names = set(['baseline_mel', 'baseline_chroma', 'baseline_mfcc', 'baseline_concat'])
 all_datasets = hf_datasets.union(new_datasets)
 
+dataset_abbrev = {'polyrhythms': 'poly', 'dynamics': 'dyn', 'chords7': 'ch7',
+             'secondary_dominant': 'sdch', 'modemix_chordprog': 'mmch',
+             'baseline_mel': 'bmel', 'baseline_chroma': 'bchr',
+             'baseline_mfcc': 'bmfcc', 'baseline_concat': 'bcat'}
+
+cluster_abbrev = {'kmeans': 'km', 'spectral': 'sp'}
 model_longhand = {'mg_audio': 'musicgen-encoder',
                  'mg_small_h': 'musicgen-small_hidden', 'mg_med_h': 'musicgen-medium_hidden', 'mg_large_h': 'musicgen-large_hidden',
                  'mg_small_at': 'musicgen-small_attn', 'mg_med_at': 'musicgen-medium_attn', 'mg_large_at': 'musicgen-large_attn',
                   'jukebox': 'jukebox', 'jukebox36': 'jukebox36', 'jukebox38': 'jukebox38'}
 
 model_shorthand = model_longhand.keys()
+
+model_abbrev = {'mg_audio': 'mga',
+                'mg_small_h': 'mgs',
+                'mg_med_h': 'mgm',
+                'mg_large_h': 'mgl',
+                'mg_small_at': 'mgaa',
+                'mg_med_at': 'mgma',
+                'mg_large_at': 'mgla',
+                'jukebox': 'jml',
+                'jukebox36': 'jml36',
+                'jukebox38': 'jml38'}
 
 
 
