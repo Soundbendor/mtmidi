@@ -43,7 +43,7 @@ def get_cluster_metrics(cur_df,cur_labelcol, num_clusters,cur_clustering, out_fo
 
     # other metrics
     use_metrics = {'adj_rand': SKM.adjusted_rand_score,
-                   'adj_mi': lambda x,y: SKM.adjusted_mutual_info_score(x,y,average_method='arithmetic')
+                   'adj_mi': lambda x,y: SKM.adjusted_mutual_info_score(x,y,average_method='arithmetic'),
                    'hg_score': SKM.homogeneity_score,
                    'complete_score': SKM.completeness_score,
                    'v_meas': lambda x,y: SKM.v_measure(x,y,beta=1.0),
