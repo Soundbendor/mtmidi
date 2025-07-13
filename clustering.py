@@ -48,7 +48,7 @@ def get_cluster_metrics(cur_df,cur_labelcol, num_clusters,cur_clustering, out_fo
                    'complete_score': SKM.completeness_score,
                    'v_meas': lambda x,y: SKM.v_measure(x,y,beta=1.0),
                    'fm_score': SKM.fowlkes_mallows_score}
-    real_idx = df['label_idx'].to_numpy().flatten()
+    real_idx = cur_df['label_idx'].to_numpy().flatten()
     calc_metrics = {k:fn(real_idx, cur_clustering) for (k,fn) in use_metrics.items()}
     res_df = pl.from_dict(calc_metrics)
     o_fname2 = os.path.join(out_folder, f'{cur_fprefix}-other-overall-res.csv')
@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
 
     cur_clustering = cur_algo.labels_
-    res_folder = UM.by_projpath2(subpaths=['res_kmeans',cur_dsname, cur_embtype, f'layer_idx-{layer_idx}'], make_dir = True)
+    res_folder = UM.by_projpath2(subpaths=['res_cluster',cur_dsname, cur_embtype, f'layer_idx-{layer_idx}'], make_dir = True)
 
     get_cluster_metrics(cur_df,cur_label_col, cur_nc,cur_clustering, res_folder)
 
