@@ -48,7 +48,9 @@ dataset_abbrev = {'polyrhythms': 'poly', 'dynamics': 'dyn', 'chords7': 'ch7',
              'baseline_mel': 'bmel', 'baseline_chroma': 'bchr',
              'baseline_mfcc': 'bmfcc', 'baseline_concat': 'bcat'}
 
-cluster_abbrev = {'kmeans': 'km', 'spectral': 'sp'}
+cluster_abbrev = {'kmeans': 'km', 'spectral': 'sp', "ward": "ward", "avg_agg": "aag", "complete_agg": "cag", "single_agg": "sag", "dbscan": "dbs", "hdbscan": "hdbs", "optics": "opt", "birch": "brc"}
+
+cluster_types = cluster_abbrev.keys()
 model_longhand = {'mg_audio': 'musicgen-encoder',
                  'mg_small_h': 'musicgen-small_hidden', 'mg_med_h': 'musicgen-medium_hidden', 'mg_large_h': 'musicgen-large_hidden',
                  'mg_small_at': 'musicgen-small_attn', 'mg_med_at': 'musicgen-medium_attn', 'mg_large_at': 'musicgen-large_attn',

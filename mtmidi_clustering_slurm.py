@@ -29,6 +29,9 @@ if __name__ == "__main__":
     parser.add_argument("-mi", "--max_iter", type=int, default=10000, help="maximum number of iterations")
     parser.add_argument("-cpm", "--cpu_mem", type=int, default=5, help="cpu_memory in gigs")
     parser.add_argument("-pt", "--partition", type=str, default="preempt", help="partition to run on")
+    parser.add_argument("-ms", "--min_samples", type=int, default=5, help="min samples, used for (h)dbscan and optics")
+    parser.add_argument("-eps", "--eps", type=float, default=0.5, help="eps, used for dbscan")
+    parser.add_argument("-tr", "--threshold", type=float, default=0.5, help="threshold for birch")
 
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -52,6 +55,12 @@ if __name__ == "__main__":
                         p_str = f"python {clust_path} -ds {dataset} -et {embedding_type} -ct {cluster_type} -li {layer_idx} -cm {cluster_mult}"
                         if dataset == "polyrhythms":
                             p_str = p_str + f" -tf {args.toml_file}"
+                        if cluster_type in ['dbscan', 'hdbscan', 'optics']:
+                            p_str = p_str + f" --min_samples {args.min_samples}"
+                            if cluster_type == 'dbscan':
+                                p_str = p_str + f" --eps {args.eps}"
+                        if cluster_type == 'birch':
+                            p_str = p_str + f" --threshold {args.threshold}"
                         slurm_strarr.append(p_str)
                         cm_str = str(int(cluster_mult * 1000))
                         script_fname = f"{start_time}_{ds_abbrev}-{cl_abbrev}-{emb_abbrev}-{cm_str}-{layer_idx}.sh"

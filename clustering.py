@@ -59,7 +59,7 @@ if __name__ == "__main__":
     #### arg parsing
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-ds", "--dataset", type=str, default="polyrhythms", help="dataset")
-    parser.add_argument("-ct", "--cluster_type", type=str, default="kmeans", help="clustering type")
+    parser.add_argument("-ct", "--cluster_type", type=str, default="kmeans", help="clustering type (kmeans, spectral, ward, avg_agg, complete_agg, single_agg, dbscan, hdbscan, optics, birch")
     parser.add_argument("-et", "--embedding_type", type=str, default="jukebox", help="mg_{small/med/large}_{h/at} / mg_audio / jukebox")
     parser.add_argument("-cm", "--cluster_mult", type=float, default=1, help="search for num_classes * cluster_mult classes")
     parser.add_argument("-li", "--layer_idx", type=int, default=0, help="specifies layer_idx 0-indexed")
@@ -73,6 +73,9 @@ if __name__ == "__main__":
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
     parser.add_argument("-ti", "--test_index", type=int, default=-1, help="pass index > 0 to specify test dataset")
     parser.add_argument("-mi", "--max_iter", type=int, default=10000, help="maximum number of iterations")
+    parser.add_argument("-ms", "--min_samples", type=int, default=5, help="min samples, used for (h)dbscan and optics")
+    parser.add_argument("-eps", "--eps", type=float, default=0.5, help="eps, used for dbscan")
+    parser.add_argument("-tr", "--threshold", type=float, default=0.5, help="threshold for birch")
     
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -88,6 +91,7 @@ if __name__ == "__main__":
     cur_mm = arg_dict['memmap']
     cur_mi = arg_dict['max_iter']
     test_idx = arg_dict['test_index']
+    cur_minsamp = arg_dict['min_samples']
     is_test = test_idx >= 0
     save_ext = 'npy'
     if cur_mm == True:
@@ -135,10 +139,38 @@ if __name__ == "__main__":
     cur_clustering = None
     
     cur_algo = None
+
+    if cur_cltype not in UM.cluster_types:
+        print("incorrect cluster type")
+        exit()
+
     if cur_cltype == 'kmeans':
         cur_algo = SKC.KMeans(n_clusters = cur_nc, random_state=seed, max_iter = cur_mi,  n_init = 'auto').fit(cur_data)
     elif cur_cltype == 'spectral':
-        cur_algo = SKC.SpectralClustering(n_clusters, cur_nc, random_state = seed, eigen_solver = 'amg', assign_labels = 'kmeans', n_init = 10).fit(cur_data)
+        cur_algo = SKC.SpectralClustering(n_clusters = cur_nc, random_state = seed, eigen_solver = 'amg', assign_labels = 'kmeans', n_init = 10).fit(cur_data)
+    elif cur_cltype in ['ward', 'avg_agg', 'complete_agg', 'single_agg']:
+        agg_str = 'ward'
+        if cur_cltype == 'avg_agg':
+            agg_str = 'average'
+        elif cur_cltype == 'complete_agg':
+            agg_str = 'complete'
+        elif cur_cltype == 'single_agg':
+            agg_str = 'single'
+        cur_algo = SKC.AgglomerativeClustering(n_clusters = cur_nc, metric='euclidean',  linkage = agg_str)
+    elif cur_cltype in ['dbscan', 'hdbscan']:
+        if cur_cltype == 'dbscan':
+            cur_algo = SKC.DBSCAN(eps = args.eps, min_samples = args.min_samples, p =2)
+        elif cur_cltype == 'hdbscan':
+            cur_algo = SKC.HDBSCAN(min_cluster_size = min_samples)
+        # set number of clusters to 0 for naming consistency
+        cur_nc = 0
+    elif cur_cltype == "optics":
+        cur_algo = SKC.OPTICS(min_samples = args.min_samples, metric='minkowski', p=2)
+    elif  cur_cltype == "birch":
+        cur_algo = SKC.Birch(threshold = args.threshold, n_clusters = cur_nc)
+
+
+
 
     cur_clustering = cur_algo.labels_
     res_folder = UM.by_projpath2(subpaths=['res_kmeans',cur_dsname, cur_embtype, f'layer_idx-{layer_idx}'], make_dir = True)
