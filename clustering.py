@@ -175,7 +175,7 @@ if __name__ == "__main__":
     cur_clustering = cur_algo.labels_
     res_folder = UM.by_projpath2(subpaths=['res_kmeans',cur_dsname, cur_embtype, f'layer_idx-{layer_idx}'], make_dir = True)
 
-    get_cluster_composition(cur_df,cur_label_col, cur_nc,cur_clustering, res_folder)
+    get_cluster_metrics(cur_df,cur_label_col, cur_nc,cur_clustering, res_folder)
 
 
 
