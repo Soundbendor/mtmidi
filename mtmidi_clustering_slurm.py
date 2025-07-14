@@ -27,7 +27,7 @@ if __name__ == "__main__":
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
     parser.add_argument("-ti", "--test_index", type=int, default=-1, help="pass index > 0 to specify test dataset")
     parser.add_argument("-mi", "--max_iter", type=int, default=10000, help="maximum number of iterations")
-    parser.add_argument("-cpm", "--cpu_mem", type=int, default=5, help="cpu_memory in gigs")
+    parser.add_argument("-cpm", "--cpu_mem", type=int, default=10, help="cpu_memory in gigs")
     parser.add_argument("-pt", "--partition", type=str, default="preempt", help="partition to run on")
     parser.add_argument("-ms", "--min_samples", type=int, default=5, help="min samples, used for (h)dbscan and optics")
     parser.add_argument("-eps", "--eps", type=float, default=0.5, help="eps, used for dbscan")
