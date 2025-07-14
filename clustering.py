@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
-    parser.add_argument("-ti", "--test_index", type=int, default=-1, help="pass index > 0 to specify test dataset")
+    parser.add_argument("-ti", "--test_index", type=int, default=-1, help="pass index >= 0 to specify test dataset")
     parser.add_argument("-mi", "--max_iter", type=int, default=10000, help="maximum number of iterations")
     parser.add_argument("-ms", "--min_samples", type=int, default=5, help="min samples, used for (h)dbscan and optics")
     parser.add_argument("-eps", "--eps", type=float, default=0.5, help="eps, used for dbscan")
@@ -94,6 +94,15 @@ if __name__ == "__main__":
     cur_minsamp = arg_dict['min_samples']
     is_test = test_idx >= 0
     save_ext = 'npy'
+    
+    # layer capping
+    cur_shape = UM.get_embedding_shape(cur_embtype)
+    cur_emblayers = cur_shape[0]
+    if layer_idx >= cur_emblayers:
+        old_layer_idx = layer_idx
+        layer_idx = cur_emblayers - 1
+        print(f'changing layer_idx from {old_layer_idx} to {layer_idx}')
+
     if cur_mm == True:
         save_ext = 'dat'
 
