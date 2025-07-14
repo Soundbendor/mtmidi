@@ -154,9 +154,9 @@ if __name__ == "__main__":
         exit()
 
     if cur_cltype == 'kmeans':
-        cur_algo = SKC.KMeans(n_clusters = cur_nc, random_state=seed, max_iter = cur_mi,  n_init = 'auto').fit(cur_data)
+        cur_algo = SKC.KMeans(n_clusters = cur_nc, random_state=seed, max_iter = cur_mi,  n_init = 'auto')
     elif cur_cltype == 'spectral':
-        cur_algo = SKC.SpectralClustering(n_clusters = cur_nc, random_state = seed, eigen_solver = 'amg', assign_labels = 'kmeans', n_init = 10).fit(cur_data)
+        cur_algo = SKC.SpectralClustering(n_clusters = cur_nc, random_state = seed, eigen_solver = 'amg', assign_labels = 'kmeans', n_init = 10)
     elif cur_cltype in ['ward', 'avg_agg', 'complete_agg', 'single_agg']:
         agg_str = 'ward'
         if cur_cltype == 'avg_agg':
@@ -175,13 +175,20 @@ if __name__ == "__main__":
         cur_nc = 0
     elif cur_cltype == "optics":
         cur_algo = SKC.OPTICS(min_samples = args.min_samples, metric='minkowski', p=2)
+        cur_nc = 0
     elif  cur_cltype == "birch":
         cur_algo = SKC.Birch(threshold = args.threshold, n_clusters = cur_nc)
 
-
+    cur_algo.fit(cur_data)
 
 
     cur_clustering = cur_algo.labels_
+    if cur_cltype == 'optics':
+        cur_nc = cur_algo.cluster_hierarchy_.shape[0]
+    elif cur_cltype == 'hdbscan':
+        cur_nc = cur_algo.centroids_.shape[0]
+    elif cur_cltype == 'dbscan':
+        cur_nc = cur_algo.components_.shape[0]
     res_folder = UM.by_projpath2(subpaths=['res_cluster',cur_cltype,cur_dsname, cur_embtype, f'layer_idx-{layer_idx}'], make_dir = True)
 
     get_cluster_metrics(cur_df,cur_label_col, cur_nc,cur_clustering, res_folder)
