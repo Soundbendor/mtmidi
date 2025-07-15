@@ -1,0 +1,11 @@
+cluster,max_label,max_proportion
+0,subp,0.2
+1,subp,0.20992677
+2,hairpin,0.1984252
+3,flat,0.28388748
+4,hairpin,0.20335701
+5,hairpin,0.20769636
+6,hairpin,0.20018622
+7,revhairpin,0.20875683
+8,subf,0.20517169
+9,hairpin,0.20322181
