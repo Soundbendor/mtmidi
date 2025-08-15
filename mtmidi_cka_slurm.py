@@ -60,26 +60,26 @@ if __name__ == "__main__":
     cka_path = os.path.join(root_path, 'cka_test.py')
     script_idx = 0
 
-    start_time = str(int(time.time() * 1000))
-    ds_abbrev = UM.dataset_abbrev[args.dataset]
-    for embedding_type1 in args.embedding_types1:
+    dataset = args.dataset
+    ds_abbrev = UM.dataset_abbrev[dataset]
 
-       
+    start_time = str(int(time.time() * 1000))
+
+    for embedding_type1 in args.embedding_types1:
         li_arr1 = get_layer_idxs(args.layer_idxs1, embedding_type1, emb1 = True)
-        
         for embedding_type2 in args.embedding_types2:
             same_emb_type = embedding_type1.strip() == embedding_type2.strip()
             emb_abbrev1 = UM.model_abbrev[embedding_type1]
             emb_abbrev2 = UM.model_abbrev[embedding_type2]
             li_arr2 = get_layer_idxs(args.layer_idxs2, embedding_type2, emb1 = False)
-      
+     
             for layer_idx1 in li_arr1:
                 for layer_idx2 in li_arr2:
                     same_li = layer_idx1 == layer_idx2
                     #if not (same_emb_type and same_li):
                     if True:
                         slurm_strarr = ["#!/bin/bash", f"#SBATCH -p {args.partition}",f"#SBATCH --mem={args.ram_mem}G", f"#SBATCH --gres=gpu:{args.gpus}", "#SBATCH -t 1-00:00:00", f"#SBATCH --job-name={ds_abbrev}_{emb_abbrev1}{emb_abbrev2}cka", "#SBATCH --export=ALL", f"#SBATCH --output=/nfs/guille/eecs_research/soundbendor/kwand/slurm_out/{ds_abbrev}{emb_abbrev1}{emb_abbrev2}cka-%j.out", ""]
-                        p_str = f"python {cka_path} -ds {args.dataset} -et1 {embedding_type1} -et2 {embedding_type2} -li1 {layer_idx1} -li2 {layer_idx2}"
+                        p_str = f"python {cka_path} -ds {dataset} -et1 {embedding_type1} -et2 {embedding_type2} -li1 {layer_idx1} -li2 {layer_idx2}"
                         if dataset == "polyrhythms":
                             p_str = p_str + f" -tf {args.toml_file}"
                         slurm_strarr.append(p_str)
