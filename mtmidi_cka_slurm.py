@@ -76,7 +76,8 @@ if __name__ == "__main__":
             for layer_idx1 in li_arr1:
                 for layer_idx2 in li_arr2:
                     same_li = layer_idx1 == layer_idx2
-                    if not (same_emb_type and same_li):
+                    #if not (same_emb_type and same_li):
+                    if True:
                         slurm_strarr = ["#!/bin/bash", f"#SBATCH -p {args.partition}",f"#SBATCH --mem={args.ram_mem}G", f"#SBATCH --gres=gpu:{args.gpus}", "#SBATCH -t 1-00:00:00", f"#SBATCH --job-name={ds_abbrev}_{emb_abbrev1}{emb_abbrev2}cka", "#SBATCH --export=ALL", f"#SBATCH --output=/nfs/guille/eecs_research/soundbendor/kwand/slurm_out/{ds_abbrev}{emb_abbrev1}{emb_abbrev2}cka-%j.out", ""]
                         p_str = f"python {cka_path} -ds {dataset} -et1 {embedding_type1} -et2 {embedding_type2} -li1 {layer_idx1} -li2 {layer_idx2}"
                         if dataset == "polyrhythms":
