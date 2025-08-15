@@ -33,7 +33,7 @@ class HSIC():
             self.accum_hsic += cur_sum
             self.num_batches += 1
     def get_value(self):
-        return self.accum_hsic.item()/torch.tensor([0., self.num_batches.item()]).max().item()
+        return self.accum_hsic/torch.tensor([0., self.num_batches.item()]).max()
 
 class CKA():
     def __init__(self, kernel_type='linear', device='cpu'):
@@ -55,5 +55,6 @@ class CKA():
             self.hsic_LL.update(Y,Y)
     
     def get_value(self):
-        return self.hsic_KL.get_value()/torch.sqrt(self.hsic_KK.get_value() * self.hsic_LL.get_value())
+        ret =self.hsic_KL.get_value()/torch.sqrt(self.hsic_KK.get_value() * self.hsic_LL.get_value())
+        return ret.item()
 
