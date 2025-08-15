@@ -238,7 +238,10 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
 def collate_data_at_idx(cur_df,layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, use_shape = None, device = 'cpu'):
     cur_names = cur_df['name']
     cur_acts = [get_data_vec_at_idx(cur_name, layer_idx, emb_type, is_memmap = is_memmap, acts_folder = acts_folder, dataset = dataset, to_torch = to_torch, use_64bit = use_64bit, use_shape = use_shape, device = device) for cur_name in cur_names]
-    return cur_acts
+    if to_torch == False:
+        return cur_acts
+    else:
+        return torch.tensor(cur_acts, device=device)
 
 
 def get_data_vec_at_idx(fname, layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, use_shape = None, device = 'cpu'):
