@@ -1,4 +1,5 @@
 from CKA import CKA
+import torch
 import util_data as UD
 from distutils.util import strtobool
 import polars as pl
