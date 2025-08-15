@@ -23,6 +23,7 @@ if __name__ == "__main__":
     parser.add_argument("-tom", "--train_on_middle", type=strtobool, default=False, help="train on middle")
     parser.add_argument("-li1", "--layer_idx1", type=int, default=0, help="specifies layer_idx 0-indexed")
     parser.add_argument("-li2", "--layer_idx2", type=int, default=0, help="specifies layer_idx 0-indexed")
+    parser.add_argument("-bs", "--batch_size", type=int, default=64, help="batch size")
     parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
@@ -40,6 +41,7 @@ if __name__ == "__main__":
     cls_subcat = arg_dict['classify_by_subcategory']
     cur_tom = arg_dict['train_on_middle']
     cur_mm = arg_dict['memmap']
+    cur_bs = arg_dict['batch_size']
     save_ext = 'npy'
   
     to_order = [(model_to_idx[cur_embtype1], cur_embtype1, layer_idx1), (model_to_idx[cur_embtype2], cur_embtype2, layer_idx2)]
@@ -82,24 +84,32 @@ if __name__ == "__main__":
     cur_label_arr = datadict['label_arr']
     num_classes =  datadict['num_classes']
     cur_label_col = datadict['label_col']
-    idxs = UD.get_train_test_subsets(cur_label_arr, train_on_middle = cur_tom, train_pct = 0.7, test_subpct = 0.5, seed = seed)
-    train_idxs = idxs['train']
-    test_idxs = idxs['test']
-    valid_idxs = idxs['valid']
-    train_df = cur_df[train_idxs]
-    test_df = cur_df[test_idxs]
-    valid_df = cur_df[valid_idxs]
-    cur_data1 = UD.collate_data_at_idx(cur_df,layer_idx1, cur_embtype1,is_memmap = cur_mm, acts_folder = 'acts', dataset = cur_dsname, to_torch = True, use_64bit = False, device = device)
-    cur_data2 = UD.collate_data_at_idx(cur_df,layer_idx2, cur_embtype2,is_memmap = cur_mm, acts_folder = 'acts', dataset = cur_dsname, to_torch = True, use_64bit = False, device = device)
+    #idxs = UD.get_train_test_subsets(cur_label_arr, train_on_middle = cur_tom, train_pct = 0.7, test_subpct = 0.5, seed = seed)
+    #train_idxs = idxs['train']
+    #test_idxs = idxs['test']
+    #valid_idxs = idxs['valid']
+    #train_df = cur_df[train_idxs]
+    #test_df = cur_df[test_idxs]
+    #valid_df = cur_df[valid_idxs]
 
+    num_entries = len(cur_df)
+    start_idx = 0
     
-
     embtype_str = f'{to_order[0][1]}-{to_order[1][1]}'
     layer_idx_str = f'layer_idx-{to_order[0][2]}-{to_order[1][2]}'
     res_folder = UM.by_projpath2(subpaths=['res_cka_linear',cur_dsname, embtype_str], make_dir = True)
     out_file = os.path.join(res_folder, f'{layer_idx_str}.txt')
     cur_cka = CKA(kernel_type='linear', device=device)
-    cur_cka.update(cur_data1, cur_data2)
+
+    while start_idx < num_entries:
+        end_idx = min(num_entries, start_idx + cur_bs) # non-inclusive
+        cur_idxs = list(range(start_idx,end_idx))
+        cur_data1 = UD.collate_data_at_idx(cur_df[cur_idxs],layer_idx1, cur_embtype1,is_memmap = cur_mm, acts_folder = 'acts', dataset = cur_dsname, to_torch = True, use_64bit = False, device = device)
+        cur_data2 = UD.collate_data_at_idx(cur_df[cur_idxs],layer_idx2, cur_embtype2,is_memmap = cur_mm, acts_folder = 'acts', dataset = cur_dsname, to_torch = True, use_64bit = False, device = device)
+        # update step
+        cur_cka.update(cur_data1, cur_data2)
+        start_idx = end_idx
+
     cur_res = cur_cka.get_value()
     with open(out_file, 'w') as f:
         f.write(f'{cur_res}')

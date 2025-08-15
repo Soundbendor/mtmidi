@@ -43,6 +43,7 @@ if __name__ == "__main__":
     parser.add_argument("-cbs", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory for dynamics, by progression for chord progression datasets")
     parser.add_argument("-li1", "--layer_idxs1", nargs='+', type=int, default=[0], help="layer_idxs of embedding files 0-indexed (if multiple, defines start and end indices)")
     parser.add_argument("-li2", "--layer_idxs2", nargs='+', type=int, default=[0], help="layer_idxs of embedding files 0-indexed (if multiple, defines start and end indices)")
+    parser.add_argument("-bs", "--batch_size", type=int, default=64, help="batch size")
     parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
     parser.add_argument("-ram", "--ram_mem", type=int, default=40, help="ram in gigs")
@@ -79,7 +80,7 @@ if __name__ == "__main__":
                     #if not (same_emb_type and same_li):
                     if True:
                         slurm_strarr = ["#!/bin/bash", f"#SBATCH -p {args.partition}",f"#SBATCH --mem={args.ram_mem}G", f"#SBATCH --gres=gpu:{args.gpus}", "#SBATCH -t 1-00:00:00", f"#SBATCH --job-name={ds_abbrev}_{emb_abbrev1}{emb_abbrev2}cka", "#SBATCH --export=ALL", f"#SBATCH --output=/nfs/guille/eecs_research/soundbendor/kwand/slurm_out/{ds_abbrev}{emb_abbrev1}{emb_abbrev2}cka-%j.out", ""]
-                        p_str = f"python {cka_path} -ds {dataset} -et1 {embedding_type1} -et2 {embedding_type2} -li1 {layer_idx1} -li2 {layer_idx2}"
+                        p_str = f"python {cka_path} -ds {dataset} -bs {args.batch_size} -et1 {embedding_type1} -et2 {embedding_type2} -li1 {layer_idx1} -li2 {layer_idx2}"
                         if dataset == "polyrhythms":
                             p_str = p_str + f" -tf {args.toml_file}"
                         slurm_strarr.append(p_str)
