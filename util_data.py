@@ -241,7 +241,7 @@ def collate_data_at_idx(cur_df,layer_idx, emb_type, is_memmap = True, acts_folde
     if to_torch == False:
         return cur_acts
     else:
-        return torch.tensor(cur_acts, device=device)
+        return torch.vstack(cur_acts)
 
 
 def get_data_vec_at_idx(fname, layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, use_shape = None, device = 'cpu'):
