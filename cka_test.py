@@ -58,8 +58,8 @@ if __name__ == "__main__":
         old_layer_idx1 = layer_idx1
         layer_idx1 = cur_emblayers1 - 1
         print(f'changing layer_idx1 from {old_layer_idx1} to {layer_idx1}')
-
-   if layer_idx2 >= cur_emblayers2:
+    
+    if layer_idx2 >= cur_emblayers2:
         old_layer_idx2 = layer_idx2
         layer_idx2 = cur_emblayers2 - 1
         print(f'changing layer_idx from {old_layer_idx2} to {layer_idx2}')
