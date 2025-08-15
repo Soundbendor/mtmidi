@@ -8,7 +8,7 @@ import os
 seed = 5
 
 model_array = ['baseline_mel', 'baseline_chroma', 'baseline_mfcc', 'baseline_concat', 'mg_audio', 'mg_small_h', 'mg_small_at', 'mg_med_h', 'mg_med_at', 'mg_large_h', 'mg_large_at', 'jukebox']
-model_to_idx = {k:v for (k,v) in enumerate(model_array)}
+model_to_idx = {k:v for (v,k) in enumerate(model_array)}
 idx_to_model = {v:k for (k,v) in model_to_idx.items()}
 
 if __name__ == "__main__":
