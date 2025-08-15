@@ -53,8 +53,8 @@ if __name__ == "__main__":
         torch.set_default_device(device)
 
     # layer capping
-    cur_shape1 = UM.get_embedding_shape(cur_embtype)
-    cur_shape2 = UM.get_embedding_shape(cur_embtype)
+    cur_shape1 = UM.get_embedding_shape(cur_embtype1)
+    cur_shape2 = UM.get_embedding_shape(cur_embtype2)
     cur_emblayers1 = cur_shape1[0]
     cur_emblayers2 = cur_shape2[0]
     if layer_idx1 >= cur_emblayers1:
@@ -92,8 +92,6 @@ if __name__ == "__main__":
     cur_data1 = UD.collate_data_at_idx(cur_df,layer_idx1, cur_embtype1,is_memmap = cur_mm, acts_folder = 'acts', dataset = cur_dsname, to_torch = True, use_64bit = False, device = device)
     cur_data2 = UD.collate_data_at_idx(cur_df,layer_idx2, cur_embtype2,is_memmap = cur_mm, acts_folder = 'acts', dataset = cur_dsname, to_torch = True, use_64bit = False, device = device)
 
-    cur_emb = UM.get_embedding_file(cur_embtype, acts_folder = test_act_folder, dataset=test_dataset, fname=cur_dat_file, write = False, use_64bit = False, use_shape = cur_shape)
-    cur_data = cur_emb.copy()
     
 
     embtype_str = f'{to_order[0][1]}-{to_order[1][1]}'
