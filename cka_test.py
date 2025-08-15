@@ -1,6 +1,7 @@
 from CKA import CKA
 import torch
 import util_data as UD
+import util as UM
 from distutils.util import strtobool
 import polars as pl
 import argparse
