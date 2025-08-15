@@ -18,6 +18,7 @@ if __name__ == "__main__":
     parser.add_argument("-et1", "--embedding_type1", type=str, default="jukebox", help="mg_{small/med/large}_{h/at} / mg_audio / jukebox")
     parser.add_argument("-et2", "--embedding_type2", type=str, default="jukebox", help="mg_{small/med/large}_{h/at} / mg_audio / jukebox")
     parser.add_argument("-cbs", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory for dynamics, by progression for chord progression datasets")
+    parser.add_argument("-tom", "--train_on_middle", type=strtobool, default=False, help="train on middle")
     parser.add_argument("-li1", "--layer_idx1", type=int, default=0, help="specifies layer_idx 0-indexed")
     parser.add_argument("-li2", "--layer_idx2", type=int, default=0, help="specifies layer_idx 0-indexed")
     parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
