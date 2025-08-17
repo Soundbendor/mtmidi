@@ -2,16 +2,13 @@ from CKA import CKA
 import torch
 import util_data as UD
 import util as UM
+import cka_util as CU
 from distutils.util import strtobool
 import polars as pl
 import argparse
 import os
 
 seed = 5
-
-model_array = ['baseline_mel', 'baseline_chroma', 'baseline_mfcc', 'baseline_concat', 'mg_audio', 'mg_small_h', 'mg_small_at', 'mg_med_h', 'mg_med_at', 'mg_large_h', 'mg_large_at', 'jukebox']
-model_to_idx = {k:v for (v,k) in enumerate(model_array)}
-idx_to_model = {v:k for (k,v) in model_to_idx.items()}
 
 if __name__ == "__main__":
     #### arg parsing
@@ -44,8 +41,6 @@ if __name__ == "__main__":
     cur_bs = arg_dict['batch_size']
     save_ext = 'npy'
   
-    to_order = [(model_to_idx[cur_embtype1], cur_embtype1, layer_idx1), (model_to_idx[cur_embtype2], cur_embtype2, layer_idx2)]
-    to_order.sort()
 
     # cuda stuff
     device ='cpu'
@@ -95,10 +90,9 @@ if __name__ == "__main__":
     num_entries = len(cur_df)
     start_idx = 0
     
-    embtype_str = f'{to_order[0][1]}-{to_order[1][1]}'
-    layer_idx_str = f'layer_idx-{to_order[0][2]}-{to_order[1][2]}'
-    res_folder = UM.by_projpath2(subpaths=['res_cka_linear',cur_dsname, embtype_str], make_dir = True)
-    out_file = os.path.join(res_folder, f'{layer_idx_str}.txt')
+    embtype_tup, embtype_str, layer_idx_istr = CU.get_embtype_layeridx_str(cur_embtype1, layer_idx1, cur_embtype2, layer_idx2)
+    res_folder = CU.get_results_folder(cur_dsname, embtype_str, make_dir = True)
+    out_file = CU.get_layer_idx_file(res_folder, layer_idx_str)
     cur_cka = CKA(kernel_type='linear', device=device)
 
     while start_idx < num_entries:
