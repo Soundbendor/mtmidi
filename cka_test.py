@@ -90,7 +90,7 @@ if __name__ == "__main__":
     num_entries = len(cur_df)
     start_idx = 0
     
-    embtype_tup, embtype_str, layer_idx_istr = CU.get_embtype_layeridx_str(cur_embtype1, layer_idx1, cur_embtype2, layer_idx2)
+    embtype_tup, embtype_str, layer_idx_str = CU.get_embtype_layeridx_str(cur_embtype1, layer_idx1, cur_embtype2, layer_idx2)
     res_folder = CU.get_results_folder(cur_dsname, embtype_str, make_dir = True)
     out_file = CU.get_layer_idx_file(res_folder, layer_idx_str)
     cur_cka = CKA(kernel_type='linear', device=device)
