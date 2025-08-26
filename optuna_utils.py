@@ -2,11 +2,17 @@ import optuna
 import os
 import time
 import pickle
+
+def get_study_name(base_name, prefix = 5):
+    study_name = f"{prefix}-{base_name}"
+    return study_name
+
+
 def create_or_load_study(study_base_name, sampler = None, maximize = True, prefix=-1, script_dir = os.path.dirname(__file__), sampler_dir = 'samplers', db_dir = 'db'): 
     cur_prefix = int(time.time() * 1000)
     if prefix > 0:
         cur_prefix = prefix
-    study_name = f"{cur_prefix}-{study_base_name}"
+    study_name = get_study_name(study_base_name, cur_prefix)
 
     sampler_path = os.path.join(script_dir, sampler_dir)
     rdb_path = os.path.join(script_dir, db_dir)
