@@ -43,7 +43,15 @@ if __name__ == "__main__":
     for embedding_type in args.embedding_types:
         emb_abbrev = UM.model_abbrev[embedding_type]
      
-        slurm_strarr = ["#!/bin/bash", f"#SBATCH -p {args.partition}",f"#SBATCH --mem={args.ram_mem}G", f"#SBATCH --gres=gpu:{args.gpus}", "#SBATCH -t 1-00:00:00", f"#SBATCH --job-name={ds_abbrev}_{emb_abbrev}eval", "#SBATCH --export=ALL", f"#SBATCH --output=/nfs/guille/eecs_research/soundbendor/kwand/slurm_out/{ds_abbrev}{emb_abbrev}eval-%j.out", ""]
+        slurm_strarr1 = ["#!/bin/bash"]
+        slurm_strarr2 = [f"#SBATCH -p {args.partition}"]
+        if args.partition != 'preempt':
+            if args.partition != 'soundbendor':
+                slurm_strarr2 = ['#SBATCH -A eecs', f"#SBATCH -p {args.partition}"]
+            else:
+                slurm_strarr2 = ['#SBATCH -A soundbendor', f"#SBATCH -p {args.partition}"]
+        slurm_strarr3 = [f"#SBATCH --mem={args.ram_mem}G", f"#SBATCH --gres=gpu:{args.gpus}", "#SBATCH -t 1-00:00:00", f"#SBATCH --job-name={ds_abbrev}_{emb_abbrev}eval", "#SBATCH --export=ALL", f"#SBATCH --output=/nfs/guille/eecs_research/soundbendor/kwand/slurm_out/{ds_abbrev}{emb_abbrev}eval-%j.out", ""]
+        slurm_strarr = slurm_strarr1 + slurm_strarr2 + slurm_strarr3
         p_str = f"python {script_path} -ds {dataset} -bs {args.batch_size} -et {embedding_type} -cbs {cur_cbs} -m {cur_memmap} -pf {cur_prefix} "
         if dataset == "polyrhythms":
             p_str = p_str + f" -tf {args.toml_file}"
