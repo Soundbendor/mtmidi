@@ -40,7 +40,7 @@ from hf_simpleprog_dataset import STHFSimpleProgressionsData
 global trial_model_state_dict
 global best_model_state_dict
 global study_sampler_path
-
+global save_imed_model
 
 
 ### init stuff
@@ -295,9 +295,10 @@ def study_callback(study, trial):
     global best_model_state_dict
 
     global study_sampler_path
+    global save_imed_model
     with open(study_sampler_path, 'wb') as f:
         pickle.dump(study.sampler, f)
-    if study.best_trial.number == trial.number:
+    if study.best_trial.number == trial.number and save_imed_model == True:
         # turns out state dicts are not json serializable (so doesn't work)
         #trial.set_user_attr(key='best_state_dict', value=copy.deepcopy(trial.user_attrs['best_state_dict']))
         best_model_state_dict = copy.deepcopy(trial_model_state_dict)
@@ -315,7 +316,6 @@ def eval_train(model, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     valid_ds.dataset.set_layer_idx(layer_idx)
 
     held_out_classes = has_held_out_classes(dataset, is_classification)     
-    model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
 
     # optimizer and loss init
     opt_fn = None
@@ -365,13 +365,14 @@ if __name__ == "__main__":
     parser.add_argument("-bs", "--batch_size", type=int, default=64, help="batch size")
     parser.add_argument("-pr", "--prune", type=strtobool, default=True, help="do pruning")
     parser.add_argument("-gr", "--grid_search", type=strtobool, default=False, help="grid search")
+    parser.add_argument("-sm", "--save_intermediate_model", type=strtobool, default=False, help="save intermediate model during training")
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
 
     # obj_dict is for passing to objective function, is arg_dict without drop_keys
     # rec_dict is for passing to neptune and study (has drop keys)
     # arg_dict just has everything
-    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'prefix','eval'])
+    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'prefix','eval', 'save_intermediate_model'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -384,6 +385,7 @@ if __name__ == "__main__":
 
     #### some variable definitions
     
+    save_imed_model = arg_dict['save_intermediate_model']
     is_eval = arg_dict['eval']
     is_64bit = False # if embeddings are 64 bit
     if arg_dict['embedding_type'] in UM.baseline_names:
@@ -555,9 +557,9 @@ if __name__ == "__main__":
         layer_idx = int(best_param_dict.get('layer_idx', 0))
         l2_weight_decay_exp = best_param_dict.get('l2_weight_decay_exp', -4.0)
 
-        learning_rate_exp = int(best_param_dict.get('learning_rate_exp', 0))
+        learning_rate_exp = best_param_dict.get('learning_rate_exp', -2.0)
 
-        print(f"training probe with: layer_idx={layer_idx}, dropout={dropout}, lr_exp={learning_rate_exp}, weight_decay_exp={l2_weight_decay_exp}") 
+        print(f"training probe (valid: {best_value}) with: layer_idx={layer_idx}, dropout={dropout}, lr_exp={learning_rate_exp}, weight_decay_exp={l2_weight_decay_exp}") 
         #bs = study.best_params.get('batch_size', 64)
         #bs = arg_dict['batch_size']
         bs = 64 # batch size used
@@ -570,11 +572,11 @@ if __name__ == "__main__":
         model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
         held_out_classes = has_held_out_classes(cur_dsname, is_classification)
 
-        eval_train(model, dataset = 'polyrhythms', embedding_type = arg_dict['embedding_type'], is_classification = is_classification, thresh=_thresh, layer_idx = layer_idx, train_ds = train_ds, valid_ds = valid_ds,  train_on_middle = train_on_middle, classify_by_subcategory = False, lr_exp = learning_rate_exp, weight_decay_exp = l2_weight_decay_exp, model_type=model_type, model_layer_dim=model_layer_dim, out_dim = out_dim, batch_size = bs, num_epochs=num_epochs)
+        eval_train(model, dataset = cur_dsname, embedding_type = arg_dict['embedding_type'], is_classification = is_classification, thresh=_thresh, layer_idx = layer_idx, train_ds = train_ds, valid_ds = valid_ds,  train_on_middle = train_on_middle, classify_by_subcategory = arg_dict['classify_by_subcategory'], lr_exp = learning_rate_exp, weight_decay_exp = l2_weight_decay_exp, model_type=model_type, model_layer_dim=model_layer_dim, out_dim = out_dim, batch_size = bs, num_epochs=num_epochs)
         test_ds.dataset.set_layer_idx(layer_idx)
         test_loss, test_metrics = valid_test_loop(model, test_ds, loss_fn = None, dataset = cur_dsname, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = True,  thresh = arg_dict['thresh'], classify_by_subcategory = arg_dict['classify_by_subcategory'], batch_size = bs, file_basename = study_name)
         UP.print_metrics(test_metrics, study_name)
-        UP.save_results_to_study(study, test_metrics)
+        #UP.save_results_to_study(study, test_metrics)
  
         # some final logging to csv
         rec_dict.update(test_metrics)
