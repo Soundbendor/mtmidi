@@ -42,7 +42,6 @@ global best_model_state_dict
 global study_sampler_path
 global save_imed_model
 
-
 ### init stuff
 train_pct = 0.7
 test_subpct = 0.5
