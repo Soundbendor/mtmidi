@@ -17,7 +17,7 @@ if __name__ == "__main__":
     parser.add_argument("-ram", "--ram_mem", type=int, default=40, help="ram in gigs")
     parser.add_argument("-gpu", "--gpus", type=int, default=1, help="num of gpus to use")
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
-    parser.add_argument("-pf", "--prefix", type=int, default=-1, help="specify a prefix > 0 for save files (db, etc.) for potential reloading (if file exists)")
+    parser.add_argument("-pf", "--prefix", type=int, default=5, help="specify a prefix > 0 for save files (db, etc.) for potential reloading (if file exists)")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
     
 
