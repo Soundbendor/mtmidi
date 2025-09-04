@@ -304,7 +304,7 @@ def study_callback(study, trial):
 
 
 # training for evaluation
-def eval_train(model, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = 0, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, batch_size = 64, num_epochs=250):
+def eval_train(model, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = 0, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', lr_exp = -3, weight_decay_exp = -3,  model_layer_dim=1024, out_dim = 1, batch_size = 64, num_epochs=250):
 
     lr = 10**lr_exp
 
@@ -555,8 +555,9 @@ if __name__ == "__main__":
         layer_idx = int(best_param_dict.get('layer_idx', 0))
         l2_weight_decay_exp = best_param_dict.get('l2_weight_decay_exp', -4.0)
 
-        learning_rate_exp = int(best_param_dict.get('layer_idx', 0))
+        learning_rate_exp = int(best_param_dict.get('learning_rate_exp', 0))
 
+        print(f"training probe with: layer_idx={layer_idx}, dropout={dropout}, lr_exp={learning_rate_exp}, weight_decay_exp={l2_weight_decay_exp}") 
         #bs = study.best_params.get('batch_size', 64)
         #bs = arg_dict['batch_size']
         bs = 64 # batch size used
@@ -569,13 +570,12 @@ if __name__ == "__main__":
         model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
         held_out_classes = has_held_out_classes(cur_dsname, is_classification)
 
-        eval_train(model, dataset = 'polyrhythms', embedding_type = arg_dict['embedding_type'], is_classification = is_classification, thresh=_thresh, layer_idx = layer_idx, train_ds = train_ds, valid_ds = valid_ds,  train_on_middle = train_on_middle, classify_by_subcategory = False, model_type=model_type, model_layer_dim=model_layer_dim, out_dim = out_dim, batch_size = bs, num_epochs=num_epochs)
+        eval_train(model, dataset = 'polyrhythms', embedding_type = arg_dict['embedding_type'], is_classification = is_classification, thresh=_thresh, layer_idx = layer_idx, train_ds = train_ds, valid_ds = valid_ds,  train_on_middle = train_on_middle, classify_by_subcategory = False, lr_exp = learning_rate_exp, weight_decay_exp = l2_weight_decay_exp, model_type=model_type, model_layer_dim=model_layer_dim, out_dim = out_dim, batch_size = bs, num_epochs=num_epochs)
         test_ds.dataset.set_layer_idx(layer_idx)
         test_loss, test_metrics = valid_test_loop(model, test_ds, loss_fn = None, dataset = cur_dsname, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = True,  thresh = arg_dict['thresh'], classify_by_subcategory = arg_dict['classify_by_subcategory'], batch_size = bs, file_basename = study_name)
         UP.print_metrics(test_metrics, study_name)
         UP.save_results_to_study(study, test_metrics)
-
-       
+ 
         # some final logging to csv
         rec_dict.update(test_metrics)
         rec_dict['best_trial_obj_value'] = best_value
