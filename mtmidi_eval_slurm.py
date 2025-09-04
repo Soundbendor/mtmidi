@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     root_path = UM.by_projpath()
     script_dir = UM.by_projpath(subpath='eval_sh', make_dir = True)
-    script_path = os.path.join(root_path, 'probing.py')
+    py_path = os.path.join(root_path, 'probing.py')
     script_idx = 0
 
     dataset = args.dataset
@@ -52,7 +52,7 @@ if __name__ == "__main__":
                 slurm_strarr2 = ['#SBATCH -A soundbendor', f"#SBATCH -p {args.partition}"]
         slurm_strarr3 = [f"#SBATCH --mem={args.ram_mem}G", f"#SBATCH --gres=gpu:{args.gpus}", "#SBATCH -t 1-00:00:00", f"#SBATCH --job-name={ds_abbrev}_{emb_abbrev}eval", "#SBATCH --export=ALL", f"#SBATCH --output=/nfs/guille/eecs_research/soundbendor/kwand/slurm_out/{ds_abbrev}{emb_abbrev}eval-%j.out", ""]
         slurm_strarr = slurm_strarr1 + slurm_strarr2 + slurm_strarr3
-        p_str = f"python {script_path} -ds {dataset} -ev True -bs {batch_size} -et {embedding_type} -cbs {cur_cbs} -m {cur_memmap} -pf {cur_prefix} "
+        p_str = f"python {py_path} -ds {dataset} -ev True -bs {batch_size} -et {embedding_type} -cbs {cur_cbs} -m {cur_memmap} -pf {cur_prefix} "
         if dataset == "polyrhythms":
             p_str = p_str + f" -tf {args.toml_file}"
         slurm_strarr.append(p_str)
