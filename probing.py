@@ -559,6 +559,8 @@ if __name__ == "__main__":
         learning_rate_exp = best_param_dict.get('learning_rate_exp', -2.0)
 
         print(f"training probe (valid: {best_value}) with: layer_idx={layer_idx}, dropout={dropout}, lr_exp={learning_rate_exp}, weight_decay_exp={l2_weight_decay_exp}") 
+        if len(tomlfile_str) > 0:
+            print(f'(toml file: {tomlfile_str})')
         #bs = study.best_params.get('batch_size', 64)
         #bs = arg_dict['batch_size']
         bs = 64 # batch size used
@@ -571,7 +573,8 @@ if __name__ == "__main__":
         model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
         held_out_classes = has_held_out_classes(cur_dsname, is_classification)
 
-        eval_train(model, dataset = cur_dsname, embedding_type = arg_dict['embedding_type'], is_classification = is_classification, thresh=_thresh, layer_idx = layer_idx, train_ds = train_ds, valid_ds = valid_ds,  train_on_middle = train_on_middle, classify_by_subcategory = arg_dict['classify_by_subcategory'], lr_exp = learning_rate_exp, weight_decay_exp = l2_weight_decay_exp, model_type=model_type, model_layer_dim=model_layer_dim, out_dim = out_dim, batch_size = bs, num_epochs=num_epochs)
+        valid_score = eval_train(model, dataset = cur_dsname, embedding_type = arg_dict['embedding_type'], is_classification = is_classification, thresh=_thresh, layer_idx = layer_idx, train_ds = train_ds, valid_ds = valid_ds,  train_on_middle = train_on_middle, classify_by_subcategory = arg_dict['classify_by_subcategory'], lr_exp = learning_rate_exp, weight_decay_exp = l2_weight_decay_exp, model_type=model_type, model_layer_dim=model_layer_dim, out_dim = out_dim, batch_size = bs, num_epochs=num_epochs)
+        print(f'eval valid score: {valid_score}')
         test_ds.dataset.set_layer_idx(layer_idx)
         test_loss, test_metrics = valid_test_loop(model, test_ds, loss_fn = None, dataset = cur_dsname, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = True,  thresh = arg_dict['thresh'], classify_by_subcategory = arg_dict['classify_by_subcategory'], batch_size = bs, file_basename = study_name)
         UP.print_metrics(test_metrics, study_name)
@@ -585,6 +588,7 @@ if __name__ == "__main__":
         rec_dict['best_trial_layer_idx'] = layer_idx
         #rec_dict['best_trial_batch_size'] = bs
 
+        rec_dict['eval_valid_score'] = valid_score
         rec_dict['best_lr_exp'] = learning_rate_exp
         rec_dict['best_weight_decay_exp'] = l2_weight_decay_exp
         test_filt_res = UP.filter_dict(rec_dict, replace_val = 'None', filter_nonstr = True)
