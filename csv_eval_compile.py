@@ -34,4 +34,7 @@ for i,_f in enumerate(os.listdir(res_folder)):
 
 df = df.sort(pl.col('dataset').replace_strict(ds_order), pl.col('embedding_type').replace_strict(emb_order), descending=[False, False])
 
-df.write_csv(os.path.join(res_folder, 'overall.csv'))
+outpath = os.path.join(res_folder, 'overall.csv')
+if os.path.isfile(outpath) == True:
+    os.remove(outpath)
+df.write_csv(outpath)
