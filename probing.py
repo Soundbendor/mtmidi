@@ -477,10 +477,10 @@ if __name__ == "__main__":
         if arg_dict['grid_search'] == True:
      
             search_space = None
-            if param_search == True:
-                search_space = {'learning_rate_exp': [-5, -4, -3], 'dropout': [0.25, 0.5, 0.75], 'l2_weight_decay_exp': [-4, -3, -2]}
-            else:
-                search_space = {'learning_rate_exp': [-5], 'dropout': [0.25], 'l2_weight_decay_exp': [-3]}
+            #if param_search == True:
+            search_space = {'learning_rate_exp': [-5, -4, -3], 'dropout': [0.25, 0.5, 0.75], 'l2_weight_decay_exp': [-4, -3, -2]}
+            #else:
+            #search_space = {'learning_rate_exp': [-5], 'dropout': [0.25], 'l2_weight_decay_exp': [-3]}
             
             if arg_dict['layer_idx']  < 0:
                 search_space['layer_idx'] = list(range(num_layers))
