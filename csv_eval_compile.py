@@ -13,28 +13,29 @@ ds_order = {k:i for (i,k) in enumerate(datasets)}
 emb_order = {k:i for (i,k) in enumerate(emb_types)}
 
 cols = ['dataset', 'embedding_type',  'toml_file',  'accuracy_score', 'f1_macro', 'f1_micro', 'eval_valid_score', 'best_trial_obj_value',  'best_trial_layer_idx','layer_idx',  'prefix',  'best_trial_dropout',  'best_lr_exp', 'best_weight_decay_exp',   'num_epochs', 'batch_size', 'slurm_job', 'thresh',   'num_trials', 'is_classification', 'train_on_middle', 'do_regression_classification', 'to_nep',  'eval', 'debug','prune', 'grid_search', 'save_intermediate_model', 'memmap', 'classify_by_subcategory', 'model_type', 'model_layer_dim', 'out_dim',  'confmat', 'confmat_path',    ]
- 
+
+first_df = True
 for i,_f in enumerate(os.listdir(res_folder)):
     #print(_f)
     cur_dir = os.path.join(res_folder, _f)
-    if i == 0:
-        df = pl.read_csv(cur_dir)[cols]
-    else:
-        cur_df = pl.read_csv(cur_dir)
-        cur_cols = set(cur_df.columns)
-        cur_diff = set(cols).difference(cur_cols)
-        if len(cur_diff) > 0:
-            for _c in cur_diff:
-                cur_df = cur_df.with_columns(**{_c: -1.0})
-        #print(cur_df)
-        if cur_df['best_trial_layer_idx'].dtype == pl.String:
-            cur_df = cur_df.with_columns(best_trial_layer_idx =  -1)
-            cur_df = cur_df.cast({'best_trial_layer_idx': pl.Int64})
-        df = df.extend(cur_df[cols])
+    if 'overall' not in _f:
+        if first_df == True:
+            df = pl.read_csv(cur_dir)[cols]
+            first_df = False
+        else:
+            cur_df = pl.read_csv(cur_dir)
+            cur_cols = set(cur_df.columns)
+            cur_diff = set(cols).difference(cur_cols)
+            if len(cur_diff) > 0:
+                for _c in cur_diff:
+                    cur_df = cur_df.with_columns(**{_c: -1.0})
+            #print(cur_df)
+            if cur_df['best_trial_layer_idx'].dtype == pl.String:
+                cur_df = cur_df.with_columns(best_trial_layer_idx =  -1)
+                cur_df = cur_df.cast({'best_trial_layer_idx': pl.Int64})
+            df = df.extend(cur_df[cols])
 
 df = df.sort(pl.col('dataset').replace_strict(ds_order), pl.col('embedding_type').replace_strict(emb_order), descending=[False, False])
 
 outpath = os.path.join(res_folder, 'overall.csv')
-if os.path.isfile(outpath) == True:
-    os.remove(outpath)
 df.write_csv(outpath)
