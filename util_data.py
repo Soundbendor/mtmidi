@@ -54,7 +54,7 @@ def get_train_test_subsets(dataset_label_arr, train_on_middle = True, train_pct 
         _train_idx = []
         _test_valid_idx = []
         if train_pct < 1.0:
-            _train_idx, _test_valid_idx = train_test_split(all_idx, random_state = seed, shuffle = True, stratify=dataset_label_arr)
+            _train_idx, _test_valid_idx = train_test_split(all_idx, random_state = seed, train_size = train_pct, shuffle = True, stratify=dataset_label_arr)
         train_idx = np.array(_train_idx, dtype=int)
         test_valid_idx = np.array(_test_valid_idx, dtype=int)
 
@@ -68,7 +68,7 @@ def get_train_test_subsets(dataset_label_arr, train_on_middle = True, train_pct 
     # returns indices of our index lists so we have to convert to regular indices
     if train_pct < 1.0:
         if test_subpct < 1.0:
-            test_idx, valid_idx = train_test_split(test_valid_idx, random_state = seed, shuffle= True, stratify=leftover_labels)
+            test_idx, valid_idx = train_test_split(test_valid_idx, train_size = test_subpct, random_state = seed, shuffle= True, stratify=leftover_labels)
         else:
             test_idx = test_valid_idx
     #test_idx = test_valid_idx[_test_idx]
