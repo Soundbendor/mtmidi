@@ -45,7 +45,7 @@ global save_imed_model
 ### init stuff
 train_pct = 0.7
 test_subpct = 0.5
-seed = 333
+seed = 5
 torch.manual_seed(seed)
 shuffle = True
 # neptune stuff
@@ -472,7 +472,7 @@ if __name__ == "__main__":
             study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.GridSampler(search_space),  maximize = True, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'grid_samplers', db_dir = 'db') 
         else:
             arg_dict['num_layers'] = num_layers
-            study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.TPESampler(),  maximize = True, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'tpe_samplers', db_dir = 'db') 
+            study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.TPESampler(seed=seed),  maximize = True, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'tpe_samplers', db_dir = 'db') 
         study = study_dict['study']
         study_name = study_dict['study_name']
         study_sampler_path = study_dict['sampler_fpath']
