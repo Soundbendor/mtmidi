@@ -12,7 +12,7 @@ emb_types=['mg_audio','mg_small_h','mg_med_h','mg_large_h','mg_small_at','mg_med
 ds_order = {k:i for (i,k) in enumerate(datasets)}
 emb_order = {k:i for (i,k) in enumerate(emb_types)}
 
-cols = ['dataset', 'embedding_type',  'toml_file',  'accuracy_score', 'f1_macro', 'f1_micro', 'best_trial_layer_idx', 'eval_valid_score',  'num_trials', 'layer_idx', 'is_classification', 'train_on_middle', 'do_regression_classification', 'to_nep', 'classify_by_subcategory', 'prefix',  'eval', 'debug', 'num_epochs', 'batch_size', 'prune', 'grid_search', 'save_intermediate_model', 'memmap', 'slurm_job', 'thresh', 'model_type', 'model_layer_dim', 'out_dim',  'confmat', 'confmat_path', 'best_trial_obj_value', 'best_trial_dropout',  'best_lr_exp', 'best_weight_decay_exp']
+cols = ['dataset', 'embedding_type',  'toml_file',  'accuracy_score', 'f1_macro', 'f1_micro', 'eval_valid_score', 'best_trial_obj_value',  'best_trial_layer_idx','layer_idx',  'prefix',  'best_trial_dropout',  'best_lr_exp', 'best_weight_decay_exp',   'num_epochs', 'batch_size', 'slurm_job', 'thresh',   'num_trials', 'is_classification', 'train_on_middle', 'do_regression_classification', 'to_nep',  'eval', 'debug','prune', 'grid_search', 'save_intermediate_model', 'memmap', 'classify_by_subcategory', 'model_type', 'model_layer_dim', 'out_dim',  'confmat', 'confmat_path',    ]
  
 for i,_f in enumerate(os.listdir(res_folder)):
     #print(_f)
