@@ -158,11 +158,19 @@ def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_
             cur_preds = torch.argmax(pred,axis=1).detach().cpu().numpy().flatten()
             
             if data_idx == 0:
-                truths = copy.deepcopy(cur_truths)
-                preds = copy.deepcopy(cur_preds)
+                #truths = copy.deepcopy(cur_truths)
+                #preds = copy.deepcopy(cur_preds)
+                truths = cur_truths
+                preds = cur_preds
             else:
-                truths = np.hstack((truths, copy.deepcopy(cur_truths)))
-                preds = np.hstack((preds, copy.deepcopy(cur_preds)))
+                if truths.base is None:
+                    truths = np.hstack((truths, cur_truths))
+                else:
+                    truths = np.hstack((truths, copy.deepcopy(cur_truths)))
+                if preds.base is None: 
+                    preds = np.hstack((preds, cur_preds))
+                else:
+                    preds = np.hstack((preds, copy.deepcopy(cur_preds)))
         else:
             ipt, ground_truth, ground_label = data
             pred = model(ipt.float())
@@ -173,14 +181,22 @@ def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_
             #if do_regression_classification == True:
             #cur_pred_labels, cur_pred_label_idx = regression_classification(dataset, pred_np, thresh=thresh)
             if data_idx == 0:
-                preds = copy.deepcopy(copy.deepcopy(pred_np))
-                truths = copy.deepcopy(ground_truth.detach().cpu().numpy().flatten())
+                #preds = copy.deepcopy(copy.deepcopy(pred_np))
+                preds = pred_np
+                #truths = copy.deepcopy(ground_truth.detach().cpu().numpy().flatten())
+                truths = ground_truth.detach.cpu().numpy().flatten()
                 #if do_regression_classification == True:
                 #truth_labels = copy.deepcopy(ground_label.detach().cpu().numpy().flatten())
                 #pred_labels = copy.deepcopy(cur_pred_label_idx)
             else:
-                preds = np.hstack((preds, copy.deepcopy(pred_np)))
-                truths = np.hstack((truths, copy.deepcopy(ground_truth.detach().cpu().numpy().flatten())))
+                if preds.base is None:
+                    preds = np.hstack((preds, pred_np))
+                else:
+                    preds = np.hstack((preds, copy.deepcopy(pred_np)))
+                if truths.base is None:
+                    truths = np.hstack((truths, ground_truth.detach().cpu().numpy().flatten()))
+                else:
+                    truths = np.hstack((truths, copy.deepcopy(ground_truth.detach().cpu().numpy().flatten())))
                 #if do_regression_classification == True:
                 #truth_labels = np.hstack((truth_labels, copy.deepcopy(ground_label.detach().cpu().numpy().flatten())))
                 #pred_labels = np.hstack((pred_labels, copy.deepcopy(cur_pred_label_idx)))
@@ -220,6 +236,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
 
     global trial_model_state_dict
     global best_model_state_dict
+    global save_imed_model
     model = None
     # suggested params
     lr_exp = trial.suggest_int('learning_rate_exp',-5,-3, step=1)
@@ -283,7 +300,8 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
         last_score = cur_score
     #trial.set_user_attr(key='best_state_dict', value=model.state_dict())
 
-    trial_model_state_dict = copy.deepcopy(model.state_dict())
+    if save_imed_model == True:
+        trial_model_state_dict = copy.deepcopy(model.state_dict())
     return last_score
     
 # use this to save the best model
@@ -504,6 +522,7 @@ if __name__ == "__main__":
         else:
             study.optimize(objective, timeout = None, n_trials = None, n_jobs=1, gc_after_trial = True, callbacks=callbacks)
 
+        """
         #### final testing on best trial
         dropout = study.best_params.get('dropout', 0.5)
         layer_idx = arg_dict.get('layer_idx', 0)
@@ -542,6 +561,7 @@ if __name__ == "__main__":
         rec_dict['best_weight_decay_exp'] = study.best_params['l2_weight_decay_exp']
         test_filt_res = UP.filter_dict(rec_dict, replace_val = 'None', filter_nonstr = True)
         UP.log_results(test_filt_res, study_name)
+        """
 
     else:
         ### ==== JUST EVAL ==== ###
