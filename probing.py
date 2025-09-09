@@ -378,7 +378,7 @@ if __name__ == "__main__":
     parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
     parser.add_argument("-ev", "--eval", type=strtobool, default=False, help="evalute on best performing params recorded")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
-    parser.add_argument("-epc", "--num_epochs", type=int, default=250, help="number of epochs")
+    parser.add_argument("-epc", "--num_epochs", type=int, default=100, help="number of epochs")
     parser.add_argument("-bs", "--batch_size", type=int, default=64, help="batch size")
     parser.add_argument("-pr", "--prune", type=strtobool, default=True, help="do pruning")
     parser.add_argument("-gr", "--grid_search", type=strtobool, default=False, help="grid search")
