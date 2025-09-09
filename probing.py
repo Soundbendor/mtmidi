@@ -584,7 +584,7 @@ if __name__ == "__main__":
         #bs = study.best_params.get('batch_size', 64)
         #bs = arg_dict['batch_size']
         bs = 64 # batch size used
-        num_epochs = 250 # num_epochs used
+        num_epochs = 100 # num_epochs used
 
 
         study_name = OU.get_study_name(study_base_name, prefix = arg_dict['prefix'])
