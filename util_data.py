@@ -52,7 +52,7 @@ def get_train_test_subsets(dataset_label_arr, train_on_middle = True, train_pct 
     test_valid_idx = []
     total_num = len(dataset_label_arr)
     all_idx = np.arange(0, total_num)
-    if train_on_middle == false:
+    if train_on_middle == False:
         _train_idx = []
         _test_valid_idx = []
         print('not training on middle')
