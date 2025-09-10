@@ -47,16 +47,18 @@ def get_train_test_subsets(dataset_label_arr, train_on_middle = True, train_pct 
     valid_pct = (1. - test_subpct) * test_valid_pct
     test_pct = test_subpct * test_valid_pct
     train_idx = []
+    test_idx = []
+    valid_idx = []
     test_valid_idx = []
     total_num = len(dataset_label_arr)
     all_idx = np.arange(0, total_num)
-    if train_on_middle == False:
+    if train_on_middle == false:
         _train_idx = []
         _test_valid_idx = []
         print('not training on middle')
         if train_pct < 1.0:
             print(f'splitting train/test with train_size = {train_pct}')
-            _train_idx, _test_valid_idx = train_test_split(all_idx, random_state = seed, train_size = train_pct, shuffle = True, stratify=dataset_label_arr)
+            _train_idx, _test_valid_idx = train_test_split(all_idx, random_state = seed, train_size = train_pct, shuffle = true, stratify=dataset_label_arr)
         train_idx = np.array(_train_idx, dtype=int)
         test_valid_idx = np.array(_test_valid_idx, dtype=int)
 
@@ -71,9 +73,10 @@ def get_train_test_subsets(dataset_label_arr, train_on_middle = True, train_pct 
     if train_pct < 1.0:
         if test_subpct < 1.0:
             print(f'splitting test/valid with test_size = {test_subpct}')
-            test_idx, valid_idx = train_test_split(test_valid_idx, train_size = test_subpct, random_state = seed, shuffle= True, stratify=leftover_labels)
+            test_idx, valid_idx = train_test_split(test_valid_idx, train_size = test_subpct, random_state = seed, shuffle= true, stratify=leftover_labels)
         else:
             test_idx = test_valid_idx
+
     #test_idx = test_valid_idx[_test_idx]
     #valid_idx = test_valid_idx[_valid_idx]
     idxs = {'train': train_idx, 'valid': valid_idx, 'test': test_idx}
@@ -112,12 +115,15 @@ def get_toml_params(toml_dict):
     return ret
 
 
-def get_df(dataset, exclude_arr):
+def get_df(dataset, exclude_arr, use_folds = False):
     csvpath = None
+    fname = f'{dataset}.csv'
+    if use_folds == True:
+        fname = f'{dataset}-folds.csv'
     if dataset in UM.new_datasets:
-        csvpath = os.path.join(UM.by_projpath('csv', make_dir = False), f'{dataset}.csv')
+        csvpath = os.path.join(UM.by_projpath('csv', make_dir = False), fname)
     elif dataset in UM.hf_datasets:
-        csvpath = os.path.join(UM.by_projpath('hf_csv', make_dir = False), f'{dataset}.csv')
+        csvpath = os.path.join(UM.by_projpath('hf_csv', make_dir = False), fname)
     cur_data = pl.read_csv(csvpath)
     cur_data = exclude_col_vals_in_data(cur_data, exclude_arr)
     return cur_data
@@ -127,7 +133,7 @@ def get_df(dataset, exclude_arr):
   
 
 
-def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = ''):
+def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '', use_folds = True):
     toml_dict = None
     exclude_arr = None
     num_classes = 1
@@ -152,10 +158,10 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
         if cur_dsname == 'modemix_chordprog':
             exclude_arr.append(('inv', [1,2]))
 
-        cur_df=get_df(cur_dsname, exclude_arr)
+        cur_df=get_df(cur_dsname, exclude_arr,use_folds=use_folds)
     else:
         # get dataframe from csv file
-        cur_df=get_df(cur_dsname, exclude)
+        cur_df=get_df(cur_dsname, exclude, use_folds = use_folds)
    
     is_classification = cur_dsname not in UM.reg_datasets
     pl_classdict = None

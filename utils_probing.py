@@ -226,9 +226,20 @@ def filter_dict(results_dict, replace_val = None, filter_nonstr = False, keys_do
             ret[res_key] = replace_val
     return ret
 
-def torch_get_train_test_subsets(dataset_obj, dataset_label_arr, train_on_middle = True, train_pct = 0.7, test_subpct = 0.5, seed = 5, debug=False, debug_name=''):
-    idxs = UD.get_train_test_subsets(dataset_label_arr, train_on_middle = train_on_middle, train_pct = train_pct, test_subpct = test_subpct, seed = seed)
-    
+def torch_get_train_test_subsets(dataset_obj, dataset_df, dataset_label_arr, train_on_middle = True, train_pct = 0.7, test_subpct = 0.5, seed = 5, debug=False, debug_name='', use_folds = True):
+    idxs = None
+    if use_folds == False:
+        idxs = UD.get_train_test_subsets(dataset_label_arr, train_on_middle = train_on_middle, train_pct = train_pct, test_subpct = test_subpct, seed = seed)
+    else:
+        num_ex = len(dataset_df)
+        idx_arr = np.arange(num_ex, dtype=int)
+        cur_df = dataset_df.with_columns(**{'ex_idx': idx_arr})
+        idxs = {}
+        for set_type in ['train', 'valid', 'test']:
+            cur_idxs = cur_df.filter(pl.col('set_type') == set_type)['ex_idx']
+            idxs[set_type] = cur_idxs.to_numpy()
+
+
     if debug == True:
         dest_dir = UM.by_projpath(subpath='split_debug', make_dir = True)
         for idxtype in ['train', 'valid', 'test']:
