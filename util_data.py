@@ -179,13 +179,16 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
         if classify_by_subcategory == True:
             num_classes = DYN.num_subcategories
             label_col = 'dyn_subcategory'
+            pl_classdict = DYN.dyn_subcategory_to_idx
         
         else:
             num_classes = DYN.num_categories
             label_col = 'dyn_category'
+            pl_classdict = DYN.dyn_category_to_idx
     
     elif cur_dsname == 'chords7':
         num_classes = CH7.num_chords
+        pl_classdict = CH7.quality_to_idx 
         label_col = 'quality'
 
     elif cur_dsname == 'chords':
@@ -208,19 +211,22 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
     elif cur_dsname == 'modemix_chordprog':
         if classify_by_subcategory == True:
             num_classes = CHP.num_subprog
-            label_arr = cur_ds.all_subprog
+            pl_classdict = CHP.subp_to_idx
             label_col = 'sub_prog'
         else:
             num_classes = CHP.num_ismodemix
+            pl_classdict = CHP.imm_to_idx
             label_col = 'is_modemix'
 
     elif cur_dsname == 'secondary_dominant':
         if classify_by_subcategory == True:
             num_classes = CSP.num_subprog
+            pl_classdict = CSP.subp_to_idx
             label_col = 'sub_prog'
         else:
             num_classes = CSP.num_subtypes
             label_col = 'sub_type'
+            pl_classdict = CSP.sub_type_to_idx
     label_arr = cur_df.select([label_col]).to_numpy().flatten()
 
 

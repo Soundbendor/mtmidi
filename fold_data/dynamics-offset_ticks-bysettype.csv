@@ -1,0 +1,4 @@
+set_type,set_type_count,offset_ticks,count,proportion
+test,6804,1,6804,1.0
+train,31752,1,31752,1.0
+valid,6804,1,6804,1.0

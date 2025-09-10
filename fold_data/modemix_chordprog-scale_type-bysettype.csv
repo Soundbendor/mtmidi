@@ -1,0 +1,4 @@
+set_type,set_type_count,scale_type,count,proportion
+test,2979,maj,2979,1.0
+train,13914,maj,13914,1.0
+valid,2979,maj,2979,1.0

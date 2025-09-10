@@ -1,0 +1,4 @@
+set_type,set_type_count,beats_per_bar,count,proportion
+test,6804,4,6804,1.0
+train,31752,4,31752,1.0
+valid,6804,4,6804,1.0
