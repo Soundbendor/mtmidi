@@ -379,6 +379,7 @@ if __name__ == "__main__":
     parser.add_argument("-ev", "--eval", type=strtobool, default=False, help="evalute on best performing params recorded")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
     parser.add_argument("-epc", "--num_epochs", type=int, default=100, help="number of epochs")
+    parser.add_argument("-spd", "--split_debug", type=strtobool, default=False, help="debug split by recording indices")
     parser.add_argument("-bs", "--batch_size", type=int, default=64, help="batch size")
     parser.add_argument("-pr", "--prune", type=strtobool, default=True, help="do pruning")
     parser.add_argument("-gr", "--grid_search", type=strtobool, default=False, help="grid search")
@@ -389,7 +390,7 @@ if __name__ == "__main__":
     # obj_dict is for passing to objective function, is arg_dict without drop_keys
     # rec_dict is for passing to neptune and study (has drop keys)
     # arg_dict just has everything
-    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'prefix','eval', 'save_intermediate_model'])
+    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'prefix','eval', 'save_intermediate_model', 'split_debug'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -455,7 +456,17 @@ if __name__ == "__main__":
         
 
 
-    cur_subsets = UP.torch_get_train_test_subsets(cur_ds, label_arr, train_on_middle = train_on_middle, train_pct = train_pct, test_subpct = test_subpct,seed = seed)
+    is_split_debug = arg_dict['split_debug']
+    split_debug_name = ''
+    _pf = arg_dict['prefix']
+    if is_split_debug == True:
+        split_annotation = ''
+        if is_eval == False:
+            split_annotation = 'train'
+        else:
+            split_annotation = 'eval'
+        split_debug_name = f'{_pf}-{cur_dsname}-{split_annotation}'
+    cur_subsets = UP.torch_get_train_test_subsets(cur_ds, label_arr, train_on_middle = train_on_middle, train_pct = train_pct, test_subpct = test_subpct,seed = seed, debug=is_split_debug, debug_name=split_debug_name)
     train_ds = cur_subsets['train']
     valid_ds = cur_subsets['valid']
     test_ds = cur_subsets['test']

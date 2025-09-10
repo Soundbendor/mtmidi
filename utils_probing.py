@@ -226,8 +226,19 @@ def filter_dict(results_dict, replace_val = None, filter_nonstr = False, keys_do
             ret[res_key] = replace_val
     return ret
 
-def torch_get_train_test_subsets(dataset_obj, dataset_label_arr, train_on_middle = True, train_pct = 0.7, test_subpct = 0.5, seed = 5):
+def torch_get_train_test_subsets(dataset_obj, dataset_label_arr, train_on_middle = True, train_pct = 0.7, test_subpct = 0.5, seed = 5, debug=False, debug_name=''):
     idxs = UD.get_train_test_subsets(dataset_label_arr, train_on_middle = train_on_middle, train_pct = train_pct, test_subpct = test_subpct, seed = seed)
+    
+    if debug == True:
+        dest_dir = UM.by_projpath(subpath='split_debug', make_dir = True)
+        for idxtype in ['train', 'valid', 'test']:
+            out_file = f'{debug_name}-{idxtype}.txt'
+            dest_file = os.path.join(dest_dir, outfile)
+            with open(dest_file, 'w') as f:
+                out_str = ' '.join([str(_idx) for _idx in idxs[idxtype]])
+                f.write(out_str)
+
+
     valid_subset = None
     test_subset = None
     train_subset = TUD.Subset(dataset_obj, idxs['train'])
