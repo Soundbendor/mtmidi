@@ -15,11 +15,11 @@ import util_data as UD
 # either classify by category or subcategory
 # example categories to exclude: dyn_pair, dyn_category, dyn_subcategory, offset_lvl
 class DynamicsData(TUD.Dataset):
-    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=-1, classify_by_subcategory = False, is_memmap = True, is_64bit = True):
+    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=0, classify_by_subcategory = False, is_memmap = True, is_64bit = True):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
-	
+        self.layer_idx = layer_idx	
         
         # filter out dyn_pair, dyn_category, and dyn_subcategories (keep given matching all three nonexcluded)
 

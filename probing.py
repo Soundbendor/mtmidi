@@ -232,7 +232,7 @@ def get_optimization_metric(metric_dict, is_classification = True):
 def has_held_out_classes(dataset, is_classification):
     return (dataset in UM.tom_datasets) and is_classification == False
 
-def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, num_layers = -1, batch_size = 64, num_epochs=250):
+def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, num_layers = 1, batch_size = 64, num_epochs=250):
 
     global trial_model_state_dict
     global best_model_state_dict
@@ -241,13 +241,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     # suggested params
     lr_exp = trial.suggest_int('learning_rate_exp',-5,-3, step=1)
     lr = 10**lr_exp
-    #batch_size_lo = 64
-    #batch_size_hi = 256
-    #batch_size_step = batch_size_hi - batch_size_lo
-
-    #bs = trial.suggest_int('batch_size', batch_size_lo, batch_size_hi, step=batch_size_step)
     
-    #batch_size = bs
     dropout = trial.suggest_float('dropout', 0.25, 0.75, step=0.25)
         
     weight_decay_exp = trial.suggest_int('l2_weight_decay_exp', -4,-2,step=1)
@@ -256,12 +250,10 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     lidx = None
     if layer_idx >= 0:
         lidx = layer_idx
-    elif num_layers > 0:
+    else:
         lidx_list = list(range(num_layers))
         lidx = trial.suggest_categorical('layer_idx', lidx_list)
         #lidx = trial.suggest_int('layer_idx', 0, num_layers - 1, step=1)
-    else:
-        lidx = 0
 
     train_ds.dataset.set_layer_idx(lidx)
     valid_ds.dataset.set_layer_idx(lidx)
@@ -481,6 +473,7 @@ if __name__ == "__main__":
         exit()
 
     study_base_name = f'{args.dataset}-{args.embedding_type}'
+    arg_dict['num_layers'] = num_layers
     ### ===== RUNNING PROBE ==== ### 
     if is_eval == False:
 
@@ -501,7 +494,6 @@ if __name__ == "__main__":
 
             study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.GridSampler(search_space),  maximize = True, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'grid_samplers', db_dir = 'db') 
         else:
-            arg_dict['num_layers'] = num_layers
             study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.TPESampler(seed=seed),  maximize = True, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'tpe_samplers', db_dir = 'db') 
         study = study_dict['study']
         study_name = study_dict['study_name']
@@ -509,9 +501,9 @@ if __name__ == "__main__":
         if using_toml == True:
             flat_toml_dict = UD.flatten_toml_dict(toml_dict)
             rec_dict.update(flat_toml_dict)
-            UP.record_dict_in_study(study, rec_dict)
 
         rec_dict['study_name'] = study_name
+        UP.record_dict_in_study(study, rec_dict)
         study.set_user_attr('classify_by_subcategory', arg_dict['classify_by_subcategory'])
         study.set_user_attr('thresh', _thresh)
         obj_dict = {k:v for (k,v) in arg_dict.items() if k not in drop_keys}
@@ -533,47 +525,6 @@ if __name__ == "__main__":
             study.optimize(objective, timeout = None, n_trials = num_trials, n_jobs=1, gc_after_trial = True, callbacks=callbacks)
         else:
             study.optimize(objective, timeout = None, n_trials = None, n_jobs=1, gc_after_trial = True, callbacks=callbacks)
-
-        """
-        #### final testing on best trial
-        dropout = study.best_params.get('dropout', 0.5)
-        layer_idx = arg_dict.get('layer_idx', 0)
-        #bs = study.best_params.get('batch_size', 64)
-        bs = arg_dict['batch_size']
-        best_value = study.best_value
-
-
-        if user_specify_layer_idx == False:
-            layer_idx = study.best_params.get('layer_idx', 0)
-
-        ## model loading and running 
-        model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
-        model.load_state_dict(best_model_state_dict)
-        held_out_classes = has_held_out_classes(cur_dsname, is_classification)
-        test_ds.dataset.set_layer_idx(layer_idx)
-        test_loss, test_metrics = valid_test_loop(model, test_ds, loss_fn = None, dataset = cur_dsname, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = True,  thresh = arg_dict['thresh'], classify_by_subcategory = arg_dict['classify_by_subcategory'], batch_size = bs, file_basename = study_name)
-        UP.print_metrics(test_metrics, study_name)
-        UP.save_results_to_study(study, test_metrics)
-
-        # some final logging to neptune
-        test_filt_nep = UP.filter_dict(test_metrics, replace_val = None, filter_nonstr = False)
-        if to_nep == True:
-            UP.neptune_log(nep, test_filt_nep)
-            TN.tidy(study, nep)
-
-        # some final logging to csv
-        rec_dict.update(test_metrics)
-        rec_dict['best_trial_obj_value'] = best_value
-        
-        rec_dict['best_trial_dropout'] = dropout
-        rec_dict['best_trial_layer_idx'] = layer_idx
-        #rec_dict['best_trial_batch_size'] = bs
-
-        rec_dict['best_lr_exp'] = study.best_params['learning_rate_exp']
-        rec_dict['best_weight_decay_exp'] = study.best_params['l2_weight_decay_exp']
-        test_filt_res = UP.filter_dict(rec_dict, replace_val = 'None', filter_nonstr = True)
-        UP.log_results(test_filt_res, study_name)
-        """
 
     else:
         ### ==== JUST EVAL ==== ###

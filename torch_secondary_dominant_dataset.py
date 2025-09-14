@@ -15,7 +15,7 @@ import util_data as UD
 # classify by subcategory = classify by individual progression (else classify by none,secondary,tritone)
 # inv, if >= 0, filter by this inversion
 class SecondaryDominantData(TUD.Dataset):
-    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=-1, classify_by_subcategory = True, is_64bit = True, is_memmap = True):
+    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=0, classify_by_subcategory = True, is_64bit = True, is_memmap = True):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
