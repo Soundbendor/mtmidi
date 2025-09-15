@@ -224,6 +224,12 @@ def get_embedding_num_layers(shorthand):
         num_layers = model_num_layers['musicgen-encoder']
     return num_layers
 
+    
+def is_embedding_single_layer(shorthand):
+    num_layers = get_embedding_num_layers(shorthand)
+    return num_layers == 1
+
+
 def old_get_embedding_shape(shorthand):
     longhand = model_longhand[shorthand]
     mtype = model_type[longhand]

@@ -232,7 +232,7 @@ def get_optimization_metric(metric_dict, is_classification = True):
 def has_held_out_classes(dataset, is_classification):
     return (dataset in UM.tom_datasets) and is_classification == False
 
-def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, num_layers = 1, batch_size = 64, num_epochs=250):
+def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, num_layers = 1, num_epochs=100):
 
     global trial_model_state_dict
     global best_model_state_dict
@@ -247,6 +247,8 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     weight_decay_exp = trial.suggest_int('l2_weight_decay_exp', -4,-2,step=1)
     weight_decay = 10**weight_decay_exp
 
+    batch_size = trial.suggest_categorical('batch_size', [64,256])
+    data_norm = trial.suggest_categorical('data_norm', [False, True])
     lidx = None
     if layer_idx >= 0:
         lidx = layer_idx
@@ -314,7 +316,7 @@ def study_callback(study, trial):
 
 
 # training for evaluation
-def eval_train(model, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = 0, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', lr_exp = -3, weight_decay_exp = -3,  model_layer_dim=1024, out_dim = 1, batch_size = 64, num_epochs=250):
+def eval_train(model, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = 0, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', lr_exp = -3, weight_decay_exp = -3,  model_layer_dim=1024, out_dim = 1, batch_size = 64, num_epochs=100, data_norm = True):
 
     lr = 10**lr_exp
 
@@ -373,7 +375,6 @@ if __name__ == "__main__":
     parser.add_argument("-epc", "--num_epochs", type=int, default=100, help="number of epochs")
     parser.add_argument("-spd", "--split_debug", type=strtobool, default=False, help="debug split by recording indices")
     parser.add_argument("-uf", "--use_folds", type=strtobool, default=True, help="use predefined folds for dataset splitting")
-    parser.add_argument("-bs", "--batch_size", type=int, default=64, help="batch size")
     parser.add_argument("-pr", "--prune", type=strtobool, default=True, help="do pruning")
     parser.add_argument("-gr", "--grid_search", type=strtobool, default=False, help="grid search")
     parser.add_argument("-sm", "--save_intermediate_model", type=strtobool, default=False, help="save intermediate model during training")
@@ -468,7 +469,7 @@ if __name__ == "__main__":
     arg_dict.update({'train_ds': train_ds, 'valid_ds': valid_ds})
 
     num_layers = UM.get_embedding_num_layers(emb_type)
-
+    is_single_layer = UM.is_embedding_single_layer(shorthand)
     if arg_dict['debug'] == True and is_eval == False:
         exit()
 
@@ -483,7 +484,11 @@ if __name__ == "__main__":
      
             search_space = None
             #if param_search == True:
-            search_space = {'learning_rate_exp': [-5, -4, -3], 'dropout': [0.25, 0.5, 0.75], 'l2_weight_decay_exp': [-4, -3, -2]}
+            if is_single_layer == False:
+                search_space = {'learning_rate_exp': [-5, -4, -3], 'dropout': [0.25, 0.5, 0.75], 'batch_size': [64,256], 'l2_weight_decay_exp': [-4, -3, -2], 'data_norm': [False, True]}
+            else:
+                search_space = {'learning_rate_exp': [-3], 'dropout': [0.5], 'batch_size': [64], 'l2_weight_decay_exp': [-2], 'data_norm': [True]}
+                
             #else:
             #search_space = {'learning_rate_exp': [-5], 'dropout': [0.25], 'l2_weight_decay_exp': [-3]}
             
@@ -540,13 +545,12 @@ if __name__ == "__main__":
         l2_weight_decay_exp = best_param_dict.get('l2_weight_decay_exp', -4.0)
 
         learning_rate_exp = best_param_dict.get('learning_rate_exp', -2.0)
-
+        data_norm = best_param_dict.get('data_norm', True)
         print(f"training probe (valid: {best_value}) with: layer_idx={layer_idx}, dropout={dropout}, lr_exp={learning_rate_exp}, weight_decay_exp={l2_weight_decay_exp}") 
         if len(tomlfile_str) > 0:
             print(f'(toml file: {tomlfile_str})')
-        #bs = study.best_params.get('batch_size', 64)
+        bs = study.best_params.get('batch_size', 64)
         #bs = arg_dict['batch_size']
-        bs = 64 # batch size used
         num_epochs = 100 # num_epochs used
 
 
@@ -556,7 +560,7 @@ if __name__ == "__main__":
         model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
         held_out_classes = has_held_out_classes(cur_dsname, is_classification)
 
-        valid_score = eval_train(model, dataset = cur_dsname, embedding_type = arg_dict['embedding_type'], is_classification = is_classification, thresh=_thresh, layer_idx = layer_idx, train_ds = train_ds, valid_ds = valid_ds,  train_on_middle = train_on_middle, classify_by_subcategory = arg_dict['classify_by_subcategory'], lr_exp = learning_rate_exp, weight_decay_exp = l2_weight_decay_exp, model_type=model_type, model_layer_dim=model_layer_dim, out_dim = out_dim, batch_size = bs, num_epochs=num_epochs)
+        valid_score = eval_train(model, dataset = cur_dsname, embedding_type = arg_dict['embedding_type'], is_classification = is_classification, thresh=_thresh, layer_idx = layer_idx, train_ds = train_ds, valid_ds = valid_ds,  train_on_middle = train_on_middle, classify_by_subcategory = arg_dict['classify_by_subcategory'], lr_exp = learning_rate_exp, weight_decay_exp = l2_weight_decay_exp, model_type=model_type, model_layer_dim=model_layer_dim, out_dim = out_dim, batch_size = bs, num_epochs=num_epochs, data_norm=data_norm)
         print(f'eval valid score: {valid_score}')
         test_ds.dataset.set_layer_idx(layer_idx)
         test_loss, test_metrics = valid_test_loop(model, test_ds, loss_fn = None, dataset = cur_dsname, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = True,  thresh = arg_dict['thresh'], classify_by_subcategory = arg_dict['classify_by_subcategory'], batch_size = bs, file_basename = study_name)
