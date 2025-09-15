@@ -15,11 +15,11 @@ import util_data as UD
 # classify by subcategory = classify by individual progression (else classify by modemix or not)
 # inv, if >= 0, filter by this inversion
 class ModemixChordprogData(TUD.Dataset):
-    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=-1, classify_by_subcategory = True, is_64bit = True, is_memmap = True):
+    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=0, classify_by_subcategory = True, is_64bit = True, is_memmap = True):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
-        
+        self.layer_idx = layer_idx 
 
         self.classify_by_subcategory = classify_by_subcategory
         self.data = cur_df.with_columns(
@@ -34,7 +34,6 @@ class ModemixChordprogData(TUD.Dataset):
         self.all_imm_idx = self.data.select(['is_modemix_idx']).to_numpy().flatten()
         self.total_num = self.data['name'].count()
         self.coldict = {x:i for (i,x) in enumerate(self.data.columns)}
-        self.layer_idx = layer_idx
         self.is_memmap = is_memmap
     def __len__(self):
         return self.data['name'].count()

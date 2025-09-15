@@ -12,7 +12,7 @@ import utils_probing as UP
 import util_data as UD
 
 class Chords7Data(TUD.Dataset):
-    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=-1, is_64bit = True, is_memmap = True):
+    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=0, is_64bit = True, is_memmap = True):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type

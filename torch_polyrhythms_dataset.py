@@ -13,12 +13,12 @@ import util_data as UD
 
 # exclude_polys should be in pstr format
 class PolyrhythmsData(TUD.Dataset):
-    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', classification = True, classdict={}, norm_labels = True, layer_idx=-1, is_64bit = True, is_memmap = True):
+    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', classification = True, classdict={}, norm_labels = True, layer_idx=0, is_64bit = True, is_memmap = True):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
         
-
+        self.layer_idx = layer_idx
         # filter out exclude_polys and exclude_offset_lvls (keep given matching both nonexcluded) 
         # also sort by norm_ratio ascending
         # also map the 'poly' to label indices
