@@ -24,7 +24,7 @@ def fit_data(_sk_scl, _t_scl, _X):
 def check_param_closeness(_sk_scl, _t_scl):
     
     X_skparam = np.array([_sk_scl.mean_, _sk_scl.var_, _sk_scl.scale_])
-    X_tparam = np.array([_t_scl.mean.numpy(), _t_scl.var.numpy(), _t_scl.scale.numpy()])
+    X_tparam = np.array([_t_scl.mean.cpu().numpy(), _t_scl.var.cpu().numpy(), _t_scl.scale.cpu().numpy()])
 
     for i,Xparam in enumerate(['mean', 'var', 'scale']):
         cur_sk = X_skparam[i]
@@ -41,24 +41,27 @@ def check_transform_closeness(_sk_scl, _t_scl, _X):
     torch_X = torch.from_numpy(_X)
 
     tX_sk = _sk_scl.transform(_X)
-    tX_t = _t_scl.transform(torch_X).numpy()
+    tX_t = _t_scl.transform(torch_X).cpu().numpy()
 
     cur_ic = np.allclose(tX_sk, tX_t)
     print(f'txed | close: {cur_ic}')
 
 seed = 5
+batch_size = 64
+dataset_size = 45000
 rng = np.random.default_rng(seed=seed)
-num_batches = 50
+num_batches = int(float(dataset_size)/batch_size * 100)
 num_feat = 4096
 
-
+device = 'cpu'
+if torch.cuda.is_available() == True:
+    device = 'cuda'
 sk_scl = KST()
-t_scl = TST()
+t_scl = TST(device=device)
 
 print(f'Testing with num_batches = {num_batches} and num_feat = {num_feat}')
 for i in range(num_batches):
-    cur_size = 50*(i+1)
-    batch = rng.uniform(-5., 5., size=(cur_size,num_feat)).astype(np.float32)
+    batch = rng.uniform(-10., 10., size=(batch_size,num_feat)).astype(np.float32)
     size = batch.shape[0]
 
     print(f'------ Checking batch {i+1} (size: {size}) ------')

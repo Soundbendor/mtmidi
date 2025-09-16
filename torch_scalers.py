@@ -30,7 +30,7 @@ class StandardScaler():
     def partial_fit(self, X):
         # (normed = batch scaled)
         ### defining vars
-        cur_data = X.clone().detach().to(self.ftype)
+        cur_data = X.clone().detach().to(self.ftype).to(self.device)
         old_mean = self.mean.clone()
         old_var = self.var.clone()
         old_num_samples = self.num_samples.clone()
@@ -85,7 +85,7 @@ class StandardScaler():
 
     def transform(self, X):
         orig_type = X.dtype
-        cur_data = X.clone().detach().to(self.ftype)
+        cur_data = X.clone().detach().to(self.ftype).to(self.device)
         if self.with_mean == True:
             cur_data -= self.mean
         if self.with_std == True:
