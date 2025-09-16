@@ -14,7 +14,7 @@ class StandardScaler():
         else:
             self.ftype = torch.float32
         self.mean = torch.tensor(0., dtype=self.ftype, device = device, requires_grad = False)
-        self.var = torch.tensor(1., dtype=self.ftype, device = device, requires_grad = False)
+        self.var = torch.tensor(0., dtype=self.ftype, device = device, requires_grad = False)
         self.scale = torch.tensor(1., dtype=self.ftype, device = device, requires_grad = False)
         self.num_samples = torch.tensor(0, dtype=torch.int64, device = device, requires_grad = False)
    
@@ -23,7 +23,7 @@ class StandardScaler():
 
     def reset(self):
         self.mean = torch.tensor(0., dtype=self.ftype, device = self.device, requires_grad = False)
-        self.var = torch.tensor(1., dtype=self.ftype, device = self.device, requires_grad = False)
+        self.var = torch.tensor(0., dtype=self.ftype, device = self.device, requires_grad = False)
         self.scale = torch.tensor(1., dtype=self.ftype, device = self.device, requires_grad = False)
         self.num_samples = torch.tensor(0, dtype=torch.int64, device = self.device, requires_grad = False)
 
@@ -55,7 +55,12 @@ class StandardScaler():
         
         q = old_num_samples.to(self.ftype)/cur_bs
         # (q/new_num_samples = m/(n * (m + n)) in paper, 1/q = n/m in paper)
-        new_unnorm_var = last_unnorm_var + corr_cur_unnorm_var + ( (q/new_num_samples) * ((old_sum/q) - cur_sum) ) # (1.5b) 
+        
+        new_unnorm_var = None
+        if old_num_samples.item() != 0:
+            new_unnorm_var = last_unnorm_var + corr_cur_unnorm_var + ( (q/new_num_samples) * torch.pow((old_sum/q) - cur_sum, 2. )) # (1.5b) 
+        else:
+            new_unnorm_var = corr_cur_unnorm_var
         new_var = new_unnorm_var/new_num_samples
 
         ### update step
@@ -77,4 +82,24 @@ class StandardScaler():
         self.reset()
         self.partial_fit(X)
 
+
+    def transform(self, X):
+        orig_type = X.dtype
+        cur_data = X.clone().detach().to(self.ftype)
+        if self.with_mean == True:
+            cur_data -= self.mean
+        if self.with_std == True:
+            cur_data /= self.scale
+        if orig_type != self.ftype:
+            return cur_data.to(orig_type)
+        else:
+            return cur_data
+
+    def fit_transform(self, X):
+        self.fit(X)
+        return self.transform(X)
+
+    def partial_fit_transform(self, X):
+        self.partial_fit(X)
+        return self.transform(X)
 
