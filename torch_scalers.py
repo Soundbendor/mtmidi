@@ -1,25 +1,35 @@
 # duplicating sklearn's standardscaler https://github.com/scikit-learn/scikit-learn/blob/b24c328a30/sklearn/preprocessing/_data.py#L723
 
+# paper cited by sklearn:
+# Tony F. Chan, Gene H. Golub and Randall J. LeVeque
+# Algorithms for Computing the Sample Variance: Analysis and Recommendations
+# The American Statistician, Vol. 37, No. 3 (Aug., 1983), pp. 242-247
+# Taylor & Francis, Ltd. on behalf of the American Statistical Association
 
 import torch
 
 class StandardScaler():
-    def __init__(self,with_mean = True, with_std = True, use_64bit = True, device = 'cpu'):
+    def __init__(self,with_mean = True, with_std = True, use_64bit = True, use_constant_feature_mask = True, device = 'cpu'):
         self.with_mean = with_mean
         self.with_std = with_std
         self.use_64bit = use_64bit
+        self.use_constant_feature_mask = use_constant_feature_mask
         self.device = device
         if self.use_64bit == True:
             self.ftype = torch.float64
         else:
             self.ftype = torch.float32
+        
+        # used for bounds checking as per sklearn
+        self.eps = torch.finfo(self.ftype).eps
+
         self.mean = torch.tensor(0., dtype=self.ftype, device = device, requires_grad = False)
         self.var = torch.tensor(0., dtype=self.ftype, device = device, requires_grad = False)
         self.scale = torch.tensor(1., dtype=self.ftype, device = device, requires_grad = False)
         self.num_samples = torch.tensor(0, dtype=torch.int64, device = device, requires_grad = False)
    
         # thresh from sklearn's _handle_zeros_in_scale in preprocessing _data.py
-        self.zero_thresh = 10. * torch.finfo(self.ftype).eps
+        self.zero_thresh = 10. * self.eps
 
     def reset(self):
         self.mean = torch.tensor(0., dtype=self.ftype, device = self.device, requires_grad = False)
@@ -70,9 +80,24 @@ class StandardScaler():
 
         new_scale = torch.sqrt(new_var)
         
-        # duplicating sklearn's _handle_zeros_in_scale in preprocessing _data.py
-        # which prevents div by small numbers or zero by replacing with 1.
-        where_zero  = torch.isclose(new_scale, torch.zeros_like(new_scale), atol=self.zero_thresh)
+        where_zero = None
+        if self.use_constant_feature_mask == True:
+            # duplicating sklearn's _is_constant_feature in preprocessing _data.py
+            # detects when variance falls within error bounds defined by Table 1. 3 in paper
+            # letting paper K = mean * sqrt(n_samp/unnormed_var) = mean / sqrt(var) (2.2)
+            # sub mean^2 = K^2 unnormed_var/n_samp in to _is_constant_feature expression
+            # (var <= n_samp * eps * var + (n_samp * mean * eps)**2 )
+            # where eps = u (in paper) and substitute var = unnorm_var/n_samp = S/N
+            # some reduction yields 1 <= Nu + N^2 K^2 u^2 where RHS is paper Table 1. 3 
+            # (not sure why sklearn is not using corrected two-pass bounds)
+            # since bounds in paper are given by |S - Sbar|/S, they are detecting when |S-Sbar|/S <= 1
+
+            where_zero = self.var <= (self.num_samples * self.var * self.eps) + torch.pow(self.num_samples * self.mean * self.eps, 2.)
+        else:
+            # duplicating sklearn's _handle_zeros_in_scale in preprocessing _data.py
+            # which prevents div by small numbers or zero by replacing with 1.
+            where_zero  = torch.isclose(new_scale, torch.zeros_like(new_scale), atol=self.zero_thresh)
+
         new_scale[where_zero] = 1.
         self.scale = new_scale
 

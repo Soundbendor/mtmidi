@@ -54,6 +54,7 @@ num_batches = int(float(dataset_size)/batch_size * 100)
 num_feat = 4096
 
 device = 'cpu'
+
 if torch.cuda.is_available() == True:
     device = 'cuda'
 sk_scl = KST()
@@ -61,7 +62,13 @@ t_scl = TST(device=device)
 
 print(f'Testing with num_batches = {num_batches} and num_feat = {num_feat}')
 for i in range(num_batches):
-    batch = rng.uniform(-10., 10., size=(batch_size,num_feat)).astype(np.float32)
+    batch = rng.uniform(-5000., 750., size=(batch_size,num_feat)).astype(np.float32)
+    #batch = rng.normal(loc=5.0, scale=20., size=(batch_size,num_feat)).astype(np.float32)
+    #batch = rng.zipf(5.0, size=(batch_size,num_feat)).astype(np.float32)
+    #batch = rng.wald(5.0, 0.1, size=(batch_size,num_feat)).astype(np.float32)
+    #batch = rng.poisson(30, size=(batch_size,num_feat)).astype(np.float32)
+    #batch = rng.power(50., size=(batch_size,num_feat)).astype(np.float32)
+    #batch = rng.chisquare(5, size=(batch_size,num_feat)).astype(np.float32)
     size = batch.shape[0]
 
     print(f'------ Checking batch {i+1} (size: {size}) ------')
