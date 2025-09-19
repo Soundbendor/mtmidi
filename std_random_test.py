@@ -3,9 +3,12 @@
 
 import numpy as np
 import random
+import util as UM
+import os
 
 random.seed(5)
 
+res_path = UM.by_projpath(subpath='misc_results', make_dir = True)
 bs = 256
 
 num_epochs = 100
@@ -38,9 +41,9 @@ max_idx = np.argmax(dist)
 minmax = f'min: ({min_idx} {dist[min_idx]}), max: ({max_idx}, {dist[max_idx]})'
 
 print(minmax)
-with open(f'sample_counts-{bs}-{num_epochs}.txt', 'w') as f:
+with open(os.path.join(res_path, f'sample_counts-{bs}-{num_epochs}.txt'), 'w') as f:
     for i in range(ds_size):
         f.write(f'{i},{dist[i]}\n')
 
-with open(f'sample_minmax-{bs}-{num_epochs}.txt', 'w') as f:
+with open(os.path.join(res_path, f'sample_minmax-{bs}-{num_epochs}.txt'), 'w') as f:
     f.write(minmax)
