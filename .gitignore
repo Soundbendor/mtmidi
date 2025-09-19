@@ -3,7 +3,6 @@ csv/*-bak.csv
 midi/*
 acts/*
 hf_acts/*
-st*
 log/*
 *.swp
 dont_save/*
