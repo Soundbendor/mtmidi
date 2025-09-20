@@ -6,15 +6,20 @@
 # The American Statistician, Vol. 37, No. 3 (Aug., 1983), pp. 242-247
 # Taylor & Francis, Ltd. on behalf of the American Statistical Association
 
+from torch import nn
 import torch
+import util as UM
+import os
 
-class StandardScaler():
-    def __init__(self,with_mean = True, with_std = True, use_64bit = True, use_constant_feature_mask = True, device = 'cpu'):
+class StandardScaler(nn.Module):
+    def __init__(self,with_mean = True, with_std = True, use_64bit = True, dim=4096, use_constant_feature_mask = True, device = 'cpu'):
+        super().__init__()
         self.with_mean = with_mean
         self.with_std = with_std
         self.use_64bit = use_64bit
         self.use_constant_feature_mask = use_constant_feature_mask
         self.device = device
+        self.dim = dim
         if self.use_64bit == True:
             self.ftype = torch.float64
         else:
@@ -23,19 +28,20 @@ class StandardScaler():
         # used for bounds checking as per sklearn
         self.eps = torch.finfo(self.ftype).eps
 
-        self.mean = torch.tensor(0., dtype=self.ftype, device = device, requires_grad = False)
-        self.var = torch.tensor(0., dtype=self.ftype, device = device, requires_grad = False)
-        self.scale = torch.tensor(1., dtype=self.ftype, device = device, requires_grad = False)
-        self.num_samples = torch.tensor(0, dtype=torch.int64, device = device, requires_grad = False)
-   
+        self.mean = nn.Parameter(torch.zeros(dim, dtype=self.ftype, device = device), requires_grad = False)
+        self.var = nn.Parameter(torch.zeros(dim, dtype=self.ftype, device = device), requires_grad = False)
+        self.scale = nn.Parameter(torch.ones(dim, dtype=self.ftype, device = device), requires_grad = False)
+        self.num_samples = nn.Parameter(torch.tensor(0, dtype=torch.int64, device = device), requires_grad = False)
+  
+
         # thresh from sklearn's _handle_zeros_in_scale in preprocessing _data.py
         self.zero_thresh = 10. * self.eps
 
     def reset(self):
-        self.mean = torch.tensor(0., dtype=self.ftype, device = self.device, requires_grad = False)
-        self.var = torch.tensor(0., dtype=self.ftype, device = self.device, requires_grad = False)
-        self.scale = torch.tensor(1., dtype=self.ftype, device = self.device, requires_grad = False)
-        self.num_samples = torch.tensor(0, dtype=torch.int64, device = self.device, requires_grad = False)
+        self.mean = 0. 
+        self.var = 0. 
+        self.scale = 1.
+        self.num_samples = 0 
 
     def partial_fit(self, X):
         # (normed = batch scaled)
@@ -74,9 +80,9 @@ class StandardScaler():
         new_var = new_unnorm_var/new_num_samples
 
         ### update step
-        self.mean = new_mean
-        self.var = new_var
-        self.num_samples = new_num_samples
+        self.mean.data = new_mean
+        self.var.data = new_var
+        self.num_samples.data = new_num_samples
 
         new_scale = torch.sqrt(new_var)
         
@@ -99,7 +105,7 @@ class StandardScaler():
             where_zero  = torch.isclose(new_scale, torch.zeros_like(new_scale), atol=self.zero_thresh)
 
         new_scale[where_zero] = 1.
-        self.scale = new_scale
+        self.scale.data = new_scale
 
         # to impl, functionality of safe_accumulator_op as used in _incremental_mean_and_var in utils/extmath.py
 

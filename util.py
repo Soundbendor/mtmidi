@@ -258,6 +258,19 @@ def get_model_act_path(model_shorthand, acts_folder = 'acts', dataset='polyrhyth
             os.makedirs(modelpath)
     return modelpath
 
+def get_model_save_path(model_shorthand, model_folder = 'saved_models', dataset='polyrhythms', return_relative = False, make_dir = False):
+    datapath = None
+    if return_relative == False:
+        actpath = by_projpath(model_folder,make_dir = make_dir)
+        datapath = os.path.join(actpath, dataset)
+    else:
+        datapath = acts_folder
+    modelpath = os.path.join(datapath, model_shorthand)
+    if os.path.exists(modelpath) == False and make_dir == True:
+            os.makedirs(modelpath)
+    return modelpath
+
+
 
 def save_npy(save_arr, fname, model_shorthand, acts_folder = 'acts', dataset='polyrhythms', make_dir = True):
     modelpath = get_model_act_path(model_shorthand, acts_folder = acts_folder, dataset = dataset, return_relative = False, make_dir = make_dir)

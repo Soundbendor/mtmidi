@@ -17,6 +17,16 @@ def get_dbconn(cur_ds, cur_embtype, prefix=5):
     #return sqlite3.connect(r'{}'.format(dburi))
     return sqlite3.connect(dbpath)
 
+def get_trial_id_from_number(conn,number):
+    tv = pl.read_database(query = f'select trial_id from trials where number={number}', connection=conn)
+    return tv['trial_id'][0]
+
+def get_number_from_trial_id(conn,trial_id):
+    tv = pl.read_database(query = f'select number from trials where trial_id={trial_id}', connection=conn)
+    return tv['number'][0]
+
+
+
 def get_best_trial_id_val(conn):
     tv = pl.read_database(query = 'select trial_id,value from trial_values', connection=conn)
     best_row = tv[tv.select(pl.col('value').arg_max())[0,0]]

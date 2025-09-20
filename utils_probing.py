@@ -1,4 +1,5 @@
 import sklearn.metrics as SKM
+import torch
 import torch.utils.data as TUD
 import util_data as UD
 import numpy as np
@@ -26,6 +27,8 @@ res_dir = UM.by_projpath("res", make_dir = True)
 nep_dont_log = set(['confmat'])
 # dont need to log this either, use to upload
 nep_paths = set(['confmat_path'])
+
+scaler_dir = UM.by_projpath(subpath = 'saved_scalers', make_dir = True)
 
 def init(class_binsize):
     TP.init(class_binsize)
@@ -284,4 +287,21 @@ def log_results(filt_dict, study_name, folder='res_csv'):
     csvw.writeheader()
     csvw.writerow(filt_dict)
     f.close()
-    
+
+def save_scaler(scaler, base_fname, is_64bit = True):
+    fname = None
+    if is_64bit == True:
+        fname = f'{base_fname}-64.scaler_dict'
+    else:
+        fname = f'{base_fname}-32.scaler_dict'
+    torch.save(scaler.state_dict(), os.path.join(scaler_dir, fname))
+
+def load_scaler(scaler, base_fname, is_64bit = True):
+    fname = None
+    if is_64bit == True:
+        fname = f'{base_fname}-64.scaler_dict'
+    else:
+        fname = f'{base_fname}-32.scaler_dict'
+    scaler.load_state_dict(torch.load(os.path.join(scaler_dir, fname), weights_only = True))
+
+

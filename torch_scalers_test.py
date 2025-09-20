@@ -69,10 +69,11 @@ device = 'cpu'
 if torch.cuda.is_available() == True:
     device = 'cuda'
 sk_scl = KST()
-t_scl = TST(device=device)
+t_scl = TST(dim=num_feat, device=device)
 
 
 for dist in ['uniform', 'normal', 'zipf', 'wald', 'poisson', 'power', 'chisquare']:
+#for dist in ['uniform']:
     fname1 = f'scalers_params-{dist}-{batch_size}_{num_batches}-{dataset_size}-{device}.csv'
     fname2 = f'scalers_txed-{dist}-{batch_size}_{num_batches}-{dataset_size}-{device}.csv'
     
