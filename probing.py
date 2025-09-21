@@ -42,7 +42,6 @@ from torch_probe_model import LinearProbe
 global trial_model_state_dict
 global best_model_state_dict
 global study_sampler_path
-global save_imed_model
 
 ### init stuff
 train_pct = 0.7
@@ -231,9 +230,6 @@ def has_held_out_classes(dataset, is_classification):
 
 def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, num_layers = 1, num_epochs=100, prefix = 1, early_stopping_check_interval = 1, early_stopping_boredom = 5):
 
-    global trial_model_state_dict
-    global best_model_state_dict
-    global save_imed_model
     model = None
     # suggested params
     lr_exp = trial.suggest_int('learning_rate_exp',-5,-3, step=1)
@@ -261,10 +257,9 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     trial_number = trial.number
     scaler = None
     if data_norm == True:
-        scaler = TST(with_mean = True, with_std = True, use_64bit = True, use_constant_feature_mask = True, device = device)
+        scaler = TST(with_mean = True, with_std = True, dim=model_layer_dim, use_64bit = True, use_constant_feature_mask = True, device = device)
 
     held_out_classes = has_held_out_classes(dataset, is_classification)     
-    #model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True, dataset = dataset, model_shorthand = embedding_type)
     model = LinearProbe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
 
     # optimizer and loss init
@@ -291,7 +286,10 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
 
     cur_boredom = 0 
 
-    best_state = None
+    best_probe_dict = None
+    best_scaler_dict = None
+    actual_epochs = num_epochs
+
     for epoch_idx in range(num_epochs):
         train_loss = train_loop(model, opt_fn, loss_fn, train_ds, batch_size = batch_size, is_classification = is_classification, scaler = scaler)
         valid_loss, valid_metrics = valid_test_loop(model,valid_ds, loss_fn = loss_fn, dataset = dataset, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = False, thresh = thresh, batch_size = batch_size, classify_by_subcategory = classify_by_subcategory, scaler = scaler)
@@ -309,39 +307,33 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
                 if cur_score > best_score:
                     best_score = cur_score
                     cur_boredom = 0
-                    best_state = copy.deepcopy(model.state_dict)
+                    best_probe_dict = copy.deepcopy(model.state_dict)
+                    best_scaler_dict = copy.deepcopy(scaler.state_dict)
                 else:
                     cur_boredom += 1
         if cur_boredom >= early_stopping_boredom:
+            actual_epochs = epoch_idx + 1
             break
-
-        if epoch_idx == (num_epochs - 1):
-            best_state = copy.deepcopy(model.state_dict)
+        elif epoch_idx == (num_epochs - 1):
+            best_probe_dict = copy.deepcopy(model.state_dict)
+            best_scaler_dict = copy.deepcopy(scaler.state_dict)
 
 
 
         last_score = cur_score
-    #trial.set_user_attr(key='best_state_dict', value=model.state_dict())
 
-    if save_imed_model == True:
-        trial_model_state_dict = copy.deepcopy(model.state_dict())
+    trial.set_user_attr(key='actual_epochs', value=actual_epochs)
+    if best_probe_dict != None:
+        UP.save_probe_dict(best_probe_dict, model_shorthand = embedding_type, dataset = dataset, prefix=prefix, trial_number = trial_number)
+    if best_scaler_dict != None:
+        UP.save_scaler_dict(best_scaler_dict, model_shorthand = embedding_type, dataset = dataset, prefix=prefix, trial_number = trial_number)
+
     return last_score
     
-# use this to save the best model
-# https://stackoverflow.com/questions/62144904/python-how-to-retrieve-the-best-model-from-optuna-lightgbm-study
 def study_callback(study, trial):
-
-    global trial_model_state_dict
-    global best_model_state_dict
-
     global study_sampler_path
-    global save_imed_model
     with open(study_sampler_path, 'wb') as f:
         pickle.dump(study.sampler, f)
-    if study.best_trial.number == trial.number and save_imed_model == True:
-        # turns out state dicts are not json serializable (so doesn't work)
-        #trial.set_user_attr(key='best_state_dict', value=copy.deepcopy(trial.user_attrs['best_state_dict']))
-        best_model_state_dict = copy.deepcopy(trial_model_state_dict)
 
 
 # training for evaluation
@@ -408,14 +400,13 @@ if __name__ == "__main__":
     parser.add_argument("-uf", "--use_folds", type=strtobool, default=True, help="use predefined folds for dataset splitting")
     parser.add_argument("-pr", "--prune", type=strtobool, default=True, help="do pruning")
     parser.add_argument("-gr", "--grid_search", type=strtobool, default=False, help="grid search")
-    parser.add_argument("-sm", "--save_intermediate_model", type=strtobool, default=False, help="save intermediate model during training")
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
 
     # obj_dict is for passing to objective function, is arg_dict without drop_keys
     # rec_dict is for passing to neptune and study (has drop keys)
     # arg_dict just has everything
-    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'eval', 'save_intermediate_model', 'split_debug', 'use_folds'])
+    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'eval', 'split_debug', 'use_folds'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -428,7 +419,6 @@ if __name__ == "__main__":
 
     #### some variable definitions
     
-    save_imed_model = arg_dict['save_intermediate_model']
     is_eval = arg_dict['eval']
     is_64bit = False # if embeddings are 64 bit
     if arg_dict['embedding_type'] in UM.baseline_names:
@@ -500,7 +490,7 @@ if __name__ == "__main__":
     arg_dict.update({'train_ds': train_ds, 'valid_ds': valid_ds})
 
     num_layers = UM.get_embedding_num_layers(emb_type)
-    is_single_layer = UM.is_embedding_single_layer(shorthand)
+    is_single_layer = UM.is_embedding_single_layer(emb_type)
     if arg_dict['debug'] == True and is_eval == False:
         exit()
 
