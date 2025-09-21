@@ -281,7 +281,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
 
     doing_early_stopping = early_stopping_check_interval > 0
 
-    last_score = None
+    ret_score = None
     best_score = float('-inf') 
 
     cur_boredom = 0 
@@ -314,15 +314,16 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
                     cur_boredom += 1
         if cur_boredom >= early_stopping_boredom:
             actual_epochs = epoch_idx + 1
+            ret_score = best_score
             break
         elif epoch_idx == (num_epochs - 1):
             best_probe_dict = copy.deepcopy(model.state_dict)
+            ret_score = cur_score
             if scaler != None:
                 best_scaler_dict = copy.deepcopy(scaler.state_dict)
 
 
 
-        last_score = cur_score
 
     trial.set_user_attr(key='actual_epochs', value=actual_epochs)
     if best_probe_dict != None:
@@ -330,7 +331,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     if best_scaler_dict != None:
         UP.save_scaler_dict(best_scaler_dict, model_shorthand = embedding_type, dataset = dataset, prefix=prefix, trial_number = trial_number)
 
-    return last_score
+    return ret_score
     
 def study_callback(study, trial):
     global study_sampler_path
