@@ -43,6 +43,3 @@ class LinearProbe(nn.Module):
     def forward(self, x):
         out = self.layers(x)
         return out
-
-    def get_savepath(self, prefix=5, trial_number = 1):
-        return os.path.join(self.save_dir, f'{prefix}-{trial_number}.probe')

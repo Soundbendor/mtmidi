@@ -35,8 +35,6 @@ cur_var = t_scl.var.clone().detach()
 cur_scale = t_scl.scale.clone().detach()
 cur_ns = t_scl.num_samples.clone().detach()
 
-UP.save_scaler(t_scl, fname)
-UP.load_scaler(t_scl2, fname)
 
 print(t_scl.mean.data)
 print(t_scl2.mean.data)
@@ -50,12 +48,16 @@ print("------")
 print(t_scl.num_samples.data)
 print(t_scl2.num_samples.data)
 
+UP.save_scaler(t_scl, model_shorthand = 'test', dataset = 'test', prefix=5, trial_number = 1, is_64bit = True)
+UP.load_scaler(t_scl2, model_shorthand = 'test', dataset = 'test', prefix=5, trial_number = 1, is_64bit = True)
+
 int_bool = lambda x: 1 if x == True else 0
 
 mean_close = torch.allclose(t_scl.mean.data, t_scl2.mean.data)
 var_close = torch.allclose(t_scl.var.data, t_scl2.var.data)
 scale_close = torch.allclose(t_scl.scale.data, t_scl2.scale.data)
 num_samples_close = torch.allclose(t_scl.num_samples.data, t_scl2.num_samples.data)
+
 fname1 = f'scalers_savetest-{batch_size}_{num_batches}-{dataset_size}-{device}.csv'
 f1 = open(os.path.join(res_path, fname1), 'w')
 csvf1 = csv.writer(f1, delimiter = ',')

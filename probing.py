@@ -37,6 +37,7 @@ from hf_chords_dataset import STHFChordsData
 from hf_timesig_dataset import STHFTimeSignaturesData
 from hf_simpleprog_dataset import STHFSimpleProgressionsData
 
+from torch_probe_model import LinearProbe
 # global declarations (hacky) to save model state dicts
 global trial_model_state_dict
 global best_model_state_dict
@@ -65,34 +66,6 @@ if torch.cuda.is_available() == True:
     device = 'cuda'
     torch.cuda.empty_cache()
     torch.set_default_device(device)
-
-### PROBE ###
-class Probe(nn.Module):
-    def __init__(self, in_dim=4800, hidden_layers = [512],out_dim=10, dropout = 0.5, initial_dropout = True):
-        super().__init__()
-        self.num_layers = len(hidden_layers)
-        self.initial_dropout = initial_dropout
-
-        self.layers = nn.Sequential()
-        
-        if initial_dropout == True:
-            self.layers.append(nn.Dropout(p=dropout))
-
-        # dropout ->
-        # num_hidden x (linear -> relu -> dropout) ->
-        # linear -> out
-        cur_dim = in_dim
-        for layer_idx, layer_dim in enumerate(hidden_layers):
-            self.layers.append(nn.Linear(cur_dim, layer_dim))
-            self.layers.append(nn.ReLU())
-            self.layers.append(nn.Dropout(p=dropout))
-
-            cur_dim = layer_dim
-        self.layers.append(nn.Linear(cur_dim, out_dim))
-
-    def forward(self, x):
-        return self.layers(x)
-
 
 ### REGRESSION "CLASSIFICATION"
 def regression_classification(dataset, predictions, thresh=0.01):
@@ -292,7 +265,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
 
     held_out_classes = has_held_out_classes(dataset, is_classification)     
     #model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True, dataset = dataset, model_shorthand = embedding_type)
-    model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
+    model = LinearProbe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
 
     # optimizer and loss init
     opt_fn = None
@@ -615,7 +588,7 @@ if __name__ == "__main__":
         study_name = OU.get_study_name(study_base_name, prefix = arg_dict['prefix'])
 
         ## model loading and running 
-        model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
+        model = LinearProbe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
         held_out_classes = has_held_out_classes(cur_dsname, is_classification)
 
         valid_score = eval_train(model, dataset = cur_dsname, embedding_type = arg_dict['embedding_type'], is_classification = is_classification, thresh=_thresh, layer_idx = layer_idx, train_ds = train_ds, valid_ds = valid_ds,  train_on_middle = train_on_middle, classify_by_subcategory = arg_dict['classify_by_subcategory'], lr_exp = learning_rate_exp, weight_decay_exp = l2_weight_decay_exp, model_type=model_type, model_layer_dim=model_layer_dim, out_dim = out_dim, batch_size = bs, num_epochs=num_epochs, data_norm=data_norm)

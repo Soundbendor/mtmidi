@@ -288,21 +288,26 @@ def log_results(filt_dict, study_name, folder='res_csv'):
     csvw.writerow(filt_dict)
     f.close()
 
-def save_scaler(scaler, base_fname, is_64bit = True):
-    fname = None
+def save_scaler(scaler, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', prefix=5, trial_number = 1, is_64bit = True):
+    save_dir = UM.get_model_save_path(model_shorthand, dataset=dataset, return_relative = False, make_dir = True)
+    cur_ext = None
     if is_64bit == True:
-        fname = f'{base_fname}-64.scaler_dict'
+        cur_ext = '64.scaler_dict'
     else:
-        fname = f'{base_fname}-32.scaler_dict'
-    torch.save(scaler.state_dict(), os.path.join(scaler_dir, fname))
+        cur_ext = '32.scaler_dict'
+    out_path = os.path.join(save_dir, f'{prefix}-{trial_number}-{cur_ext}')
+    torch.save(scaler.state_dict(), out_path)
 
-def load_scaler(scaler, base_fname, is_64bit = True):
-    fname = None
+def load_scaler(scaler, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', prefix=5, trial_number = 1, is_64bit = True):
+    save_dir = UM.get_model_save_path(model_shorthand, dataset=dataset, return_relative = False, make_dir = True)
+    cur_ext = None
     if is_64bit == True:
-        fname = f'{base_fname}-64.scaler_dict'
+        cur_ext = '64.scaler_dict'
     else:
-        fname = f'{base_fname}-32.scaler_dict'
-    scaler.load_state_dict(torch.load(os.path.join(scaler_dir, fname), weights_only = True))
+        cur_ext = '32.scaler_dict'
+    out_path = os.path.join(save_dir, f'{prefix}-{trial_number}-{cur_ext}')
+
+    scaler.load_state_dict(torch.load(out_path, weights_only = True))
 
 def save_probe(model, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', prefix=5, trial_number = 1):
     save_dir = UM.get_model_save_path(model_shorthand, dataset=dataset, return_relative = False, make_dir = True)
@@ -314,4 +319,4 @@ def load_probe(model, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', p
     save_dir = UM.get_model_save_path(model_shorthand, dataset=dataset, return_relative = False, make_dir = True)
     out_path = os.path.join(save_dir, f'{prefix}-{trial_number}.probe_dict')
 
-    model.load_state_dict(out_path, weights_only = True)
+    model.load_state_dict(torch.load(out_path, weights_only = True))
