@@ -16,11 +16,13 @@ import util as UM
 import torch
 
 class LinearProbe(nn.Module):
-    def __init__(self, in_dim=4800, hidden_layers = [512],num_classes=10, dropout = 0.5, initial_dropout = True):
+    def __init__(self, in_dim=4800, hidden_layers = [512],out_dim=10, dropout = 0.5, initial_dropout = True):
         super().__init__()
         self.in_dim = in_dim
-        self.num_classes = num_classes
+        self.out_dim = out_dim
         self.hidden_layers = hidden_layers
+        self.num_layers = len(hidden_layers) + 1
+        self.initial_dropout = initial_dropout
         d_idx = 0
         cur_layers = []
         if initial_dropout == True:
@@ -37,9 +39,9 @@ class LinearProbe(nn.Module):
             h_idx += 1
             r_idx += 1
             d_idx += 1
-        cur_layers.append( ( f'linear_{h_idx}', nn.Linear(prev_dim, num_classes)))
-
+        cur_layers.append( ( f'linear_{h_idx}', nn.Linear(prev_dim, out_dim)))
         self.layers = nn.Sequential(OrderedDict(cur_layers))
+
     def forward(self, x):
         out = self.layers(x)
         return out

@@ -14,9 +14,9 @@ if torch.cuda.is_available() == True:
     device = 'cuda'
 
 
-x = LinearProbe(in_dim=4800, hidden_layers = [512],num_classes=10, dropout = 0.5, initial_dropout = True).to(device)
+x = LinearProbe(in_dim=4800, hidden_layers = [512],out_dim=10, dropout = 0.5, initial_dropout = True).to(device)
 
-y = LinearProbe(in_dim=4800, hidden_layers = [512],num_classes=10, dropout = 0.5, initial_dropout = True).to(device)
+y = LinearProbe(in_dim=4800, hidden_layers = [512],out_dim=10, dropout = 0.5, initial_dropout = True).to(device)
 
 fname1 = f'probe_savetest.csv'
 f1 = open(os.path.join(res_path, fname1), 'w')
