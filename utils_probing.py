@@ -304,4 +304,14 @@ def load_scaler(scaler, base_fname, is_64bit = True):
         fname = f'{base_fname}-32.scaler_dict'
     scaler.load_state_dict(torch.load(os.path.join(scaler_dir, fname), weights_only = True))
 
+def save_probe(model, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', prefix=5, trial_number = 1):
+    save_dir = UM.get_model_save_path(model_shorthand, dataset=dataset, return_relative = False, make_dir = True)
+    out_path = os.path.join(save_dir, f'{prefix}-{trial_number}.probe_dict')
 
+    torch.save(model.state_dict(), out_path)
+
+def load_probe(model, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', prefix=5, trial_number = 1):
+    save_dir = UM.get_model_save_path(model_shorthand, dataset=dataset, return_relative = False, make_dir = True)
+    out_path = os.path.join(save_dir, f'{prefix}-{trial_number}.probe_dict')
+
+    model.load_state_dict(out_path, weights_only = True)

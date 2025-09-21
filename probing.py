@@ -291,7 +291,8 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
         scaler = TST(with_mean = True, with_std = True, use_64bit = True, use_constant_feature_mask = True, device = device)
 
     held_out_classes = has_held_out_classes(dataset, is_classification)     
-    model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True, dataset = dataset, model_shorthand = embedding_type)
+    #model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True, dataset = dataset, model_shorthand = embedding_type)
+    model = Probe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
 
     # optimizer and loss init
     opt_fn = None
