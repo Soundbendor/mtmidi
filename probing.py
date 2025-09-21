@@ -308,7 +308,8 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
                     best_score = cur_score
                     cur_boredom = 0
                     best_probe_dict = copy.deepcopy(model.state_dict)
-                    best_scaler_dict = copy.deepcopy(scaler.state_dict)
+                    if scaler != None:
+                        best_scaler_dict = copy.deepcopy(scaler.state_dict)
                 else:
                     cur_boredom += 1
         if cur_boredom >= early_stopping_boredom:
@@ -316,7 +317,8 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
             break
         elif epoch_idx == (num_epochs - 1):
             best_probe_dict = copy.deepcopy(model.state_dict)
-            best_scaler_dict = copy.deepcopy(scaler.state_dict)
+            if scaler != None:
+                best_scaler_dict = copy.deepcopy(scaler.state_dict)
 
 
 
