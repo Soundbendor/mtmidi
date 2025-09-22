@@ -347,7 +347,7 @@ def load_probe(model, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', p
     out_path = os.path.join(save_dir, f'{prefix}-{trial_number}.probe_dict')
 
     # following error message on loading
-    with torch.serialization.safe_globals([getattr, torch_probe_model.LinearProbe]):
+    with torch.serialization.safe_globals([getattr, torch_probe_model.LinearProbe, torch.nn.modules.container.Sequential]):
         model.load_state_dict(torch.load(out_path, map_location=device, weights_only = True))
     #model.load_state_dict(torch.load(out_path, weights_only = False))
     #model.load_state_dict(torch.load(out_path))
