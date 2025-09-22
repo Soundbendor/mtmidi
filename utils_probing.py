@@ -19,6 +19,8 @@ import os, csv
 import time
 import tomllib
 import polars as pl
+import torch_probe_model
+import torch_scalers
 
 figsize = 15
 
@@ -320,7 +322,7 @@ def load_scaler(scaler, model_shorthand = 'mg_large_h', dataset = 'polyrhythms',
     out_path = os.path.join(save_dir, f'{prefix}-{trial_number}-{cur_ext}')
 
     # following error message on loading
-    with torch.serialization.safe_globals([getattr]):
+    with torch.serialization.safe_globals([getattr,torch_scalers.StandardScaler]):
         scaler.load_state_dict(torch.load(out_path, map_location=device, weights_only = True))
     #scaler.load_state_dict(torch.load(out_path, weights_only = False))
     #scaler.load_state_dict(torch.load(out_path))
@@ -345,7 +347,7 @@ def load_probe(model, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', p
     out_path = os.path.join(save_dir, f'{prefix}-{trial_number}.probe_dict')
 
     # following error message on loading
-    with torch.serialization.safe_globals([getattr]):
+    with torch.serialization.safe_globals([getattr, torch_probe_model.LinearProbe]):
         model.load_state_dict(torch.load(out_path, map_location=device, weights_only = True))
     #model.load_state_dict(torch.load(out_path, weights_only = False))
     #model.load_state_dict(torch.load(out_path))
