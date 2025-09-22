@@ -615,10 +615,10 @@ if __name__ == "__main__":
         else:
             trial_number = best_trial_dict['trial_number']
             
-            UP.load_probe(model, model_shorthand = emb_type, dataset = cur_dsname, prefix=arg_dict['prefix'], trial_number = trial_number)
+            UP.load_probe(model, model_shorthand = emb_type, dataset = cur_dsname, prefix=arg_dict['prefix'], trial_number = trial_number, device = device)
 
             if data_norm == True:
-                UP.load_scaler(scaler, model_shorthand = emb_type, dataset = cur_dsname, prefix=arg_dict['prefix'], trial_number = trial_number, is_64bit = True)
+                UP.load_scaler(scaler, model_shorthand = emb_type, dataset = cur_dsname, prefix=arg_dict['prefix'], trial_number = trial_number, is_64bit = True, device = device)
         test_ds.dataset.set_layer_idx(layer_idx)
 
         test_loss, test_metrics = valid_test_loop(model,test_ds, loss_fn = None, dataset = cur_dsname, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = True, thresh = _thresh, batch_size = bs, classify_by_subcategory = arg_dict['classify_by_subcategory'], scaler = scaler, file_basename = study_name)

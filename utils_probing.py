@@ -310,7 +310,7 @@ def save_scaler_dict(scaler_dict, model_shorthand = 'mg_large_h', dataset = 'pol
 
 
 
-def load_scaler(scaler, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', prefix=5, trial_number = 1, is_64bit = True):
+def load_scaler(scaler, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', prefix=5, trial_number = 1, is_64bit = True, device = 'cpu'):
     save_dir = UM.get_model_save_path(model_shorthand, dataset=dataset, return_relative = False, make_dir = True)
     cur_ext = None
     if is_64bit == True:
@@ -319,8 +319,10 @@ def load_scaler(scaler, model_shorthand = 'mg_large_h', dataset = 'polyrhythms',
         cur_ext = '32.scaler_dict'
     out_path = os.path.join(save_dir, f'{prefix}-{trial_number}-{cur_ext}')
 
-    #scaler.load_state_dict(torch.load(out_path, weights_only = True))
-    scaler.load_state_dict(torch.load(out_path, weights_only = False))
+    # following error message on loading
+    with torch.serialization.safe_globals([getattr]):
+        scaler.load_state_dict(torch.load(out_path, map_location=device, weights_only = True))
+    #scaler.load_state_dict(torch.load(out_path, weights_only = False))
     #scaler.load_state_dict(torch.load(out_path))
 
 def save_probe(model, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', prefix=5, trial_number = 1):
@@ -339,9 +341,11 @@ def save_probe_dict(model_dict, model_shorthand = 'mg_large_h', dataset = 'polyr
 
 
 def load_probe(model, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', prefix=5, trial_number = 1):
-    save_dir = UM.get_model_save_path(model_shorthand, dataset=dataset, return_relative = False, make_dir = True)
+    save_dir = UM.get_model_save_path(model_shorthand, dataset=dataset, return_relative = False, make_dir = True, device='cpu')
     out_path = os.path.join(save_dir, f'{prefix}-{trial_number}.probe_dict')
 
-    #model.load_state_dict(torch.load(out_path, weights_only = True))
-    model.load_state_dict(torch.load(out_path, weights_only = False))
+    # following error message on loading
+    with torch.serialization.safe_globals([getattr]):
+        model.load_state_dict(torch.load(out_path, map_location=device, weights_only = True))
+    #model.load_state_dict(torch.load(out_path, weights_only = False))
     #model.load_state_dict(torch.load(out_path))
