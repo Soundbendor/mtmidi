@@ -1,6 +1,6 @@
 import polars as pl
 import util as UM
-import os
+import os,json
 import sqlite3
 
 db_folder = UM.by_projpath(subpath='db', make_dir = False)
@@ -35,19 +35,41 @@ def get_best_trial_id_val(conn):
 def get_best_trial_params(conn):
     best_row = get_best_trial_id_val(conn)
     best_id = best_row['trial_id'][0]
+    best_trial_number = get_number_from_trial_id(conn, best_id)
     best_val = best_row['value'][0]
-    best_params = pl.read_database(query = f'select param_name,param_value from trial_params where trial_id={best_id}', connection=conn)
-    return (best_params, best_id, best_val)
+    best_params = pl.read_database(query = f'select param_name,param_value,distribution_json from trial_params where trial_id={best_id}', connection=conn)
+    best_dict = {'trial_id': best_id, 'trial_number': best_trial_number, 'value': best_val}
+    return (best_params, best_dict)
 
 def close_dbconn(conn):
     conn.close()
 
+def parse_best_params(best_params_df):
+    param_dict = {x['param_name']: {'_value': x['param_value'], 'dict': json.loads(x['distribution_json'])} for x in best_params_df.to_dicts()}
+    for param,pdict in param_dict.items():
+        cur_dist = pdict['dict']['name']
+        if cur_dist == 'CategoricalDistribution':
+            cur_choices = pdict['dict']['attributes']['choices']
+            choice_idx = int(pdict['_value'])
+            param_dict[param]['value'] = cur_choices[choice_idx]
+        elif cur_dist == "IntDistribution":
+            param_dict[param]['value'] = int(pdict["_value"])
+        else:
+            param_dict[param]['value'] = pdict["_value"]
+    return param_dict
+
+def get_study_attr(conn):
+    study_attr = pl.read_database(query = f'select * from study_user_attributes', connection=conn)
+    ret_dict = {x['key']: json.loads(x['value_json']) for x in study_attr.to_dicts()}
+    return ret_dict
+
 def get_best_params(cur_ds, cur_embtype, prefix=5):
     conn = get_dbconn(cur_ds, cur_embtype, prefix=prefix)
-    (best_params, best_id, best_val) = get_best_trial_params(conn)
+    (best_params, best_dict) = get_best_trial_params(conn)
+    param_dict = parse_best_params(best_params)
+    attr_dict = get_study_attr(conn)
     close_dbconn(conn)
-    param_dict = {x['param_name']: x['param_value'] for x in best_params.to_dicts()}
     #param_dict['best_value'] = best_val
-    return (param_dict, best_id, best_val)
+    return (param_dict, best_dict, attr_dict)
 
 
