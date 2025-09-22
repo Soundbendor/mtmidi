@@ -340,8 +340,8 @@ def save_probe_dict(model_dict, model_shorthand = 'mg_large_h', dataset = 'polyr
 
 
 
-def load_probe(model, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', prefix=5, trial_number = 1):
-    save_dir = UM.get_model_save_path(model_shorthand, dataset=dataset, return_relative = False, make_dir = True, device='cpu')
+def load_probe(model, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', prefix=5, trial_number = 1, device='cpu'):
+    save_dir = UM.get_model_save_path(model_shorthand, dataset=dataset, return_relative = False, make_dir = True)
     out_path = os.path.join(save_dir, f'{prefix}-{trial_number}.probe_dict')
 
     # following error message on loading
