@@ -1,7 +1,7 @@
 import torch
 from torch_probe_model import LinearProbe
 import utils_probing as UP
-import os,csv
+import os,csv,copy
 import util as UM
 
 res_path = UM.by_projpath(subpath='misc_results', make_dir = True)
@@ -13,10 +13,10 @@ device = 'cpu'
 if torch.cuda.is_available() == True:
     device = 'cuda'
 
-
 x = LinearProbe(in_dim=4800, hidden_layers = [512],out_dim=10, dropout = 0.5, initial_dropout = True).to(device)
 
 y = LinearProbe(in_dim=4800, hidden_layers = [512],out_dim=10, dropout = 0.5, initial_dropout = True).to(device)
+
 
 fname1 = f'probe_savetest.csv'
 f1 = open(os.path.join(res_path, fname1), 'w')
@@ -29,7 +29,8 @@ for k in x.state_dict().keys():
     csvf1.writerow([0, k, int_bool(is_close)])
 
 
-UP.save_probe(x, model_shorthand = 'test', dataset = 'test', prefix=5, trial_number = 1)
+x_state_dict = copy.deepcopy(x.state_dict())
+UP.save_probe_dict(x_state_dict, model_shorthand = 'test', dataset = 'test', prefix=5, trial_number = 1)
 
 UP.load_probe(y, model_shorthand = 'test', dataset = 'test', prefix=5, trial_number = 1)
 
