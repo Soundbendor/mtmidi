@@ -322,7 +322,9 @@ def load_scaler(scaler, model_shorthand = 'mg_large_h', dataset = 'polyrhythms',
     out_path = os.path.join(save_dir, f'{prefix}-{trial_number}-{cur_ext}')
 
     # following error message on loading
-    with torch.serialization.safe_globals([getattr,torch_scalers.StandardScaler]):
+    cur_globals = torch.serialization.get_unsafe_globals_in_checkpoint(out_path)
+    #with torch.serialization.safe_globals([getattr,torch_scalers.StandardScaler]):
+    with torch.serialization.safe_globals([cur_globals]):
         scaler.load_state_dict(torch.load(out_path, map_location=device, weights_only = True))
     #scaler.load_state_dict(torch.load(out_path, weights_only = False))
     #scaler.load_state_dict(torch.load(out_path))
@@ -347,7 +349,9 @@ def load_probe(model, model_shorthand = 'mg_large_h', dataset = 'polyrhythms', p
     out_path = os.path.join(save_dir, f'{prefix}-{trial_number}.probe_dict')
 
     # following error message on loading
-    with torch.serialization.safe_globals([getattr, torch_probe_model.LinearProbe, torch.nn.modules.container.Sequential]):
+    cur_globals = torch.serialization.get_unsafe_globals_in_checkpoint(out_path)
+    #with torch.serialization.safe_globals([getattr, torch_probe_model.LinearProbe, torch.nn.modules.container.Sequential]):
+    with torch.serialization.safe_globals([cur_globals]):
         model.load_state_dict(torch.load(out_path, map_location=device, weights_only = True))
     #model.load_state_dict(torch.load(out_path, weights_only = False))
     #model.load_state_dict(torch.load(out_path))
