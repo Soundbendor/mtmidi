@@ -262,7 +262,7 @@ def torch_get_train_test_subsets(dataset_obj, dataset_df, dataset_label_arr, tra
         valid_subset = TUD.Subset(dataset_obj, idxs['valid'])
     if len(idxs['test']) > 0:
         test_subset = TUD.Subset(dataset_obj, idxs['test'])
-    subsets = {'train': train_subset, 'test': test_subset, 'valid': valid_subset}
+    subsets = {'train': train_subset, 'test': test_subset, 'valid': valid_subset, 'train_idx': idxs['train'], 'valid_idx': idxs['valid'], 'test_idx': idxs['test']}
     return subsets
 
 
