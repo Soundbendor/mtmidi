@@ -421,6 +421,7 @@ if __name__ == "__main__":
     parser.add_argument("-uf", "--use_folds", type=strtobool, default=True, help="use predefined folds for dataset splitting")
     parser.add_argument("-pr", "--prune", type=strtobool, default=False, help="do pruning")
     parser.add_argument("-gr", "--grid_search", type=strtobool, default=True, help="grid search")
+    parser.add_argument("fs", "--full_search", type=strtobool, default=False, help="force full parameter search")
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
 
@@ -452,7 +453,7 @@ if __name__ == "__main__":
     tomlfile_str = arg_dict['toml_file'] 
     
     _classify_by_subcategory = arg_dict['classify_by_subcategory'] 
-
+    force_full_search = arg_dict['full_search']
     
 
     datadict  = UD.load_data_dict(cur_dsname, classify_by_subcategory = _classify_by_subcategory, tomlfile_str = tomlfile_str, use_folds = arg_dict['use_folds'])
@@ -464,6 +465,7 @@ if __name__ == "__main__":
     toml_dict = datadict['toml_dict']
     pl_classdict = datadict['pl_classdict']
     is_classification = datadict['is_classification']
+
 
     arg_dict.update({'thresh': _thresh, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
 
@@ -526,7 +528,7 @@ if __name__ == "__main__":
      
             search_space = None
             #if param_search == True:
-            if is_single_layer == True:
+            if is_single_layer == True or force_full_search == True:
                 search_space = {'learning_rate_exp': [-5, -4, -3], 'dropout': [0.25, 0.5, 0.75], 'batch_size': [64,256], 'l2_weight_decay_exp': [-4, -3, -2], 'data_norm': [False, True]}
             else:
                 search_space = {'learning_rate_exp': [-3], 'dropout': [0.5], 'batch_size': [64], 'l2_weight_decay_exp': [-2], 'data_norm': [True]}
