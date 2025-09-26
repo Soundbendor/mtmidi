@@ -165,7 +165,7 @@ def get_jukebox_layer_embeddings(fpath=None, audio = None, layers=list(range(1,7
     jml.lib.empty_cache()
     return np.array([acts[i] for i in layers])
 
-def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, normalize = True, dur = 4., use_64bit = True, logfile_handle=None, recfile_handle = None, memmap = True, pickup = False):
+def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, normalize = True, dur = 4., use_64bit = True, logfile_handle=None, recfile_handle = None, memmap = True, pickup = False, on_share = False):
     cur_model_type = um.get_model_type(cur_act_type)
     model_sr = um.model_sr[cur_model_type]
     model_longhand = um.model_longhand[cur_act_type]
@@ -209,7 +209,7 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
     # existing files removing latest (since it may be partially written) and removing extension for each of checking
     existing_name_set = None
     if pickup == True:
-        _file_dir = um.get_model_act_path(cur_act_type, acts_folder = acts_folder, dataset=cur_dataset, return_relative = False, make_dir = False)
+        _file_dir = um.get_model_act_path(cur_act_type, acts_folder = acts_folder, dataset=cur_dataset, return_relative = False, make_dir = False, on_share = on_share)
         existing_files = um.remove_latest_file(_file_dir, is_relative = False)
         existing_name_set = set([um.get_basename(_f, with_ext = False) for _f in existing_files])
     for fidx,f in enumerate(cur_pathlist):
@@ -226,7 +226,7 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
         emb_file = None
         np_arr = None
         if memmap == True:
-            emb_file = um.get_embedding_file(cur_act_type, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = use_64bit, write=True, use_shape = None)
+            emb_file = um.get_embedding_file(cur_act_type, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = use_64bit, write=True, use_shape = None, on_share = on_share)
         if cur_model_type == 'jukebox':
             print(f'--- extracting jukebox for {f} with {layers_per} layers at a time ---', file=logfile_handle)
             # note that layers are 1-indexed in jukebox
@@ -252,7 +252,7 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
                     np_arr[layer_arr,:] = rep_arr
                     # should be the last layer to save
                     if has_last_layer == True:
-                        um.save_npy(np_arr, out_fname, cur_act_type, acts_folder = acts_folder, dataset=cur_dataset)
+                        um.save_npy(np_arr, out_fname, cur_act_type, acts_folder = acts_folder, dataset=cur_dataset, on_share = on_share)
         else:
             audio_ipt = fdict['audio']
             if model_longhand == "musicgen-encoder":
@@ -263,7 +263,7 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
                     emb_file[:,:] = rep_arr
                     emb_file.flush()
                 else:
-                    um.save_npy(rep_arr, out_fname, cur_act_type, acts_folder = acts_folder, dataset=cur_dataset)
+                    um.save_npy(rep_arr, out_fname, cur_act_type, acts_folder = acts_folder, dataset=cur_dataset, on_share = on_share)
             else:
 
                 print(f'--- extracting musicgen_lm for {f} ---', file=logfile_handle)
@@ -272,14 +272,14 @@ def get_embeddings(cur_act_type, cur_dataset, layers_per = 4, layer_num = -1, no
                     emb_file[:,:] = rep_arr
                     emb_file.flush()
                 else:
-                    um.save_npy(rep_arr, out_fname, cur_act_type, acts_folder = acts_folder, dataset=cur_dataset)
+                    um.save_npy(rep_arr, out_fname, cur_act_type, acts_folder = acts_folder, dataset=cur_dataset, on_share = on_share)
         fname = fdict['fname']
         print(f'{fname},1', file=recfile_handle)
 
 
 
 # note that these are 32bit
-def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile_handle=None, recfile_handle = None, memmap = True, pickup = False):
+def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile_handle=None, recfile_handle = None, memmap = True, pickup = False, on_share = False):
     #cur_model_type = um.get_model_type(cur_act_type)
     #model_sr = um.model_sr[cur_model_type]
     #model_longhand = um.model_longhand[cur_act_type]
@@ -296,7 +296,7 @@ def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile
     proc = None
     model = None
     text = ""
-    wav_path = os.path.join(um.by_projpath('wav'), cur_dataset)
+    wav_path = os.path.join(um.by_projpath('wav'), cur_dataset, on_share = on_share)
     cur_pathlist = None
 
     out_ext = 'dat'
@@ -313,7 +313,7 @@ def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile
 
     existing_name_set = None
     if pickup == True:
-        _file_dir = um.get_model_act_path(cur_act_type, acts_folder = acts_folder, dataset=cur_dataset, return_relative = False, make_dir = False)
+        _file_dir = um.get_model_act_path(cur_act_type, acts_folder = acts_folder, dataset=cur_dataset, return_relative = False, make_dir = False, on_share = on_share)
         existing_files = um.remove_latest_file(_file_dir, is_relative = False)
         existing_name_set = set([um.get_basename(_f, with_ext = False) for _f in existing_files])
 
@@ -339,11 +339,11 @@ def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile
             ft_shape = ft_vec.shape
             ft_shape_str = um.get_shape_string(ft_shape, joiner='|')
             if memmap == True:
-                emb_file = um.get_embedding_file(_act, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = False, write=True, use_shape = ft_shape)
+                emb_file = um.get_embedding_file(_act, acts_folder=acts_folder, dataset=cur_dataset, fname=out_fname, use_64bit = False, write=True, use_shape = ft_shape, on_share = on_share)
                 emb_file[:,:] = ft_vec
                 emb_file.flush()
             else:
-                um.save_npy(ft_vec, out_fname, _act, acts_folder = acts_folder, dataset=cur_dataset)
+                um.save_npy(ft_vec, out_fname, _act, acts_folder = acts_folder, dataset=cur_dataset, on_share = on_share)
 
             print(f'{_act},{out_fname},{ft_shape_str}', file=shape_file)
         fname = fdict['fname']
@@ -374,6 +374,7 @@ if __name__ == '__main__':
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="save as memmap, else save as npy")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="debug mode")
     parser.add_argument("-p", "--pickup", type=strtobool, default=False, help="pickup where script left off")
+    parser.add_argument("-sh", "--on_share", type=strtobool, default=False, help="save on share partition")
 
 
     args = parser.parse_args()
@@ -404,8 +405,8 @@ if __name__ == '__main__':
         rf = open(rec_fpath, 'w')
         print(f'=== running extraction for {dataset} with {act_type} at {timestamp} ===', file=lf)
         if 'baseline' in act_type:
-            get_baselines(act_type, dataset, normalize=normalize, dur = dur, logfile_handle = lf, recfile_handle =rf, memmap = memmap, pickup = pickup)
+            get_baselines(act_type, dataset, normalize=normalize, dur = dur, logfile_handle = lf, recfile_handle =rf, memmap = memmap, pickup = pickup, on_share = args.on_share)
         else:
-            get_embeddings(act_type, dataset, layers_per = lper, layer_num = lnum, normalize = normalize, dur = dur, use_64bit = use_64bit, logfile_handle=lf, recfile_handle=rf, memmap = memmap, pickup = pickup)
+            get_embeddings(act_type, dataset, layers_per = lper, layer_num = lnum, normalize = normalize, dur = dur, use_64bit = use_64bit, logfile_handle=lf, recfile_handle=rf, memmap = memmap, pickup = pickup, on_share = args.on_share)
         lf.close()
         rf.close()

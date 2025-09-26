@@ -12,11 +12,11 @@ import utils_probing as UP
 import util_data as UD
 
 class STHFTimeSignaturesData(TUD.Dataset):
-    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=-1, is_64bit = True, is_memmap = True):
+    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=-1, is_64bit = True, is_memmap = True, on_share = False):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
-        
+        self.on_share = on_share
 
 
 
@@ -40,7 +40,7 @@ class STHFTimeSignaturesData(TUD.Dataset):
         cur_row = self.data.row(idx)
         cur_name = cur_row[self.coldict['name']]
         cur_truth = cur_row[self.coldict['timesig_idx']]
-        cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, is_memmap = self.is_memmap, acts_folder = 'acts', dataset = 'time_signatures', to_torch = True, use_64bit = self.is_64bit, device = self.device)
+        cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, is_memmap = self.is_memmap, acts_folder = 'acts', dataset = 'time_signatures', to_torch = True, use_64bit = self.is_64bit, device = self.device, on_share = self.on_share)
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
         return cur_arr, cur_truth
 

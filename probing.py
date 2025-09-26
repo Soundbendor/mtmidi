@@ -423,12 +423,13 @@ if __name__ == "__main__":
     parser.add_argument("-gr", "--grid_search", type=strtobool, default=True, help="grid search")
     parser.add_argument("fs", "--full_search", type=strtobool, default=False, help="force full parameter search")
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
+    parser.add_argument("-sh", "--on_share", type=strtobool, default=False, help="load from share partition")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
 
     # obj_dict is for passing to objective function, is arg_dict without drop_keys
     # rec_dict is for passing to neptune and study (has drop keys)
     # arg_dict just has everything
-    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'eval', 'split_debug', 'use_folds', 'eval_retrain'])
+    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'eval', 'split_debug', 'use_folds', 'eval_retrain', 'on_share'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -451,6 +452,7 @@ if __name__ == "__main__":
     train_on_middle = cur_dsname in UM.tom_datasets
     user_specify_layer_idx = arg_dict['layer_idx'] >= 0 
     tomlfile_str = arg_dict['toml_file'] 
+    _on_share = arg_dict['on_share'] 
     
     _classify_by_subcategory = arg_dict['classify_by_subcategory'] 
     force_full_search = arg_dict['full_search']
@@ -466,31 +468,30 @@ if __name__ == "__main__":
     pl_classdict = datadict['pl_classdict']
     is_classification = datadict['is_classification']
 
-
     arg_dict.update({'thresh': _thresh, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
 
     is_memmap = arg_dict['memmap']
     #### load dataset(s)
     if cur_dsname == "polyrhythms":
 
-        cur_ds = PolyrhythmsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, classification = is_classification, classdict = pl_classdict, norm_labels = True, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit, is_memmap = is_memmap)
+        cur_ds = PolyrhythmsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, classification = is_classification, classdict = pl_classdict, norm_labels = True, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit, is_memmap = is_memmap, on_share = _on_share)
     elif cur_dsname == 'tempos':
-        cur_ds = STHFTempiData(cur_df, embedding_type= arg_dict['embedding_type'], device=device, norm_labels = True, layer_idx= arg_dict['layer_idx'], class_binsize = TEMPOS_CLASS_BINSIZE, num_classes = TP.num_classes, bpm_class_mapper = TP.bpm_class_mapper, is_64bit = is_64bit, is_memmap = is_memmap)
+        cur_ds = STHFTempiData(cur_df, embedding_type= arg_dict['embedding_type'], device=device, norm_labels = True, layer_idx= arg_dict['layer_idx'], class_binsize = TEMPOS_CLASS_BINSIZE, num_classes = TP.num_classes, bpm_class_mapper = TP.bpm_class_mapper, is_64bit = is_64bit, is_memmap = is_memmap, on_share = _on_share)
     elif cur_dsname == 'dynamics':
-        cur_ds = DynamicsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, is_memmap = is_memmap)
+        cur_ds = DynamicsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, is_memmap = is_memmap, on_share = _on_share)
     elif cur_dsname == 'chords7':
-        cur_ds = Chords7Data(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap)
+        cur_ds = Chords7Data(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, on_share = _on_share)
     elif cur_dsname == 'chords':
-        cur_ds = STHFChordsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap)
+        cur_ds = STHFChordsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, on_share = _on_share)
     elif cur_dsname == 'time_signatures':
-        cur_ds = STHFTimeSignaturesData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap)
+        cur_ds = STHFTimeSignaturesData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, on_share = _on_share)
     elif cur_dsname == 'simple_progressions':
-        cur_ds = STHFSimpleProgressionsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, is_memmap = is_memmap)
+        cur_ds = STHFSimpleProgressionsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, is_memmap = is_memmap, on_share = _on_share)
         
     elif cur_dsname == 'modemix_chordprog':
-        cur_ds = ModemixChordprogData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, is_memmap = is_memmap)
+        cur_ds = ModemixChordprogData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, is_memmap = is_memmap, on_share = _on_share)
     elif cur_dsname == 'secondary_dominant':
-        cur_ds = SecondaryDominantData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, is_memmap = is_memmap)
+        cur_ds = SecondaryDominantData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, is_memmap = is_memmap, on_share = _on_share)
         
 
 

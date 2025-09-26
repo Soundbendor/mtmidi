@@ -13,11 +13,11 @@ import util_data as UD
 
 # exclude_polys should be in pstr format
 class PolyrhythmsData(TUD.Dataset):
-    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', classification = True, classdict={}, norm_labels = True, layer_idx=0, is_64bit = True, is_memmap = True):
+    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', classification = True, classdict={}, norm_labels = True, layer_idx=0, is_64bit = True, is_memmap = True, on_share = False):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
-        
+        self.on_share = on_share
         self.layer_idx = layer_idx
         # filter out exclude_polys and exclude_offset_lvls (keep given matching both nonexcluded) 
         # also sort by norm_ratio ascending
@@ -51,7 +51,7 @@ class PolyrhythmsData(TUD.Dataset):
                 cur_reg = cur_row[self.coldict['norm_ratio']]
             else:
                 cur_reg = cur_row[self.coldict['ratio']]
-        cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, is_memmap = self.is_memmap, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = True, use_64bit = self.is_64bit, device = self.device)
+        cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, is_memmap = self.is_memmap, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = True, use_64bit = self.is_64bit, device = self.device, on_share = self.on_share)
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
         if self.classification == True:
             return cur_arr, cur_truth

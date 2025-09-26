@@ -250,27 +250,27 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
     return ret
 
 
-def collate_data_at_idx(cur_df,layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, use_shape = None, device = 'cpu'):
+def collate_data_at_idx(cur_df,layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, use_shape = None, device = 'cpu', on_share = False):
     cur_names = cur_df['name']
-    cur_acts = [get_data_vec_at_idx(cur_name, layer_idx, emb_type, is_memmap = is_memmap, acts_folder = acts_folder, dataset = dataset, to_torch = to_torch, use_64bit = use_64bit, use_shape = use_shape, device = device) for cur_name in cur_names]
+    cur_acts = [get_data_vec_at_idx(cur_name, layer_idx, emb_type, is_memmap = is_memmap, acts_folder = acts_folder, dataset = dataset, to_torch = to_torch, use_64bit = use_64bit, use_shape = use_shape, device = device, on_share = on_share) for cur_name in cur_names]
     if to_torch == False:
         return cur_acts
     else:
         return torch.vstack(cur_acts)
 
 
-def get_data_vec_at_idx(fname, layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, use_shape = None, device = 'cpu'):
+def get_data_vec_at_idx(fname, layer_idx, emb_type, is_memmap = True, acts_folder = 'acts', dataset = 'polyrhythms', to_torch = False, use_64bit = False, use_shape = None, device = 'cpu', on_share = False):
     cur = None
     if is_memmap == True:
         cur_fname = f'{fname}.dat'
-        emb_file = UM.get_embedding_file(emb_type, acts_folder = acts_folder, dataset=dataset, fname=cur_fname, write = False, use_64bit = use_64bit, use_shape = use_shape)
+        emb_file = UM.get_embedding_file(emb_type, acts_folder = acts_folder, dataset=dataset, fname=cur_fname, write = False, use_64bit = use_64bit, use_shape = use_shape, on_share = on_share)
         if layer_idx >= 0:
             cur = emb_file[layer_idx,:].copy()
         else:
             cur = emb_file.copy()
     else: 
         cur_fname = f'{fname}.npy'
-        actpath = UM.by_projpath(acts_folder)
+        actpath = UM.by_projpath(acts_folder, on_share = on_share)
         datapath = os.path.join(actpath, dataset)
         modelpath = os.path.join(datapath, emb_type)
         fpath = os.path.join(modelpath, cur_fname)
