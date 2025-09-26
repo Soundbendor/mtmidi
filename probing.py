@@ -421,7 +421,7 @@ if __name__ == "__main__":
     parser.add_argument("-uf", "--use_folds", type=strtobool, default=True, help="use predefined folds for dataset splitting")
     parser.add_argument("-pr", "--prune", type=strtobool, default=False, help="do pruning")
     parser.add_argument("-gr", "--grid_search", type=strtobool, default=True, help="grid search")
-    parser.add_argument("fs", "--full_search", type=strtobool, default=False, help="force full parameter search")
+    parser.add_argument("-fs", "--full_search", type=strtobool, default=False, help="force full parameter search")
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
     parser.add_argument("-sh", "--on_share", type=strtobool, default=False, help="load from share partition")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
