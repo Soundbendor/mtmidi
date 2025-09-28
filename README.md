@@ -8,3 +8,5 @@
 - 333 - gridsearch 5 boredom folds
 - 11 - gridsearch 5 boredom no folds
 - 39 - gridsearch 10 boredom folds no toml file
+- 55 - gridsearch 10 boredom folds fullsearch
+- 59 -gridsearch 10 boredom folds no toml file fullsearch
