@@ -94,6 +94,8 @@ def train_loop(model, opt_fn, loss_fn, train_ds, batch_size = 64, shuffle = True
     model.train(True)
     iters = 0
     total_loss = 0
+    if scaler != None:
+        scaler.eval()
     for data_idx, data in enumerate(train_dl):
         loss = None
         if is_classification == True:
@@ -128,6 +130,8 @@ def train_loop(model, opt_fn, loss_fn, train_ds, batch_size = 64, shuffle = True
 def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_classification = True, held_out_classes = False, is_testing = False, batch_size = 64, shuffle = True,thresh = 0.01, classify_by_subcategory = False, file_basename=None, scaler = None):
     eval_dl = TUD.DataLoader(eval_ds, batch_size = batch_size, shuffle=shuffle, generator=torch.Generator(device=device))
     model.eval()
+    if scaler != None:
+        scaler.eval()
     iters = 0
     total_loss = 0
 
@@ -612,6 +616,7 @@ if __name__ == "__main__":
         study_name = OU.get_study_name(study_base_name, prefix = arg_dict['prefix'])
 
         ## model loading and running 
+        model = None
         model = LinearProbe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
         held_out_classes = has_held_out_classes(cur_dsname, is_classification)
         
