@@ -81,7 +81,7 @@ if __name__ == "__main__":
                     if True:
                         slurm_strarr = ["#!/bin/bash", f"#SBATCH -p {args.partition}",f"#SBATCH --mem={args.ram_mem}G", f"#SBATCH --gres=gpu:{args.gpus}", "#SBATCH -t 1-00:00:00", f"#SBATCH --job-name={ds_abbrev}_{emb_abbrev1}{emb_abbrev2}cka", "#SBATCH --export=ALL", f"#SBATCH --output=/nfs/guille/eecs_research/soundbendor/kwand/slurm_out/{ds_abbrev}{emb_abbrev1}{emb_abbrev2}cka-%j.out", ""]
                         p_str = f"python {cka_path} -ds {dataset} -bs {args.batch_size} -et1 {embedding_type1} -et2 {embedding_type2} -li1 {layer_idx1} -li2 {layer_idx2}"
-                        if dataset == "polyrhythms":
+                        if dataset == "polyrhythms" and len(args.toml_file) > 0:
                             p_str = p_str + f" -tf {args.toml_file}"
                         slurm_strarr.append(p_str)
                         script_fname = f"{start_time}_{ds_abbrev}-{emb_abbrev1}-{emb_abbrev2}-{layer_idx1}_{layer_idx2}.sh"

@@ -537,7 +537,7 @@ if __name__ == "__main__":
             if is_single_layer == True or force_full_search == True:
                 search_space = {'learning_rate_exp': [-5, -4, -3], 'dropout': [0.25, 0.5, 0.75], 'batch_size': [64,256], 'l2_weight_decay_exp': [-4, -3, -2], 'data_norm': [False, True]}
             elif reduced_search == True:
-                search_space = {'learning_rate_exp': [-5, -4, -3], 'dropout': [0.25, 0.5, 0.75], 'batch_size': [64], 'l2_weight_decay_exp': [-2], 'data_norm': [True]}
+                search_space = {'learning_rate_exp': [-3], 'dropout': [0.25, 0.5, 0.75], 'batch_size': [64], 'l2_weight_decay_exp': [-2], 'data_norm': [True]}
             else:
                 search_space = {'learning_rate_exp': [-3], 'dropout': [0.5], 'batch_size': [64], 'l2_weight_decay_exp': [-2], 'data_norm': [True]}
                 
