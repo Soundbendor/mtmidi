@@ -53,7 +53,6 @@ global study_sampler_path
 train_pct = 0.7
 test_subpct = 0.5
 seed = 5
-torch.manual_seed(seed)
 shuffle = True
 # neptune stuff
 plots_update_freq = 10
@@ -72,6 +71,7 @@ if torch.cuda.is_available() == True:
     torch.cuda.empty_cache()
     torch.set_default_device(device)
 
+torch.manual_seed(seed)
 ### REGRESSION "CLASSIFICATION"
 def regression_classification(dataset, predictions, thresh=0.01):
     # predictions should be in numpy format
@@ -494,7 +494,9 @@ if __name__ == "__main__":
     elif cur_dsname == 'chords7':
         cur_ds = Chords7Data(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, on_share = _on_share)
     elif cur_dsname == 'chords':
-        cur_ds = STHFChordsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, on_share = _on_share)
+        cur_ds = STHFChordsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, on_share = _on_share)    
+    elif cur_dsname == 'notes':
+        cur_ds = STHFNotesData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, on_share = _on_share)
     elif cur_dsname == 'time_signatures':
         cur_ds = STHFTimeSignaturesData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, on_share = _on_share)
     elif cur_dsname == 'simple_progressions':
