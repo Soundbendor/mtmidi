@@ -39,10 +39,10 @@ class StandardScaler(nn.Module):
 
     def reset(self):
        
-        self.mean = nn.Parameter(torch.zeros(self.dim, dtype=self.ftype, device = device), requires_grad = False)
-        self.var = nn.Parameter(torch.zeros(self.dim, dtype=self.ftype, device = device), requires_grad = False)
-        self.scale = nn.Parameter(torch.ones(self.dim, dtype=self.ftype, device = device), requires_grad = False)
-        self.num_samples = nn.Parameter(torch.tensor(0, dtype=torch.int64, device = device), requires_grad = False)
+        self.mean = nn.Parameter(torch.zeros(self.dim, dtype=self.ftype, device = self.device), requires_grad = False)
+        self.var = nn.Parameter(torch.zeros(self.dim, dtype=self.ftype, device = self.device), requires_grad = False)
+        self.scale = nn.Parameter(torch.ones(self.dim, dtype=self.ftype, device = self.device), requires_grad = False)
+        self.num_samples = nn.Parameter(torch.tensor(0, dtype=torch.int64, device = self.device), requires_grad = False)
 
     def partial_fit(self, X):
         # (normed = batch scaled)
