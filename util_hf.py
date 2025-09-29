@@ -15,9 +15,9 @@ import numpy as np
 # offset_time is float in seconds?
 
 
-def load_syntheory_train_dataset(ds_name):
-    cur_ds =  HFDS.load_dataset("meganwei/syntheory", ds_name)
-    return cur_ds['train']
+def load_syntheory_train_dataset(ds_name, streaming = True):
+    cur_ds =  HFDS.load_dataset("meganwei/syntheory", ds_name, split = 'train', streaming = streaming)
+    return cur_ds
 
 def get_from_entry_syntheory_audio(cur_entry, mono=True, normalize =True, dur = 4.0):
     #cur_aud = train_ds[idx]['audio']
