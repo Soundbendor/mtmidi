@@ -142,7 +142,29 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
     d = {'accuracy_score': acc, 'f1_macro': f1_macro, 'f1_micro': f1_micro, 'confmat': cm, 'confmat_path': cm_path}
     return d
 
-def get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = 'polyrhythms',  held_out_classes = False, save_confmat = True, do_regression_classification = True, file_basename = None):
+
+
+def get_regression_metrics(truths, preds):
+    mse = SKM.mean_squared_error(truths, preds)
+    r2 = SKM.r2_score(truths, preds)
+    mae = SKM.mean_absolute_error(truths, preds)
+    ev = SKM.explained_variance_score(truths, preds)
+    medae = SKM.median_absolute_error(truths, preds)
+    maxerr = SKM.max_error(truths, preds)
+    mape = SKM.mean_absolute_percentage_error(truths, preds)
+    rmse = SKM.root_mean_squared_error(truths, preds)
+    d2ae = SKM.d2_absolute_error_score(truths, preds)
+    
+    d = {'mean_squared_error': mse, "r2_score": r2, "mean_absolute_error": mae,
+         "explained_variance_score": ev, "median_absolute_error": medae,
+         "max_error": maxerr, "mean_absolute_percentage_error": mape,
+         "root_mean_squared_error": rmse, "d2_absolute_error_score": d2ae}
+    return d
+
+
+
+
+def get_regression_classification_metrics(truths, truth_labels, preds, pred_labels, dataset = 'polyrhythms',  held_out_classes = False, save_confmat = True, do_regression_classification = True, file_basename = None):
     mse = SKM.mean_squared_error(truths, preds)
     r2 = SKM.r2_score(truths, preds)
     mae = SKM.mean_absolute_error(truths, preds)

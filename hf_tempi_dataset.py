@@ -51,14 +51,15 @@ class STHFTempiData(torch.utils.data.Dataset):
         cur_row = self.data.row(idx)
         cur_name = cur_row[self.coldict['name']]
         cur_reg = None
-        cur_truth = cur_row[self.coldict['bpm_class']]
+        #cur_truth = cur_row[self.coldict['bpm_class']]
         if self.norm_labels == True:
             cur_reg = cur_row[self.coldict['norm_bpm']]
         else:
             cur_reg = cur_row[self.coldict['bpm']]
         cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, is_memmap = self.is_memmap, acts_folder = 'acts', dataset = 'tempos', to_torch = True, use_64bit = self.is_64bit, device = self.device, on_share = self.on_share)
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
-        return cur_arr, cur_reg, cur_truth
+        #return cur_arr, cur_reg, cur_truth
+        return cur_arr, cur_reg
 
 
 

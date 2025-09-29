@@ -109,7 +109,8 @@ def train_loop(model, opt_fn, loss_fn, train_ds, batch_size = 64, shuffle = True
             pred = model(ipt)
             loss = loss_fn(pred, ground_truth)
         else:
-            _ipt, ground_truth, ground_label = data
+            #_ipt, ground_truth, ground_label = data
+            _ipt, ground_truth = data
             ipt = None
             if scaler != None:
                 scaler.partial_fit(_ipt)
@@ -173,7 +174,8 @@ def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_
                 else:
                     preds = np.hstack((preds, copy.deepcopy(cur_preds)))
         else:
-            _ipt, ground_truth, ground_label = data
+            #_ipt, ground_truth, ground_label = data
+            _ipt, ground_truth = data
             ipt = None
             if scaler != None:
                 ipt = scaler.transform(_ipt)
@@ -220,7 +222,7 @@ def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_
         # only save confusion matrix if testing
         metrics = UP.get_classification_metrics(truths, preds, dataset = dataset, classify_by_subcategory = classify_by_subcategory, save_confmat=is_testing, file_basename=file_basename)
     else:
-        metrics = UP.get_regression_metrics(truths, truth_labels, preds, pred_labels, dataset = dataset,  held_out_classes = held_out_classes, save_confmat = is_testing)
+        metrics = UP.get_regression_metrics(truths, preds)
     avg_loss = 0
     if loss_fn != None:
         avg_loss = total_loss/float(iters)
@@ -497,6 +499,11 @@ if __name__ == "__main__":
         cur_ds = STHFChordsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, on_share = _on_share)    
     elif cur_dsname == 'notes':
         cur_ds = STHFNotesData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, on_share = _on_share)
+    elif cur_dsname == 'scales':
+        cur_ds = STHFScalesData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, on_share = _on_share)
+    elif cur_dsname == 'intervals':
+        cur_ds = STHFIntervalsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, on_share = _on_share)
+
     elif cur_dsname == 'time_signatures':
         cur_ds = STHFTimeSignaturesData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, on_share = _on_share)
     elif cur_dsname == 'simple_progressions':
