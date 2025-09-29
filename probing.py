@@ -39,6 +39,9 @@ from hf_tempi_dataset import STHFTempiData
 from hf_chords_dataset import STHFChordsData
 from hf_timesig_dataset import STHFTimeSignaturesData
 from hf_simpleprog_dataset import STHFSimpleProgressionsData
+from hf_notes_dataset import STHFNotesData
+from hf_scales_dataset import STHFScalesData
+from hf_intervals_dataset import STHFIntervalsData
 
 from torch_probe_model import LinearProbe
 # global declarations (hacky) to save model state dicts
@@ -615,6 +618,7 @@ if __name__ == "__main__":
         scaler = None
         if data_norm == True:
             scaler = TST(with_mean = True, with_std = True, dim=model_layer_dim, use_64bit = True, use_constant_feature_mask = True, device = device)
+            scaler.reset()
 
         valid_score = -1.0
 
