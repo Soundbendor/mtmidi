@@ -11,6 +11,9 @@ import chords7 as CH7
 import hf_chords as HFC
 import hf_timesig as HTS
 import hf_simpleprog as HFSP
+import hf_scales as HSCL
+import hf_notes as HFN
+import hf_intervals as HFI
 import tempi as TP
 import chords as CHS
 import chordprog as CHP
@@ -164,6 +167,7 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
         cur_df=get_df(cur_dsname, exclude, use_folds = use_folds)
    
     is_classification = cur_dsname not in UM.reg_datasets
+    is_hf = cur_dsname in UM.hf_datasets 
     pl_classdict = None
     label_col = None
     if cur_dsname == 'polyrhythms':
@@ -199,18 +203,36 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
 
     elif cur_dsname == 'chords':
         num_classes = HFC.num_chords
+        pl_classdict = HFC.quality_to_idx 
         label_col = 'chord_type'
+
+    elif cur_dsname == 'notes':
+        num_classes = HFN.num_pc
+        pl_classdict = HFN.pc_to_idx 
+        label_col = 'root_note_pitch_class'
+
+    elif cur_dsname == 'intervals':
+        num_classes = HFI.num_intervals
+        pl_classdict = HFI.interval_to_idx 
+        label_col = 'interval' #1-12
+    elif cur_dsname == 'scales':
+        num_classes = HSCL.num_modes
+        pl_classdict = HSCL.mode_to_idx 
+        label_col = 'mode'
 
     elif cur_dsname == 'time_signatures':
         num_classes = HTS.num_timesig
+        pl_classdict = HTS.timesig_to_idx
         label_col = 'time_signature'
     
     elif cur_dsname == 'simple_progressions':
         if classify_by_subcategory == True:
             num_classes = HFSP.num_progs
+            pl_classdict = HFSP.prog_to_idx 
             label_col = 'orig_prog'
         else:
             num_classes = HFSP.num_types
+            pl_classdict = HFSP.major_to_idx
             label_col = 'is_major'
 
 
@@ -247,6 +269,7 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
     ret['label_col'] = label_col
     ret['using_toml'] = using_toml
     ret['label_arr'] = label_arr
+    ret['is_hf'] = is_hf
     return ret
 
 

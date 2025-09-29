@@ -1,0 +1,4 @@
+set_type,set_type_count,bpm,count,proportion
+test,3144,60,3144,1.0
+train,14686,60,14686,1.0
+valid,3146,60,3146,1.0

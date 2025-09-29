@@ -20,6 +20,9 @@ import chords7 as CH7
 import hf_chords as HFC
 import hf_timesig as HTS
 import hf_simpleprog as HFSP
+import hf_notes as HFN
+import hf_scales as HSCL
+import hf_intervals as HFI
 import tempi as TP
 import chords as CHS
 import chordprog as CHP

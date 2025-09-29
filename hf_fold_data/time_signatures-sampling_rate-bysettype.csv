@@ -1,0 +1,4 @@
+set_type,set_type_count,sampling_rate,count,proportion
+test,180,44100,180,1.0
+train,840,44100,840,1.0
+valid,180,44100,180,1.0

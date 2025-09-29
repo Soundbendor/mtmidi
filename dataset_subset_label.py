@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split, StratifiedKFold
 seed = 5
 
 csv_folder = UM.by_projpath(subpath='csv', make_dir = False)
+hf_csv_folder = UM.by_projpath(subpath='hf_csv', make_dir = False)
 def check_overlap(idx_arrs):
     num_folds = len(idx_arrs)
     overlap = False
@@ -62,7 +63,7 @@ if __name__ == "__main__":
     cur_dsname = arg_dict['dataset'] 
     want_folds = arg_dict['folds']
     out_csvf = f'{cur_dsname}-folds.csv'
-    cur_dd = UD.load_data_dict(cur_dsname, classify_by_subcategory = True, tomlfile_str = '')
+    cur_dd = UD.load_data_dict(cur_dsname, classify_by_subcategory = True, tomlfile_str = '', use_folds = False)
     df = cur_dd['df']
     num_ex = len(df)
     #print(num_ex)
@@ -73,8 +74,13 @@ if __name__ == "__main__":
     classdict = cur_dd['pl_classdict']
     label_idxs = np.array([classdict[x] for x in label_arr])
     #print(num_ex, len(label_idxs))
+
     if want_folds == True:
-        out_folder = UM.by_projpath(subpath='fold_data', make_dir = True) 
+        out_folder = None
+        if cur_dd['is_hf'] == False:
+            out_folder = UM.by_projpath(subpath='fold_data', make_dir = True) 
+        else:
+            out_folder = UM.by_projpath(subpath='hf_fold_data', make_dir = True) 
         skf = StratifiedKFold(n_splits = 20, random_state = seed, shuffle = True)
         #print(skf.get_n_splits(num_ex, label_idxs))
         folds = [y for (x,y) in skf.split(ex_idxs, label_idxs)]
@@ -106,7 +112,10 @@ if __name__ == "__main__":
             cur_fpath = os.path.join(out_folder, cur_fname)
             col_df.write_csv(cur_fpath)
 
-        df.write_csv(os.path.join(csv_folder, out_csvf))
+        if cur_dd['is_hf'] == False:
+            df.write_csv(os.path.join(csv_folder, out_csvf))
+        else:
+            df.write_csv(os.path.join(hf_csv_folder, out_csvf))
         #print(np.alltrue(fold_col > 0))
         #for i, (tr_idx, te_idx) in enumerate(skf.split(ex_idxs, label_idxs)):
         #print(i, len(tr_idx), len(te_idx))

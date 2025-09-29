@@ -1,0 +1,16 @@
+set_type,set_type_count,click_config_name,count,proportion
+test,180,default,31,0.17222222222222222
+test,180,synth_drum,30,0.16666666666666669
+test,180,taiko,38,0.2111111111111111
+test,180,woodblock_dark,42,0.23333333333333334
+test,180,woodblock_light,39,0.21666666666666667
+train,840,default,182,0.21666666666666667
+train,840,synth_drum,158,0.18809523809523812
+train,840,taiko,168,0.2
+train,840,woodblock_dark,165,0.19642857142857145
+train,840,woodblock_light,167,0.19880952380952382
+valid,180,default,27,0.15
+valid,180,synth_drum,52,0.2888888888888889
+valid,180,taiko,34,0.18888888888888888
+valid,180,woodblock_dark,33,0.18333333333333335
+valid,180,woodblock_light,34,0.18888888888888888

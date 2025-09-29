@@ -9,7 +9,10 @@ import chords7 as CH7
 import chordprog as CHP
 import chord7prog as CSP
 import hf_chords as HFC
+import hf_notes as HFN
+import hf_intervals as HFI
 import hf_timesig as HTS
+import hf_scales as HSCL
 import hf_simpleprog as HFSP
 import matplotlib.pyplot as plt
 import util as UM
@@ -105,6 +108,21 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
             class_truths = [HFC.idx_to_quality[x] for x in truths]
             class_preds = [HFC.idx_to_quality[x] for x in preds]
             class_arr = HFC.class_arr
+        elif dataset == 'scales':
+            class_truths = [HSCL.idx_to_mode[x] for x in truths]
+            class_preds = [HSCL.idx_to_mode[x] for x in preds]
+            class_arr = HSCL.class_arr
+
+        elif dataset == 'intervals':
+            class_truths = [HFI.idx_to_interval[x] for x in truths]
+            class_preds = [HFI.idx_to_interval[x] for x in preds]
+            class_arr = HFI.class_arr
+
+        elif dataset == 'notes':
+            class_truths = truths.copy() 
+            class_preds = preds.copy() 
+            class_arr = HFN.class_arr
+
         elif dataset == 'time_signatures':
             class_truths = [HTS.idx_to_timesig[x] for x in truths]
             class_preds = [HTS.idx_to_timesig[x] for x in preds]
