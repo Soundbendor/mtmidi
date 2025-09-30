@@ -183,7 +183,7 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
             pl_classdict = PL.reg_polystr_to_idx
         label_col = 'poly'
     elif cur_dsname == 'tempos':
-        label_col = 'bpm_class'
+        label_col = 'bpm'
 
     elif cur_dsname == 'dynamics':
         if classify_by_subcategory == True:

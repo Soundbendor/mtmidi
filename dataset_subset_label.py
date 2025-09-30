@@ -5,7 +5,7 @@ import tomllib
 from distutils.util import strtobool
 import polars as pl
 import numpy as np
-from sklearn.model_selection import train_test_split, StratifiedKFold 
+from sklearn.model_selection import train_test_split, StratifiedKFold, KFold 
 
 seed = 5
 
@@ -72,21 +72,40 @@ if __name__ == "__main__":
     #labels = df[label_col]
     label_arr = cur_dd['label_arr']
     classdict = cur_dd['pl_classdict']
-    label_idxs = np.array([classdict[x] for x in label_arr])
     #print(num_ex, len(label_idxs))
 
     if want_folds == True:
         out_folder = None
+        folds = None
         if cur_dd['is_hf'] == False:
             out_folder = UM.by_projpath(subpath='fold_data', make_dir = True) 
         else:
             out_folder = UM.by_projpath(subpath='hf_fold_data', make_dir = True) 
-        skf = StratifiedKFold(n_splits = 20, random_state = seed, shuffle = True)
-        #print(skf.get_n_splits(num_ex, label_idxs))
-        folds = [y for (x,y) in skf.split(ex_idxs, label_idxs)]
-        has_overlap = check_overlap(folds)
-        covers = check_cover(folds, num_ex)
-        print(f'overlaps: {has_overlap}, covers: {covers}')
+        if cur_dsname != 'tempos':
+            label_idxs = np.array([classdict[x] for x in label_arr])
+            skf = StratifiedKFold(n_splits = 20, random_state = seed, shuffle = True)
+            #print(skf.get_n_splits(num_ex, label_idxs))
+            folds = [y for (x,y) in skf.split(ex_idxs, label_idxs)]
+        else:
+            # folds 1-14 are middle bpms, do stratified split (14)
+            # folds 15-20 are from top and bottom bpms, do stratified split (6)
+            num_samples = cur_dd['df'].shape[0]
+            sort_df = cur_dd['df'].sort('bpm')
+            props = [0., 0.15, 0.85, 1.]
+            cutoffs = [int(num_samples * c) for c in props]
+            idxs = [np.arange(cutoffs[c], cutoffs[c+1]) for c in range(len(props)-1)]
+            train_idxs = idxs[1]
+            train_labels = sort_df[train_idxs]['bpm'].to_numpy()
+            validtest_idxs = np.hstack((idxs[0], idxs[2]))
+            validtest_labels = sort_df[validtest_idxs]['bpm'].to_numpy()
+            
+            # hard to do stratified split, just do kfold split
+            skf = StratifiedKFold(n_splits = 14, random_state = seed, shuffle = True)
+            skf2 = StratifiedKFold(n_splits = 6, random_state = seed, shuffle = True)
+            train_folds = [train_idxs[y] for (x,y) in skf.split(train_idxs, train_labels)]
+            validtest_folds = [validtest_idxs[y] for (x,y) in skf2.split(validtest_idxs, validtest_labels)]
+            folds = train_folds + validtest_folds
+ 
         fold_col = np.zeros(num_ex, dtype=int)
         set_type_col = np.repeat('train', num_ex).astype(str)
         for i,f in enumerate(folds):
@@ -98,6 +117,10 @@ if __name__ == "__main__":
                 set_type_col[f] = 'valid'
             else:
                 set_type_col[f] = 'test'
+
+        has_overlap = check_overlap(folds)
+        covers = check_cover(folds, num_ex)
+        print(f'overlaps: {has_overlap}, covers: {covers}')
         df = df.with_columns(**{'fold': fold_col, 'set_type': set_type_col})
         #print(df['fold'].unique_values)
         col_dict = check_counts(df, 'fold')
