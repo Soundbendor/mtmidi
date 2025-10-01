@@ -436,6 +436,7 @@ if __name__ == "__main__":
     parser.add_argument("-fs", "--full_search", type=strtobool, default=False, help="force full parameter search")
     parser.add_argument("-rs", "--reduced_search", type=strtobool, default=True, help="reduced parameter search")
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
+    parser.add_argument("-cu", "--use_cuda", type=strtobool, default=True, help="use cuda, else cpu")
     parser.add_argument("-sh", "--on_share", type=strtobool, default=False, help="load from share partition")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
 
@@ -453,6 +454,9 @@ if __name__ == "__main__":
     # defining grid search
     emb_type = arg_dict['embedding_type']
 
+    if arg_dict['use_cuda'] == False:
+        device = 'cpu'
+        torch.set_default_device(device)
     #### some variable definitions
     
     is_eval = arg_dict['eval']
