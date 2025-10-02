@@ -439,12 +439,12 @@ if __name__ == "__main__":
     parser.add_argument("-cu", "--use_cuda", type=strtobool, default=True, help="use cuda, else cpu")
     parser.add_argument("-sh", "--on_share", type=strtobool, default=False, help="load from share partition")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
-    parser.add_argument("-exd", "--external_drive", type=strtobool, default=False, help="load from external drive if True")
+    parser.add_argument("-extd", "--external_drive", type=strtobool, default=False, help="load from external drive if True")
 
     # obj_dict is for passing to objective function, is arg_dict without drop_keys
     # rec_dict is for passing to neptune and study (has drop keys)
     # arg_dict just has everything
-    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'eval', 'split_debug', 'use_folds', 'eval_retrain', 'on_share', 'full_search', 'reduced_search', 'use_cuda', 'data_folder'])
+    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'eval', 'split_debug', 'use_folds', 'eval_retrain', 'on_share', 'full_search', 'reduced_search', 'use_cuda', 'external_drive'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
