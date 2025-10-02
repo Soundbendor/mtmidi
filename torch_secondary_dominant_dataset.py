@@ -15,11 +15,11 @@ import util_data as UD
 # classify by subcategory = classify by individual progression (else classify by none,secondary,tritone)
 # inv, if >= 0, filter by this inversion
 class SecondaryDominantData(TUD.Dataset):
-    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=0, classify_by_subcategory = True, is_64bit = True, is_memmap = True, on_share = False):
+    def __init__(self, cur_df, embedding_type = 'mg_small_h', device='cpu', layer_idx=0, classify_by_subcategory = True, is_64bit = True, is_memmap = True, other_projdir = ''):
         self.device = device
         self.is_64bit = is_64bit
         self.embedding_type = embedding_type
-        self.on_share = on_share
+        self.other_projdir = other_projdir
 
         self.classify_by_subcategory = classify_by_subcategory
         self.data = cur_df.with_columns(
@@ -53,7 +53,7 @@ class SecondaryDominantData(TUD.Dataset):
             cur_truth = cur_row[self.coldict['sub_prog_idx']]
         else:
             cur_truth = cur_row[self.coldict['sub_type_idx']]
-        cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, is_memmap = self.is_memmap, acts_folder = 'acts', dataset = 'secondary_dominant', to_torch = True, use_64bit = self.is_64bit, device = self.device, on_share = self.on_share)
+        cur_arr = UD.get_data_vec_at_idx(cur_name, self.layer_idx, self.embedding_type, is_memmap = self.is_memmap, acts_folder = 'acts', dataset = 'secondary_dominant', to_torch = True, use_64bit = self.is_64bit, device = self.device, other_projdir = self.other_projdir)
         #cur_onehot = NF.one_hot(torch.tensor(cur_lidx),  num_classes = self.num_classes)
         return cur_arr, cur_truth
 

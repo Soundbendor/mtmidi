@@ -18,6 +18,7 @@ inst = {}
 drum = {}
 
 share_path = os.path.join(os.sep, 'nfs','hpc', 'share', 'kwand') 
+extd_path = os.path.join(os.sep, 'run','media','dxk','TOSHIBA EXT', 'mtmidi')
 random.seed(5)
 bpms = (1./60000.) # (1 min/60 sec) x (1 sec/1000 ms)
 
@@ -142,10 +143,10 @@ pitched_inst_to_use = []
 # https://stackoverflow.com/questions/4934806/how-can-i-find-scripts-directory
 script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 
-def by_projpath(subpath=None,make_dir = False, on_share = False):
+def by_projpath(subpath=None,make_dir = False, other_projdir = ''):
     cur_path = os.path.dirname(os.path.realpath(__file__))
-    if on_share == True:
-        cur_path = share_path
+    if len(other_projdir) > 0:
+        cur_path = other_projdir
     if subpath != None:
         cur_path = os.path.join(cur_path, subpath)
         if os.path.exists(cur_path) == False and make_dir == True:
@@ -249,10 +250,10 @@ def get_embedding_shape(shorthand):
     return shape
    
 
-def get_model_act_path(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', return_relative = False, make_dir = False, on_share = False):
+def get_model_act_path(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', return_relative = False, make_dir = False, other_projdir = ''):
     datapath = None
     if return_relative == False:
-        actpath = by_projpath(acts_folder,make_dir = make_dir, on_share = on_share)
+        actpath = by_projpath(acts_folder,make_dir = make_dir, other_projdir = other_projdir)
         datapath = os.path.join(actpath, dataset)
     else:
         datapath = acts_folder
@@ -275,14 +276,14 @@ def get_model_save_path(model_shorthand, model_folder = 'saved_models', dataset=
 
 
 
-def save_npy(save_arr, fname, model_shorthand, acts_folder = 'acts', dataset='polyrhythms', make_dir = True, on_share = False):
-    modelpath = get_model_act_path(model_shorthand, acts_folder = acts_folder, dataset = dataset, return_relative = False, make_dir = make_dir, on_share = on_share)
+def save_npy(save_arr, fname, model_shorthand, acts_folder = 'acts', dataset='polyrhythms', make_dir = True, other_projdir = ''):
+    modelpath = get_model_act_path(model_shorthand, acts_folder = acts_folder, dataset = dataset, return_relative = False, make_dir = make_dir, other_projdir = other_projdir)
     fpath = os.path.join(modelpath, fname)
     np.save(fpath, save_arr, allow_pickle = True)
 
 # use_shape argument overrides shape getting (useful for baselines)
-def get_embedding_file(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', fname='', write = True, use_64bit = True, use_shape = None, on_share = False):
-    modelpath = get_model_act_path(model_shorthand, acts_folder = acts_folder, dataset = dataset, return_relative = False, make_dir = write, on_share = on_share)
+def get_embedding_file(model_shorthand, acts_folder = 'acts', dataset='polyrhythms', fname='', write = True, use_64bit = True, use_shape = None, other_projdir = ''):
+    modelpath = get_model_act_path(model_shorthand, acts_folder = acts_folder, dataset = dataset, return_relative = False, make_dir = write, other_projdir = other_projdir)
     fpath = os.path.join(modelpath, fname)
     fp = None
     dtype = 'float32'
