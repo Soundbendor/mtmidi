@@ -574,7 +574,7 @@ if __name__ == "__main__":
             else:
                 search_space['layer_idx'] = [arg_dict['layer_idx']]
 
-            study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.GridSampler(search_space),  maximize = True, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'grid_samplers', db_dir = 'db') 
+            study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.GridSampler(search_space, seed=seed),  maximize = True, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'grid_samplers', db_dir = 'db') 
         else:
             study_dict = OU.create_or_load_study(study_base_name, sampler = optuna.samplers.TPESampler(seed=seed),  maximize = True, prefix=arg_dict['prefix'], script_dir = os.path.dirname(__file__), sampler_dir = 'tpe_samplers', db_dir = 'db') 
         study = study_dict['study']
