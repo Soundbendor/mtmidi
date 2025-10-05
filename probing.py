@@ -464,7 +464,7 @@ if __name__ == "__main__":
     if arg_dict['on_share'] == True:
         _other_projdir = UM.share_path
     elif arg_dict['external_drive'] > 0:
-        _other_projdir = UM.extd_path[arg_dict['external_drive']]
+        _other_projdir = UM.extd_path[arg_dict['external_drive'] - 1]
     is_eval = arg_dict['eval']
     is_64bit = False # if embeddings are 64 bit
     if arg_dict['embedding_type'] in UM.baseline_names:
