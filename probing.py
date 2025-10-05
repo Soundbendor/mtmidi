@@ -439,7 +439,7 @@ if __name__ == "__main__":
     parser.add_argument("-cu", "--use_cuda", type=strtobool, default=True, help="use cuda, else cpu")
     parser.add_argument("-sh", "--on_share", type=strtobool, default=False, help="load from share partition")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
-    parser.add_argument("-extd", "--external_drive", type=strtobool, default=False, help="load from external drive if True")
+    parser.add_argument("-extd", "--external_drive", type=int, default=0, help="load from external drive idx if > 0")
 
     # obj_dict is for passing to objective function, is arg_dict without drop_keys
     # rec_dict is for passing to neptune and study (has drop keys)
@@ -463,8 +463,8 @@ if __name__ == "__main__":
     _other_projdir = ''
     if arg_dict['on_share'] == True:
         _other_projdir = UM.share_path
-    elif arg_dict['external_drive'] == True:
-        _other_projdir = UM.extd_path
+    elif arg_dict['external_drive'] > 0:
+        _other_projdir = UM.extd_path[arg_dict['external_drive']]
     is_eval = arg_dict['eval']
     is_64bit = False # if embeddings are 64 bit
     if arg_dict['embedding_type'] in UM.baseline_names:

@@ -18,7 +18,7 @@ inst = {}
 drum = {}
 
 share_path = os.path.join(os.sep, 'nfs','hpc', 'share', 'kwand') 
-extd_path = os.path.join(os.sep, 'run','media','dxk','TOSHIBA EXT', 'mtmidi')
+extd_path = [os.path.join(os.sep, 'run','media','dxk',x, 'mtmidi') for x in ['TOSHIBA EXT','wdpass']]
 random.seed(5)
 bpms = (1./60000.) # (1 min/60 sec) x (1 sec/1000 ms)
 
