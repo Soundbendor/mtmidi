@@ -296,7 +296,7 @@ def get_baselines(cur_act_type, cur_dataset, normalize = True, dur = 4., logfile
     proc = None
     model = None
     text = ""
-    wav_path = os.path.join(um.by_projpath('wav'), cur_dataset, other_projdir = other_projdir)
+    wav_path = os.path.join(um.by_projpath('wav'), cur_dataset)
     cur_pathlist = None
 
     out_ext = 'dat'
