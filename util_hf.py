@@ -29,7 +29,8 @@ def get_from_entry_syntheory_audio(cur_entry, mono=True, normalize =True, dur = 
         cur_arr = np.mean(cur_aud['array'], axis=0)
     else:
         cur_arr = cur_aud['array'].flatten()
-    if normalize == True:
+    is_zero = np.isclose(np.max(np.abs(cur_arr)), 0.0)
+    if is_zero == False and normalize == True:
         cur_arr = cur_arr/np.max(np.abs(cur_arr))
     return cur_arr[:want_samp], cur_sr
 
