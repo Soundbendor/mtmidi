@@ -60,7 +60,11 @@ model_longhand = {'mg_audio': 'musicgen-encoder',
 
 model_shorthand = model_longhand.keys()
 
-model_abbrev = {'mg_audio': 'mga',
+model_abbrev = {'baseline_mel': 'bmel',
+                'baseline_mfcc': 'bmfcc',
+                'baseline_chroma': 'bchr',
+                'baseline_concat': 'bcat',
+                'mg_audio': 'mga',
                 'mg_small_h': 'mgs',
                 'mg_med_h': 'mgm',
                 'mg_large_h': 'mgl',
