@@ -46,7 +46,7 @@ baseline_names = set(['baseline_mel', 'baseline_chroma', 'baseline_mfcc', 'basel
 all_datasets = hf_datasets.union(new_datasets)
 
 dataset_abbrev = {'polyrhythms': 'poly', 'dynamics': 'dyn', 'chords7': 'ch7',
-             'secondary_dominant': 'sdch', 'modemix_chordprog': 'mmch',
+             'secondary_dominant': 'sdch', 'modemix_chordprog': 'mmch', 'chords': 'crd',
              'baseline_mel': 'bmel', 'baseline_chroma': 'bchr',
              'baseline_mfcc': 'bmfcc', 'baseline_concat': 'bcat'}
 
