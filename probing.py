@@ -240,7 +240,7 @@ def get_optimization_metric(metric_dict, is_classification = True):
 def has_held_out_classes(dataset, is_classification):
     return (dataset in UM.tom_datasets) and is_classification == False
 
-def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, num_layers = 1, num_epochs=100, prefix = 1, early_stopping_check_interval = 1, early_stopping_boredom = 5):
+def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, num_layers = 1, num_epochs=100, prefix = 1, early_stopping_check_interval = 1, no_hidden = False, early_stopping_boredom = 5):
 
     model = None
     # suggested params
@@ -272,7 +272,11 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
         scaler = TST(with_mean = True, with_std = True, dim=model_layer_dim, use_64bit = True, use_constant_feature_mask = True, device = device)
 
     held_out_classes = has_held_out_classes(dataset, is_classification)     
-    model = LinearProbe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
+    if no_hidden == False:
+        model = LinearProbe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
+    else:
+        model = LinearProbe(in_dim=model_layer_dim, hidden_layers = [],out_dim=out_dim, dropout = dropout, initial_dropout = True)
+
 
     # optimizer and loss init
     opt_fn = None
@@ -438,6 +442,7 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
     parser.add_argument("-cu", "--use_cuda", type=strtobool, default=True, help="use cuda, else cpu")
     parser.add_argument("-sh", "--on_share", type=strtobool, default=False, help="load from share partition")
+    parser.add_argument("-nh", "--no_hidden", type=strtobool, default=False, help="no hidden to excluse hidden")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
     parser.add_argument("-extd", "--external_drive", type=int, default=0, help="load from external drive idx if > 0")
 
@@ -635,7 +640,10 @@ if __name__ == "__main__":
 
         ## model loading and running 
         model = None
-        model = LinearProbe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
+        if args.no_hidden == False:
+            model = LinearProbe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
+        else:
+            model = LinearProbe(in_dim=model_layer_dim, hidden_layers = [],out_dim=out_dim, dropout = dropout, initial_dropout = True)
         held_out_classes = has_held_out_classes(cur_dsname, is_classification)
         
         scaler = None

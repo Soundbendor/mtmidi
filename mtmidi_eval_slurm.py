@@ -19,7 +19,7 @@ def get_prefix(_dataset, embedding):
         else:
             # baselines should really be 33 but made a mistake, parameters still correspond to full search
             ret_pfix = 55
-    elif _dataset in ['dynamics', 'chords7']:
+    elif _dataset in ['dynamics', 'chords7', 'chords']:
         if embedding in ['mg_small_h', 'mg_med_h', 'mg_large_h', 'jukebox']:
             ret_pfix = 55
         else:
@@ -39,6 +39,7 @@ if __name__ == "__main__":
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
     parser.add_argument("-ram", "--ram_mem", type=int, default=40, help="ram in gigs")
     parser.add_argument("-gpu", "--gpus", type=int, default=1, help="num of gpus to use")
+    parser.add_argument("-sh", "--on_share", type=strtobool, default=False, help="on share")
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
     parser.add_argument("-sj", "--slurm_job", type=int, default=0, help="slurm job")
     
@@ -76,7 +77,7 @@ if __name__ == "__main__":
                 slurm_strarr2 = ['#SBATCH -A soundbendor', f"#SBATCH -p {args.partition}"]
         slurm_strarr3 = [f"#SBATCH --mem={args.ram_mem}G", f"#SBATCH --gres=gpu:{args.gpus}", "#SBATCH -t 1-00:00:00", f"#SBATCH --job-name={ds_abbrev}_{emb_abbrev}eval", "#SBATCH --export=ALL", f"#SBATCH --output=/nfs/guille/eecs_research/soundbendor/kwand/slurm_out/{ds_abbrev}{emb_abbrev}eval-%j.out", ""]
         slurm_strarr = slurm_strarr1 + slurm_strarr2 + slurm_strarr3
-        p_str = f"python {py_path} -ds {dataset} -ev True -et {embedding_type} -cbs {cur_cbs} -m {cur_memmap} -pf {cur_prefix} "
+        p_str = f"python {py_path} -ds {dataset} -ev True -et {embedding_type} -cbs {cur_cbs} -m {cur_memmap} -pf {cur_prefix} -sh {args.on_share}"
         slurm_strarr.append(p_str)
         script_fname = f"{start_time}_{ds_abbrev}-{emb_abbrev}.sh"
         script_idx += 1
