@@ -4,6 +4,7 @@ import polars as pl
 
 
 models = ['baseline_mel', 'baseline_mfcc', 'baseline_chroma', 'baseline_concat', 'mg_audio', 'mg_small_h', 'mg_med_h', 'mg_large_h', 'jukebox']
+models = models[::-1]
 datasets = ['polyrhythms', 'dynamics', 'chords7', 'modemix_chordprog', 'secondary_dominant']
 datasets2 = ['chords']
 res = {}
