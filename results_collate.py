@@ -8,14 +8,17 @@ datasets = ['polyrhythms', 'dynamics', 'chords7', 'modemix_chordprog', 'secondar
 datasets2 = ['chords']
 res = {}
 res2 = {}
-res['dataset'] = [d for d in datasets]
-res2['dataset'] = [d for d in datasets2]
-for m in models:
-    res[m] = [-1.0 for _ in range(len(datasets))]
-    res2[m] = [-1.0 for _ in range(len(datasets2))]
-d_idx = {d:i for (i,d) in enumerate(datasets)}
-d2_idx = {d:i for (i,d) in enumerate(datasets2)}
-cur_schema = [("dataset", pl.String)] + [(m, pl.Float64) for m in models]
+
+res['model'] = [m for m in models]
+res2['model'] = [m for m in models]
+for d in datasets:
+    res[d] = [-1.0 for _ in range(len(models))]
+
+for d in datasets2:
+    res2[d] = [-1.0 for _ in range(len(models))]
+m_idx = {m:i for (i,m) in enumerate(models)}
+cur_schema = [("model", pl.String)] + [(d, pl.Float64) for d in datasets]
+cur_schema2 = [("model", pl.String)] + [(d, pl.Float64) for d in datasets2]
 cur_time = int(time.time() * 1000)
 outfname = f'combined_result.csv'
 outfname2 = f'combined_result2.csv'
@@ -29,25 +32,21 @@ for fi,f in enumerate(os.listdir('res_csv')):
     cur_prefix = int(cur_split[0])
     cur_ds = cur_split[1]
     cur_emb = cur_split[2].split(".")[0]
-    cur_idx = -1
+    cur_idx = m_idx[cur_emb]
     new_dataset = cur_ds in datasets
-    if new_dataset == True:
-        cur_idx = d_idx[cur_ds]
-    else:
-        cur_idx = d2_idx[cur_ds]
     csvr = csv.DictReader(iptf)
     for row in csvr:
         if new_dataset == True:
-            if res[cur_emb][cur_idx] < 0.0:
-                res[cur_emb][cur_idx] = float(row['accuracy_score'])
+            if res[cur_ds][cur_idx] < 0.0:
+                res[cur_ds][cur_idx] = float(row['accuracy_score'])
         else:
-            if res2[cur_emb][cur_idx] < 0.0:
-                res2[cur_emb][cur_idx] = float(row['accuracy_score'])
+            if res2[cur_ds][cur_idx] < 0.0:
+                res2[cur_ds][cur_idx] = float(row['accuracy_score'])
     iptf.close()
 
 print(res)
 print(res2)
 df = pl.DataFrame(res, schema=cur_schema)
-df2 = pl.DataFrame(res2, schema=cur_schema)
+df2 = pl.DataFrame(res2, schema=cur_schema2)
 df.write_csv(out_file, separator=",")
 df2.write_csv(out_file2, separator=",")
