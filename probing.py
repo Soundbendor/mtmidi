@@ -440,6 +440,7 @@ if __name__ == "__main__":
     parser.add_argument("-fs", "--full_search", type=strtobool, default=False, help="force full parameter search")
     parser.add_argument("-rs", "--reduced_search", type=strtobool, default=True, help="reduced parameter search")
     parser.add_argument("-m", "--memmap", type=strtobool, default=True, help="load embeddings as memmap, else npy")
+    parser.add_argument("-inv", "--inversion", type=int, default=-1, help="if > 0, specify inversion for chords7")
     parser.add_argument("-cu", "--use_cuda", type=strtobool, default=True, help="use cuda, else cpu")
     parser.add_argument("-sh", "--on_share", type=strtobool, default=False, help="load from share partition")
     parser.add_argument("-nh", "--no_hidden", type=strtobool, default=False, help="no hidden to excluse hidden")
@@ -449,7 +450,7 @@ if __name__ == "__main__":
     # obj_dict is for passing to objective function, is arg_dict without drop_keys
     # rec_dict is for passing to neptune and study (has drop keys)
     # arg_dict just has everything
-    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'eval', 'split_debug', 'use_folds', 'eval_retrain', 'on_share', 'full_search', 'reduced_search', 'use_cuda', 'external_drive'])
+    drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'eval', 'split_debug', 'use_folds', 'eval_retrain', 'on_share', 'full_search', 'reduced_search', 'use_cuda', 'external_drive', 'inversion'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -486,7 +487,7 @@ if __name__ == "__main__":
     reduced_search = arg_dict['reduced_search']
     
 
-    datadict  = UD.load_data_dict(cur_dsname, classify_by_subcategory = _classify_by_subcategory, tomlfile_str = tomlfile_str, use_folds = arg_dict['use_folds'])
+    datadict  = UD.load_data_dict(cur_dsname, classify_by_subcategory = _classify_by_subcategory, tomlfile_str = tomlfile_str, inversion = arg_dict['inversion'], use_folds = arg_dict['use_folds'])
     out_dim = datadict['num_classes']
     cur_df = datadict['df']
     label_arr = datadict['label_arr']

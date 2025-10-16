@@ -136,7 +136,7 @@ def get_df(dataset, exclude_arr, use_folds = False):
   
 
 
-def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '', use_folds = True):
+def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '', inversion = -1, use_folds = True):
     toml_dict = None
     exclude_arr = None
     num_classes = 1
@@ -161,6 +161,18 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
         if cur_dsname == 'modemix_chordprog':
             exclude_arr.append(('inv', [1,2]))
 
+        cur_df=get_df(cur_dsname, exclude_arr,use_folds=use_folds)
+    elif cur_dsname == 'chords7' and inversion >= 0:
+        exclude_arr = []
+        if inversion == 0:
+            exclude_arr.append(('inversion', [1,2,3]))
+        elif inversion == 1:
+            exclude_arr.append(('inversion', [0,2,3]))
+        elif inversion == 2:
+            exclude_arr.append(('inversion', [0,1,3]))
+        elif inversion == 3:
+            exclude_arr.append(('inversion', [0,1,2]))
+            
         cur_df=get_df(cur_dsname, exclude_arr,use_folds=use_folds)
     else:
         # get dataframe from csv file
