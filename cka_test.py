@@ -44,11 +44,12 @@ if __name__ == "__main__":
 
     # cuda stuff
     device ='cpu'
+    """
     if torch.cuda.is_available() == True:
         device = 'cuda'
         torch.cuda.empty_cache()
         torch.set_default_device(device)
-
+    """
     # layer capping
     cur_shape1 = UM.get_embedding_shape(cur_embtype1)
     cur_shape2 = UM.get_embedding_shape(cur_embtype2)
