@@ -47,7 +47,7 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
     acc = SKM.accuracy_score(truths, preds)
     f1_macro = SKM.f1_score(truths, preds, average='macro')
     f1_micro = SKM.f1_score(truths, preds, average='micro')
-    
+    acc_bal = SKM.balanced_accuracy_score(truths, preds) 
 
 
     cm = []
@@ -139,7 +139,7 @@ def get_classification_metrics(truths, preds, dataset = 'polyrhythms', classify_
         cm_path = os.path.join(res_dir, cm_fname)
         plt.savefig(cm_path)
         plt.clf()
-    d = {'accuracy_score': acc, 'f1_macro': f1_macro, 'f1_micro': f1_micro, 'confmat': cm, 'confmat_path': cm_path}
+    d = {'accuracy_score': acc, 'f1_macro': f1_macro, 'f1_micro': f1_micro, 'balanced_accuracy_score': acc_bal, 'confmat': cm, 'confmat_path': cm_path}
     return d
 
 
