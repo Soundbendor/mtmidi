@@ -1,4 +1,4 @@
 set_type,set_type_count,num_beats,count,proportion
-test,6804,4,6804,1.0
-train,31752,4,31752,1.0
-valid,6804,4,6804,1.0
+test,6237,4,6237,1.0
+train,29106,4,29106,1.0
+valid,6237,4,6237,1.0
