@@ -4,7 +4,7 @@ import polars as pl
 pfix_2l = set([39,33,59,55])
 pfix_1l = set([139,133,159,155])
 
-models = ['baseline_mel', 'baseline_mfcc', 'baseline_chroma', 'baseline_concat', 'mg_audio', 'mg_small_h', 'mg_med_h', 'mg_large_h', 'jukebox']
+models = ['baseline_concat', 'baseline_chroma', 'baseline_mfcc', 'baseline_mel',  'mg_audio', 'mg_small_h', 'mg_med_h', 'mg_large_h', 'jukebox']
 models = models[::-1]
 datasets = ['polyrhythms', 'dynamics', 'chords7', 'modemix_chordprog', 'secondary_dominant']
 datasets2 = ['chords']
