@@ -65,22 +65,25 @@ for d in datasets:
     res_1l[d] = [-1.0 for _ in range(len(models))]
     res_1l_f1macro[d] = [-1.0 for _ in range(len(models))]
     res_1l_f1micro[d] = [-1.0 for _ in range(len(models))]
-    res__1l_li[d] = [-1 for _ in range(len(models_li))]
+    res_1l_li[d] = [-1 for _ in range(len(models_li))]
 
 for d in datasets2:
     res2[d] = [-1.0 for _ in range(len(models))]
     res2_f1macro[d] = [-1.0 for _ in range(len(models))]
     res2_f1micro[d] = [-1.0 for _ in range(len(models))]
+    res2_li[d] = [-1 for _ in range(len(models_li))]
 
 for inv in invs:
-    res_inv[inv] = [-1.0 for _ in range(len(models))]
-    res_inv_li[inv] = [-1.0 for _ in range(len(models_li))]
+    res_inv[f'inv_{inv}'] = [-1.0 for _ in range(len(models))]
+    res_inv_f1macro[f'inv_{inv}'] = [-1.0 for _ in range(len(models))]
+    res_inv_f1micro[f'inv_{inv}'] = [-1.0 for _ in range(len(models))]
+    res_inv_li[f'inv_{inv}'] = [-1 for _ in range(len(models_li))]
 
 m_idx = {m:i for (i,m) in enumerate(models)}
 mli_idx = {m:i for (i,m) in enumerate(models_li)}
 cur_schema = [("model", pl.String)] + [(d, pl.Float64) for d in datasets]
 cur_schema2 = [("model", pl.String)] + [(d, pl.Float64) for d in datasets2]
-cur_schema_inv = [('model', pl.String)] + [(inv, pl.Float64) for inv in invs]
+cur_schema_inv = [('model', pl.String)] + [(f'inv_{inv}', pl.Float64) for inv in invs]
 cur_time = int(time.time() * 1000)
 outfname = f'combined_result.csv'
 outfname_f1macro = f'combined_result_f1macro.csv'
@@ -150,15 +153,16 @@ for fi,f in enumerate(os.listdir('res_csv')):
                         res_1l_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx'])
             elif cur_prefix in pfix_inv:
                 cur_inv = cur_prefix % 10
-                if res_inv[cur_inv][cur_idx] < 0.0:
-                    res_inv[cur_inv][cur_idx] = float(row['accuracy_score'])
-                    res_inv_f1macro[cur_inv][cur_idx] = float(row['f1_macro'])
-                    res_inv_f1micro[cur_inv][cur_idx] = float(row['f1_micro'])
+                cur_inv_str = f'inv_{cur_inv}'
+                if res_inv[cur_inv_str][cur_idx] < 0.0:
+                    res_inv[cur_inv_str][cur_idx] = float(row['accuracy_score'])
+                    res_inv_f1macro[cur_inv_str][cur_idx] = float(row['f1_macro'])
+                    res_inv_f1micro[cur_inv_str][cur_idx] = float(row['f1_micro'])
 
                 if cur_emb in models_li:
                     cur_idx = mli_idx[cur_emb]
-                    if res_inv_li[cur_inv][cur_idx] < 0:
-                        res_inv_li[cur_inv][cur_idx] = int(row['best_trial_layer_idx'])
+                    if res_inv_li[cur_inv_str][cur_idx] < 0:
+                        res_inv_li[cur_inv_str][cur_idx] = int(row['best_trial_layer_idx'])
                     
         else:
             if res2[cur_ds][cur_idx] < 0.0:
@@ -174,6 +178,7 @@ for fi,f in enumerate(os.listdir('res_csv')):
 
 print(res)
 print(res2)
+print(res_inv)
 df = pl.DataFrame(res, schema=cur_schema)
 df_f1macro = pl.DataFrame(res_f1macro, schema=cur_schema)
 df_f1micro = pl.DataFrame(res_f1micro, schema=cur_schema)
