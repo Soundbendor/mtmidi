@@ -82,8 +82,11 @@ for inv in invs:
 m_idx = {m:i for (i,m) in enumerate(models)}
 mli_idx = {m:i for (i,m) in enumerate(models_li)}
 cur_schema = [("model", pl.String)] + [(d, pl.Float64) for d in datasets]
+cur_schema_li = [("model", pl.String)] + [(d, pl.Int64) for d in datasets]
 cur_schema2 = [("model", pl.String)] + [(d, pl.Float64) for d in datasets2]
+cur_schema2_li = [("model", pl.String)] + [(d, pl.Int64) for d in datasets2]
 cur_schema_inv = [('model', pl.String)] + [(f'inv_{inv}', pl.Float64) for inv in invs]
+cur_schema_inv_li = [('model', pl.String)] + [(f'inv_{inv}', pl.Int64) for inv in invs]
 cur_time = int(time.time() * 1000)
 outfname = f'combined_result.csv'
 outfname_f1macro = f'combined_result_f1macro.csv'
@@ -182,20 +185,20 @@ print(res_inv)
 df = pl.DataFrame(res, schema=cur_schema)
 df_f1macro = pl.DataFrame(res_f1macro, schema=cur_schema)
 df_f1micro = pl.DataFrame(res_f1micro, schema=cur_schema)
-df_li = pl.DataFrame(res_li, schema=cur_schema)
+df_li = pl.DataFrame(res_li, schema=cur_schema_li)
 df2 = pl.DataFrame(res2, schema=cur_schema2)
 df2_f1macro = pl.DataFrame(res2_f1macro, schema=cur_schema2)
 df2_f1micro = pl.DataFrame(res2_f1micro, schema=cur_schema2)
-df2_li = pl.DataFrame(res2_li, schema=cur_schema2)
+df2_li = pl.DataFrame(res2_li, schema=cur_schema2_li)
 df_1l = pl.DataFrame(res_1l, schema=cur_schema)
 df_1l_f1macro = pl.DataFrame(res_1l_f1macro, schema=cur_schema)
 df_1l_f1micro = pl.DataFrame(res_1l_f1micro, schema=cur_schema)
-df_1l_li = pl.DataFrame(res_1l_li, schema=cur_schema)
+df_1l_li = pl.DataFrame(res_1l_li, schema=cur_schema_li)
 
 df_inv = pl.DataFrame(res_inv, schema=cur_schema_inv)
 df_inv_f1macro = pl.DataFrame(res_inv_f1macro, schema=cur_schema_inv)
 df_inv_f1micro = pl.DataFrame(res_inv_f1micro, schema=cur_schema_inv)
-df_inv_li = pl.DataFrame(res_inv_li, schema=cur_schema_inv)
+df_inv_li = pl.DataFrame(res_inv_li, schema=cur_schema_inv_li)
 
 df.write_csv(out_file, separator=",")
 df_f1macro.write_csv(out_file_f1macro, separator=",")
