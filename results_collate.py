@@ -143,7 +143,7 @@ for fi,f in enumerate(os.listdir('res_csv')):
                 if cur_emb in models_li:
                     cur_idx = mli_idx[cur_emb]
                     if res_li[cur_ds][cur_idx] < 0:
-                        res_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx'])
+                        res_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx']) + 1
             elif cur_prefix in pfix_1l:
                 if res_1l[cur_ds][cur_idx] < 0.0:
                     res_1l[cur_ds][cur_idx] = float(row['accuracy_score'])
@@ -153,7 +153,7 @@ for fi,f in enumerate(os.listdir('res_csv')):
                 if cur_emb in models_li:
                     cur_idx = mli_idx[cur_emb]
                     if res_1l_li[cur_ds][cur_idx] < 0:
-                        res_1l_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx'])
+                        res_1l_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx']) + 1
             elif cur_prefix in pfix_inv:
                 cur_inv = cur_prefix % 10
                 cur_inv_str = f'inv_{cur_inv}'
@@ -165,7 +165,7 @@ for fi,f in enumerate(os.listdir('res_csv')):
                 if cur_emb in models_li:
                     cur_idx = mli_idx[cur_emb]
                     if res_inv_li[cur_inv_str][cur_idx] < 0:
-                        res_inv_li[cur_inv_str][cur_idx] = int(row['best_trial_layer_idx'])
+                        res_inv_li[cur_inv_str][cur_idx] = int(row['best_trial_layer_idx']) + 1
                     
         else:
             if res2[cur_ds][cur_idx] < 0.0:
@@ -176,11 +176,15 @@ for fi,f in enumerate(os.listdir('res_csv')):
             if cur_emb in models_li:
                 cur_idx = mli_idx[cur_emb]
                 if res2_li[cur_ds][cur_idx] < 0:
-                    res2_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx'])
+                    res2_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx']) + 1
     iptf.close()
 
 print(res)
+print('=====')
 print(res2)
+print('=====')
+print(res_1l)
+print('=====')
 print(res_inv)
 df = pl.DataFrame(res, schema=cur_schema)
 df_f1macro = pl.DataFrame(res_f1macro, schema=cur_schema)
