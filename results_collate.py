@@ -156,10 +156,10 @@ for fi,f in enumerate(os.listdir('res_csv')):
                     res_f1macro[cur_ds][cur_idx] = float(row['f1_macro'])
                     res_f1micro[cur_ds][cur_idx] = float(row['f1_micro'])
                     if cur_ds == 'dynamics':
-                        for m in ['2l', '1l']:
-                            for u in unbal_metrics:
-                                cur_key = f'{m}-{u}'
-                                res_dyn[cur_key][cur_idx] = float(row[u])
+                        m = '2l'
+                        for u in unbal_metrics:
+                            cur_key = f'{m}-{u}'
+                            res_dyn[cur_key][cur_idx] = float(row[u])
                 if cur_emb in models_li:
                     cur_idx = mli_idx[cur_emb]
                     if res_li[cur_ds][cur_idx] < 0:
@@ -171,10 +171,10 @@ for fi,f in enumerate(os.listdir('res_csv')):
                     res_1l_f1micro[cur_ds][cur_idx] = float(row['f1_micro'])
 
                     if cur_ds == 'dynamics':
-                        for m in ['2l', '1l']:
-                            for u in unbal_metrics:
-                                cur_key = f'{m}-{u}'
-                                res_dyn[cur_key][cur_idx] = float(row[u])
+                        m = '1l'
+                        for u in unbal_metrics:
+                            cur_key = f'{m}-{u}'
+                            res_dyn[cur_key][cur_idx] = float(row[u])
 
                 if cur_emb in models_li:
                     cur_idx = mli_idx[cur_emb]
