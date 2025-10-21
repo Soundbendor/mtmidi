@@ -21,6 +21,12 @@ models = models[::-1]
 models_li = ['jukebox', 'mg_large_h', 'mg_med_h', 'mg_small_h']
 datasets = ['polyrhythms', 'dynamics', 'chords7', 'modemix_chordprog', 'secondary_dominant']
 datasets2 = ['chords']
+
+unbal_metrics = ['balanced_accuracy_score', 'f1_macro']
+unbal_mm = []
+for m in ['2l', '1l']:
+    for u in unbal_metrics:
+        unbal_mm.append(f'{m}-{u}')
 invs = [0,1,2,3]
 res = {}
 res_f1macro = {}
@@ -39,7 +45,10 @@ res_inv_f1macro = {}
 res_inv_f1micro = {}
 res_inv_li = {}
 
+res_dyn = {}
+
 res['model'] = [m for m in models]
+res_dyn['model'] = [m for m in models]
 res_f1macro['model'] = [m for m in models]
 res_f1micro['model'] = [m for m in models]
 res_li['model'] = [m for m in models_li]
@@ -56,6 +65,8 @@ res_inv_f1macro['model'] = [m for m in models]
 res_inv_f1micro['model'] = [m for m in models]
 res_inv_li['model'] = [m for m in models_li]
 
+for m in unbal_mm:
+    res_dyn[m] = [-1.0 for _ in range(len(models))]
 
 for d in datasets:
     res[d] = [-1.0 for _ in range(len(models))]
@@ -87,6 +98,7 @@ cur_schema2 = [("model", pl.String)] + [(d, pl.Float64) for d in datasets2]
 cur_schema2_li = [("model", pl.String)] + [(d, pl.Int64) for d in datasets2]
 cur_schema_inv = [('model', pl.String)] + [(f'inv_{inv}', pl.Float64) for inv in invs]
 cur_schema_inv_li = [('model', pl.String)] + [(f'inv_{inv}', pl.Int64) for inv in invs]
+cur_schema_unbal = [('model', pl.String)] + [(m, pl.Float64) for m in unbal_mm]
 cur_time = int(time.time() * 1000)
 outfname = f'combined_result.csv'
 outfname_f1macro = f'combined_result_f1macro.csv'
@@ -105,6 +117,7 @@ outfname_inv_f1macro = f'combined_result_inv_f1macro.csv'
 outfname_inv_f1micro = f'combined_result_inv_f1micro.csv'
 outfname_inv_li = f'combined_result_inv_li.csv'
 
+outfname_unbal = f'combined_result_unbal.csv'
 
 out_file = os.path.join('res_csv',outfname)
 out_file_f1macro = os.path.join('res_csv',outfname_f1macro)
@@ -122,6 +135,8 @@ out_file_inv = os.path.join('res_csv',outfname_inv)
 out_file_inv_f1macro = os.path.join('res_csv',outfname_inv_f1macro)
 out_file_inv_f1micro = os.path.join('res_csv',outfname_inv_f1micro)
 out_file_inv_li = os.path.join('res_csv',outfname_inv_li)
+
+out_file_unbal = os.path.join('res_csv',outfname_unbal)
 for fi,f in enumerate(os.listdir('res_csv')):
     if 'combined' in f:
         continue
@@ -140,6 +155,11 @@ for fi,f in enumerate(os.listdir('res_csv')):
                     res[cur_ds][cur_idx] = float(row['accuracy_score'])
                     res_f1macro[cur_ds][cur_idx] = float(row['f1_macro'])
                     res_f1micro[cur_ds][cur_idx] = float(row['f1_micro'])
+                    if cur_ds == 'dynamics':
+                        for m in ['2l', '1l']:
+                            for u in unbal_metrics:
+                                cur_key = f'{m}-{u}'
+                                res_dyn[cur_key][cur_idx] = float(row[u])
                 if cur_emb in models_li:
                     cur_idx = mli_idx[cur_emb]
                     if res_li[cur_ds][cur_idx] < 0:
@@ -149,6 +169,12 @@ for fi,f in enumerate(os.listdir('res_csv')):
                     res_1l[cur_ds][cur_idx] = float(row['accuracy_score'])
                     res_1l_f1macro[cur_ds][cur_idx] = float(row['f1_macro'])
                     res_1l_f1micro[cur_ds][cur_idx] = float(row['f1_micro'])
+
+                    if cur_ds == 'dynamics':
+                        for m in ['2l', '1l']:
+                            for u in unbal_metrics:
+                                cur_key = f'{m}-{u}'
+                                res_dyn[cur_key][cur_idx] = float(row[u])
 
                 if cur_emb in models_li:
                     cur_idx = mli_idx[cur_emb]
@@ -204,6 +230,7 @@ df_inv_f1macro = pl.DataFrame(res_inv_f1macro, schema=cur_schema_inv)
 df_inv_f1micro = pl.DataFrame(res_inv_f1micro, schema=cur_schema_inv)
 df_inv_li = pl.DataFrame(res_inv_li, schema=cur_schema_inv_li)
 
+df_unbal = pl.DataFrame(res_dyn, schema=cur_schema_unbal)
 df.write_csv(out_file, separator=",")
 df_f1macro.write_csv(out_file_f1macro, separator=",")
 df_f1micro.write_csv(out_file_f1micro, separator=",")
@@ -220,3 +247,5 @@ df_inv.write_csv(out_file_inv, separator=",")
 df_inv_f1macro.write_csv(out_file_inv_f1macro, separator=",")
 df_inv_f1micro.write_csv(out_file_inv_f1micro, separator=",")
 df_inv_li.write_csv(out_file_inv_li, separator=",")
+
+df_unbal.write_csv(out_file_unbal, separator=",") 
