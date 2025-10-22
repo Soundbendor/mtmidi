@@ -1,5 +1,5 @@
 model,polyrhythms,dynamics,chords7,modemix_chordprog,secondary_dominant
-jukebox,56,-1,57,56,42
-mg_large_h,33,-1,45,33,32
-mg_med_h,33,-1,31,29,33
-mg_small_h,16,-1,8,15,15
+jukebox,56,47,57,56,42
+mg_large_h,33,34,45,33,32
+mg_med_h,33,32,31,29,33
+mg_small_h,16,17,8,15,15
