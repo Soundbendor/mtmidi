@@ -1,5 +1,5 @@
 model,inv_0,inv_1,inv_2,inv_3
-jukebox,35,-1,35,-1
+jukebox,35,58,35,39
 mg_large_h,45,45,45,43
 mg_med_h,30,31,30,30
-mg_small_h,6,8,8,-1
+mg_small_h,6,8,8,7
