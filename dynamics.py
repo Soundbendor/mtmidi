@@ -1,4 +1,5 @@
 import musicnoteconv as mnc
+import numpy as np
 from itertools import combinations
 import mido
 
@@ -102,6 +103,16 @@ dyn_idx_to_category = {i:x for (x,i) in dyn_category_to_idx.items()}
 dyn_subcategory_to_idx = {x:i for (i,x) in enumerate(dyn_subcategories)}
 dyn_idx_to_subcategory = {i:x for (x,i) in dyn_subcategory_to_idx.items()}
 
+dyn_category_sizes = {'revhairpin': 8505, 'subf': 8505, 'subp': 8505, 'flat': 1890, 'decresc': 2835, 'cresc': 2835, 'hairpin': 8505}
+
+dyn_category_sizes_by_idx = [0 for _ in range(num_categories)]
+for (cur_cat, cur_idx) in dyn_category_to_idx.items():
+    dyn_category_sizes_by_idx[cur_idx] = dyn_category_sizes[cur_cat]
+
+dyn_category_prop = np.array(dyn_category_sizes_by_idx)/41580.
+dyn_category_wts = 41580./np.array(dyn_category_sizes_by_idx)
+dyn_category_wts_norm = dyn_category_wts/np.max(dyn_category_wts)
+print(dyn_category_wts_norm)
 def get_category_idx(category):
     return dyn_category_to_idx[category]
 

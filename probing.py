@@ -229,10 +229,14 @@ def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_
     return avg_loss, metrics
 
 # for use with optuna trials
-def get_optimization_metric(metric_dict, is_classification = True):
+def get_optimization_metric(metric_dict, is_classification = True, is_bal = True):
     ret = None
     if is_classification == True:
-        ret = metric_dict['accuracy_score']
+        if is_bal == True:
+            ret = metric_dict['accuracy_score']
+        else:
+            ret = metric_dict['balanced_accuracy_score']
+
     else:
         ret = metric_dict['r2_score']
     return ret
@@ -240,7 +244,7 @@ def get_optimization_metric(metric_dict, is_classification = True):
 def has_held_out_classes(dataset, is_classification):
     return (dataset in UM.tom_datasets) and is_classification == False
 
-def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, num_layers = 1, num_epochs=100, prefix = 1, early_stopping_check_interval = 1, no_hidden = False, early_stopping_boredom = 5):
+def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is_classification = True, thresh=0.01, layer_idx = -1, train_ds = None, valid_ds = None,  train_on_middle = False, classify_by_subcategory = False, model_type='musicgen-small', model_layer_dim=1024, out_dim = 1, prune=False, num_layers = 1, num_epochs=100, prefix = 1, early_stopping_check_interval = 1, no_hidden = False, early_stopping_boredom = 5, is_bal = True, weights_arr = []):
 
     model = None
     # suggested params
@@ -287,7 +291,10 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
         opt_fn = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = None
     if is_classification == True:
-        loss_fn = nn.CrossEntropyLoss(reduction='mean')
+        if is_bal == True:
+            loss_fn = nn.CrossEntropyLoss(reduction='mean')
+        else:
+            loss_fn = nn.CrossEntropyLoss(reduction='mean', weight = torch.from_numpy(weights_arr).to(device=device, dtype=torch.float32))
     else:
         loss_fn = nn.MSELoss(reduction='mean')
 
@@ -309,7 +316,7 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     for epoch_idx in range(num_epochs):
         train_loss = train_loop(model, opt_fn, loss_fn, train_ds, batch_size = batch_size, is_classification = is_classification, scaler = scaler)
         valid_loss, valid_metrics = valid_test_loop(model,valid_ds, loss_fn = loss_fn, dataset = dataset, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = False, thresh = thresh, batch_size = batch_size, classify_by_subcategory = classify_by_subcategory, scaler = scaler)
-        cur_score = get_optimization_metric(valid_metrics, is_classification = is_classification)
+        cur_score = get_optimization_metric(valid_metrics, is_classification = is_classification, is_bal = is_bal)
         # https://optuna.readthedocs.io/en/v2.0.0/tutorial/pruning.html
 
         if prune == True: 
@@ -451,6 +458,8 @@ if __name__ == "__main__":
     # rec_dict is for passing to neptune and study (has drop keys)
     # arg_dict just has everything
     drop_keys = set(['to_nep', 'num_trials', 'toml_file', 'do_regression_classification', 'debug', 'memmap', 'slurm_job','grid_search', 'eval', 'split_debug', 'use_folds', 'eval_retrain', 'on_share', 'full_search', 'reduced_search', 'use_cuda', 'external_drive', 'inversion'])
+    # can't be recorded in neptune, drop for recording
+    drop_keys2 = set(['weights_arr'])
     #### some more logic to define experiments
     args = parser.parse_args()
     arg_dict = vars(args)
@@ -496,8 +505,9 @@ if __name__ == "__main__":
     toml_dict = datadict['toml_dict']
     pl_classdict = datadict['pl_classdict']
     is_classification = datadict['is_classification']
-
-    arg_dict.update({'thresh': _thresh, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
+    is_bal = datadict['is_bal']
+    weights_arr = datadict['weights_arr']
+    arg_dict.update({'is_bal': is_bal,'weights_arr': weights_arr, 'thresh': _thresh, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
 
     is_memmap = arg_dict['memmap']
     #### load dataset(s)
@@ -591,6 +601,8 @@ if __name__ == "__main__":
             rec_dict.update(flat_toml_dict)
 
         rec_dict['study_name'] = study_name
+        for _k in drop_keys2:
+            rec_dict.pop(_k, None)
         UP.record_dict_in_study(study, rec_dict)
         study.set_user_attr('classify_by_subcategory', arg_dict['classify_by_subcategory'])
         study.set_user_attr('thresh', _thresh)

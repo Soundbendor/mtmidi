@@ -26,3 +26,9 @@
 - 6152 gridsearch 10 boredom folds reduced search 2nd inv one layer
 - 6133 gridsearch 10 boredom folds  3rd inv one layer
 - 6153 gridsearch 10 boredom folds reduced search 3rd inv one layer
+
+- 933 - gridsearch 10 boredom folds
+- 955 - gridsearch 10 boredom folds reduced search
+
+- 9133 - gridsearch 10 boredom folds one layer
+- 9155 - gridsearch 10 boredom folds reduced search one layer

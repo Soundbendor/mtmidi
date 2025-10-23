@@ -144,6 +144,8 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
     exclude = []
     label_arr = []
     using_toml = False
+    is_bal = True
+    weights_arr = []
     if len(tomlfile_str) > 0:
         using_toml = True
         toml_dict = read_toml_file(tomlfile_str)
@@ -198,6 +200,7 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
         label_col = 'bpm'
 
     elif cur_dsname == 'dynamics':
+        is_bal = False
         if classify_by_subcategory == True:
             num_classes = DYN.num_subcategories
             label_col = 'dyn_subcategory'
@@ -207,6 +210,8 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
             num_classes = DYN.num_categories
             label_col = 'dyn_category'
             pl_classdict = DYN.dyn_category_to_idx
+            weights_arr = DYN.dyn_category_wts_norm 
+            
     
     elif cur_dsname == 'chords7':
         num_classes = CH7.num_chords
@@ -282,6 +287,8 @@ def load_data_dict(cur_dsname, classify_by_subcategory = False, tomlfile_str = '
     ret['using_toml'] = using_toml
     ret['label_arr'] = label_arr
     ret['is_hf'] = is_hf
+    ret['is_bal'] = is_bal
+    ret['weights_arr'] = weights_arr
     return ret
 
 
