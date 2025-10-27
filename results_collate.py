@@ -16,12 +16,14 @@ pfix_i1 = set([6151,6131])
 pfix_i2 = set([6152,6132])
 pfix_i3 = set([6153,6133])
 pfix_inv = set([6150,6130,6151,6131,6152,6132,6153,6133])
+pfix_dyn_unbal_2l = set([955, 933])
+pfix_dyn_unbal_1l = set([9155, 9133])
 models = ['baseline_concat', 'baseline_chroma', 'baseline_mfcc', 'baseline_mel',  'mg_audio', 'mg_small_h', 'mg_med_h', 'mg_large_h', 'jukebox']
 models = models[::-1]
 models_li = ['jukebox', 'mg_large_h', 'mg_med_h', 'mg_small_h']
 datasets = ['polyrhythms', 'dynamics', 'chords7', 'modemix_chordprog', 'secondary_dominant']
 datasets2 = ['chords']
-
+datasets_dyn_unbal = ['dynamics']
 unbal_metrics = ['balanced_accuracy_score', 'f1_macro']
 unbal_mm = []
 for m in ['2l', '1l']:
@@ -47,6 +49,33 @@ res_inv_li = {}
 
 res_dyn = {}
 
+res_dyn_unbal_2l = {}
+res_dyn_unbal_1l = {}
+
+res_dyn_unbal_f1macro_2l = {}
+res_dyn_unbal_f1macro_1l = {}
+
+res_dyn_unbal_f1micro_2l = {}
+res_dyn_unbal_f1micro_1l = {}
+res_dyn_unbal_2l_li = {}
+res_dyn_unbal_1l_li = {}
+res_dyn_unbal2 = {}
+
+
+
+res_dyn_unbal_2l['model'] = [m for m in models]
+res_dyn_unbal_1l['model'] = [m for m in models]
+
+res_dyn_unbal_f1macro_2l['model'] = [m for m in models]
+res_dyn_unbal_f1micro_2l['model'] = [m for m in models]
+res_dyn_unbal_f1macro_1l['model'] = [m for m in models]
+res_dyn_unbal_f1micro_1l['model'] = [m for m in models]
+res_dyn_unbal_2l_li['model'] = [m for m in models_li]
+res_dyn_unbal_1l_li['model'] = [m for m in models_li]
+res_dyn_unbal2['model'] = [m for m in models]
+
+
+
 res['model'] = [m for m in models]
 res_dyn['model'] = [m for m in models]
 res_f1macro['model'] = [m for m in models]
@@ -67,6 +96,17 @@ res_inv_li['model'] = [m for m in models_li]
 
 for m in unbal_mm:
     res_dyn[m] = [-1.0 for _ in range(len(models))]
+    res_dyn_unbal2[m] = [-1.0 for _ in range(len(models))]
+
+for d in datasets_dyn_unbal:
+    res_dyn_unbal_2l[d] = [-1.0 for _ in range(len(models))]
+    res_dyn_unbal_f1macro_2l[d] = [-1.0 for _ in range(len(models))]
+    res_dyn_unbal_f1micro_2l[d] = [-1.0 for _ in range(len(models))]
+    res_dyn_unbal_1l[d] = [-1.0 for _ in range(len(models))]
+    res_dyn_unbal_f1macro_1l[d] = [-1.0 for _ in range(len(models))]
+    res_dyn_unbal_f1micro_1l[d] = [-1.0 for _ in range(len(models))]
+    res_dyn_unbal_2l_li[d] = [-1 for _ in range(len(models_li))]
+    res_dyn_unbal_1l_li[d] = [-1 for _ in range(len(models_li))]
 
 for d in datasets:
     res[d] = [-1.0 for _ in range(len(models))]
@@ -89,6 +129,10 @@ for inv in invs:
     res_inv_f1macro[f'inv_{inv}'] = [-1.0 for _ in range(len(models))]
     res_inv_f1micro[f'inv_{inv}'] = [-1.0 for _ in range(len(models))]
     res_inv_li[f'inv_{inv}'] = [-1 for _ in range(len(models_li))]
+
+
+cur_schema_dyn_unbal = [("model", pl.String)] + [(d, pl.Float64) for d in datasets2]
+cur_schema_dyn_unbal_li = [("model", pl.String)] + [(d, pl.Int64) for d in datasets2]
 
 m_idx = {m:i for (i,m) in enumerate(models)}
 mli_idx = {m:i for (i,m) in enumerate(models_li)}
@@ -118,6 +162,27 @@ outfname_inv_f1micro = f'combined_result_inv_f1micro.csv'
 outfname_inv_li = f'combined_result_inv_li.csv'
 
 outfname_unbal = f'combined_result_unbal.csv'
+
+outfname_dyn_unbal_2l = f'combined_result_dyn_unbal_2l.csv'
+outfname_dyn_unbal_f1macro_2l = f'combined_result_dyn_unbal_f1macro_2l.csv'
+outfname_dyn_unbal_f1micro_2l = f'combined_result_dyn_unbal_f1micro_2l.csv'
+outfname_dyn_unbal_1l = f'combined_result_dyn_unbal_1l.csv'
+outfname_dyn_unbal_f1macro_1l = f'combined_result_dyn_unbal_f1macro_1l.csv'
+outfname_dyn_unbal_f1micro_1l = f'combined_result_dyn_unbal_f1micro_1l.csv'
+outfname_dyn_unbal_2l_li = f'combined_result_dyn_unbal_2l_li.csv'
+outfname_dyn_unbal_1l_li = f'combined_result_dyn_unbal_1l_li.csv'
+outfname_dyn_unbal2 = f'combined_result_dyn_unbal2.csv'
+
+out_file_dyn_unbal_2l = os.path.join('res_csv',outfname_dyn_unbal_2l)
+out_file_dyn_unbal_f1macro_2l = os.path.join('res_csv',outfname_dyn_unbal_f1macro_2l)
+out_file_dyn_unbal_f1micro_2l = os.path.join('res_csv',outfname_dyn_unbal_f1micro_2l)
+out_file_dyn_unbal_1l = os.path.join('res_csv',outfname_dyn_unbal_1l)
+out_file_dyn_unbal_f1macro_1l = os.path.join('res_csv',outfname_dyn_unbal_f1macro_1l)
+out_file_dyn_unbal_f1micro_1l = os.path.join('res_csv',outfname_dyn_unbal_f1micro_1l)
+out_file_dyn_unbal_2l_li = os.path.join('res_csv', outfname_dyn_unbal_2l_li)
+out_file_dyn_unbal_1l_li = os.path.join('res_csv', outfname_dyn_unbal_1l_li)
+out_file_dyn_unbal2 = os.path.join('res_csv',outfname_dyn_unbal2)
+
 
 out_file = os.path.join('res_csv',outfname)
 out_file_f1macro = os.path.join('res_csv',outfname_f1macro)
@@ -180,6 +245,38 @@ for fi,f in enumerate(os.listdir('res_csv')):
                     cur_idx = mli_idx[cur_emb]
                     if res_1l_li[cur_ds][cur_idx] < 0:
                         res_1l_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx']) + 1
+            if cur_prefix in pfix_dyn_unbal_2l:
+                if res_dyn_unbal_2l[cur_ds][cur_idx] < 0.0:
+                    res_dyn_unbal_2l[cur_ds][cur_idx] = float(row['accuracy_score'])
+                    res_dyn_unbal_f1macro_2l[cur_ds][cur_idx] = float(row['f1_macro'])
+                    res_dyn_unbal_f1micro_2l[cur_ds][cur_idx] = float(row['f1_micro'])
+                    if cur_ds == 'dynamics':
+                        m = '2l'
+                        for u in unbal_metrics:
+                            cur_key = f'{m}-{u}'
+                            res_dyn_unbal2[cur_key][cur_idx] = float(row[u])
+                if cur_emb in models_li:
+                    cur_idx = mli_idx[cur_emb]
+                    if res_dyn_unbal_2l_li[cur_ds][cur_idx] < 0:
+                        res_dyn_unbal_2l_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx']) + 1
+            elif cur_prefix in pfix_dyn_unbal_1l:
+                if res_dyn_unbal_1l[cur_ds][cur_idx] < 0.0:
+                    res_dyn_unbal_1l[cur_ds][cur_idx] = float(row['accuracy_score'])
+
+                    res_dyn_unbal_f1macro_1l[cur_ds][cur_idx] = float(row['f1_macro'])
+                    res_dyn_unbal_f1micro_1l[cur_ds][cur_idx] = float(row['f1_micro'])
+                    
+                    if cur_ds == 'dynamics':
+                        m = '1l'
+                        for u in unbal_metrics:
+                            cur_key = f'{m}-{u}'
+                            res_dyn_unbal2[cur_key][cur_idx] = float(row[u])
+
+                if cur_emb in models_li:
+                    cur_idx = mli_idx[cur_emb]
+                    if res_dyn_unbal_1l_li[cur_ds][cur_idx] < 0:
+                        res_dyn_unbal_1l_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx']) + 1
+
             elif cur_prefix in pfix_inv:
                 cur_inv = cur_prefix % 10
                 cur_inv_str = f'inv_{cur_inv}'
@@ -225,12 +322,41 @@ df_1l_f1macro = pl.DataFrame(res_1l_f1macro, schema=cur_schema)
 df_1l_f1micro = pl.DataFrame(res_1l_f1micro, schema=cur_schema)
 df_1l_li = pl.DataFrame(res_1l_li, schema=cur_schema_li)
 
+
+df_dyn_unbal_2l = pl.DataFrame(res_dyn_unbal_2l, schema=cur_schema_dyn_unbal)
+df_dyn_unbal_2l_f1macro = pl.DataFrame(res_dyn_unbal_f1macro_2l, schema=cur_schema_dyn_unbal)
+df_dyn_unbal_2l_f1micro = pl.DataFrame(res_dyn_unbal_f1micro_2l, schema=cur_schema_dyn_unbal)
+df_dyn_unbal_2l_li = pl.DataFrame(res_dyn_unbal_2l_li, schema=cur_schema_dyn_unbal_li)
+
+
+
+df_dyn_unbal_1l = pl.DataFrame(res_dyn_unbal_1l, schema=cur_schema_dyn_unbal)
+df_dyn_unbal_1l_f1macro = pl.DataFrame(res_dyn_unbal_f1macro_1l, schema=cur_schema_dyn_unbal)
+df_dyn_unbal_1l_f1micro = pl.DataFrame(res_dyn_unbal_f1micro_1l, schema=cur_schema_dyn_unbal)
+df_dyn_unbal_1l_li = pl.DataFrame(res_dyn_unbal_1l_li, schema=cur_schema_dyn_unbal_li)
+
+df_dyn_unbal2 = pl.DataFrame(res_dyn_unbal2, schema=cur_schema_unbal)
+
+
 df_inv = pl.DataFrame(res_inv, schema=cur_schema_inv)
 df_inv_f1macro = pl.DataFrame(res_inv_f1macro, schema=cur_schema_inv)
 df_inv_f1micro = pl.DataFrame(res_inv_f1micro, schema=cur_schema_inv)
 df_inv_li = pl.DataFrame(res_inv_li, schema=cur_schema_inv_li)
 
 df_unbal = pl.DataFrame(res_dyn, schema=cur_schema_unbal)
+
+
+
+df_dyn_unbal_2l.write_csv(out_file_dyn_unbal_2l, separator=",")
+df_dyn_unbal_2l_f1macro.write_csv(out_file_dyn_unbal_f1macro_2l, separator=",")
+df_dyn_unbal_2l_f1micro.write_csv(out_file_dyn_unbal_f1micro_2l, separator=",")
+df_dyn_unbal_2l_li.write_csv(out_file_dyn_unbal_2l_li, separator=",")
+df_dyn_unbal_1l.write_csv(out_file_dyn_unbal_1l, separator=",")
+df_dyn_unbal_1l_f1macro.write_csv(out_file_dyn_unbal_f1macro_1l, separator=",")
+df_dyn_unbal_1l_f1micro.write_csv(out_file_dyn_unbal_f1micro_1l, separator=",")
+df_dyn_unbal_1l_li.write_csv(out_file_dyn_unbal_1l_li, separator=",")
+
+
 df.write_csv(out_file, separator=",")
 df_f1macro.write_csv(out_file_f1macro, separator=",")
 df_f1micro.write_csv(out_file_f1micro, separator=",")
@@ -249,3 +375,4 @@ df_inv_f1micro.write_csv(out_file_inv_f1micro, separator=",")
 df_inv_li.write_csv(out_file_inv_li, separator=",")
 
 df_unbal.write_csv(out_file_unbal, separator=",") 
+df_dyn_unbal2.write_csv(out_file_dyn_unbal2, separator=",") 
