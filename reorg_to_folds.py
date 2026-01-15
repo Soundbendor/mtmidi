@@ -43,6 +43,6 @@ for i in range(len(df)):
     to_fp = os.path.join(fold_fp, filename)
     if os.path.isdir(fold_fp) == False:
         os.mkdir(fold_fp)
-    os.rename(from_fp, cur_wp)
+    os.rename(from_fp, to_fp)
 
 
