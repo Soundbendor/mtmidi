@@ -20,7 +20,7 @@ drum = {}
 share_path = os.path.join(os.sep, 'nfs','hpc', 'share', 'kwand') 
 extd_path = [os.path.join(os.sep, 'run','media','dxk',x, 'mtmidi') for x in ['TOSHIBA EXT','wdpass']]
 random.seed(5)
-bpms = (1./60000.) # (1 min/60 sec) x (1 sec/1000 ms)
+min_per_ms = (1./60000.) # (1 min/60 sec) x (1 sec/1000 ms)
 
 drum_pfix = "D:"
 drum_pgm = 0
@@ -441,7 +441,7 @@ def ms_to_ticks(ms, ticks_per_beat = 1000, bpm = 120):
     # ticks/beat x beats/min x min/sec x sec/ms = ticks/ms
     # ticks/beat x beats/ms = ticks/ms
     # ticks/ms x ms = ticks
-    ticks = (ticks_per_beat * bpm) * bpms
+    ticks = (ticks_per_beat * bpm) * min_per_ms * ms
     return ticks
 
 # https://github.com/brown-palm/syntheory/blob/main/embeddings/models.py

@@ -16,11 +16,12 @@ dur = 4 # dealing with quarter notes
 
 # copied from midi_make_polyrhythms
 tick_offsets = {x:(offset_lvl, int(UM.ms_to_ticks(x,ticks_per_beat = ticks_per_beat, bpm = bpm))) for offset_lvl, x in enumerate(DYN.offset_ms_arr)}
+print(bpm, tick_offsets)
 
-csvpath = os.path.join(UM.by_projpath('csv'), 'dynamics.csv')
-outf = open(csvpath, 'w')
-csvw = csv.DictWriter(outf,fieldnames=DYN.fieldnames)
-csvw.writeheader()
+#csvpath = os.path.join(UM.by_projpath('csv'), 'dynamics.csv')
+#outf = open(csvpath, 'w')
+#csvw = csv.DictWriter(outf,fieldnames=DYN.fieldnames)
+#csvw.writeheader()
 
 
 # always goes from soft to loud
@@ -85,7 +86,7 @@ for _bsd in DYN.beat_subdiv_arr:
                                        'beat_subdiv': subdiv, 'bpm': bpm, 'num_beats': beat * DYN.num_bars,
                                        'name': cur_name}
                             
-                            csvw.writerow(cur_row)
+                            #csvw.writerow(cur_row)
                             #print(outname)
                             # keep track of ticks left from last bar
                             last_ticks_left = 0
@@ -124,7 +125,7 @@ for _bsd in DYN.beat_subdiv_arr:
                             mid.tracks[0].append(mido.MetaMessage('end_of_track', time=0))
                             UM.save_midi(mid, outname, dataset="dynamics")
 
-outf.close()
+#outf.close()
 
 
                         
