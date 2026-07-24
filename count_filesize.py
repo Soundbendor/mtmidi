@@ -2,8 +2,8 @@ import librosa as lr
 import os
 import polars as pl
 
-#ds = 'polyrhythms'
-ds = 'dynamics'
+ds = 'polyrhythms'
+#ds = 'dynamics'
 
 home_dir = '/nfs/hpc/share/kwand/syntheory_plus'
 
