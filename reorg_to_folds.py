@@ -3,8 +3,8 @@ import polars as pl
 import util as UM
 import sys
 
-mv_test = True
-wavdir = '/nfs/hpc/share/kwand/wav'
+mv_test = False
+wavdir = '/nfs/hpc/share/kwand/syntheory_plus'
 testdir = '/nfs/hpc/share/kwand/test'
 dataset = 'polyrhythms'
 if len(sys.argv) > 1:

@@ -10,14 +10,14 @@ def get_prefix(_dataset, embedding):
     ret_pfix = 0
     if _dataset == 'polyrhythms':
         if embedding in ['mg_small_h', 'mg_med_h', 'mg_large_h', 'jukebox']:
-            ret_pfix = 159
+            ret_pfix = 139
         else:
             ret_pfix = 139
     elif _dataset in ['modemix_chordprog', 'secondary_dominant', 'dynamics', 'chords7', 'chords']:
         if embedding in ['mg_small_h', 'mg_med_h', 'mg_large_h', 'jukebox']:
-            ret_pfix = 155
+            ret_pfix = 139
         else:
-            ret_pfix = 133
+            ret_pfix = 139
     return ret_pfix
 
         

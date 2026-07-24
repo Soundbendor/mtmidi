@@ -10,20 +10,20 @@ def get_prefix(_dataset, embedding):
     ret_pfix = 0
     if _dataset == 'polyrhythms':
         if embedding in ['mg_small_h', 'mg_med_h', 'mg_large_h', 'jukebox']:
-            ret_pfix = 59
+            ret_pfix = 39
         else:
             ret_pfix = 39
     elif _dataset in ['modemix_chordprog', 'secondary_dominant']:
         if embedding == 'mg_audio':
-            ret_pfix = 33
+            ret_pfix = 39
         else:
             # baselines should really be 33 but made a mistake, parameters still correspond to full search
-            ret_pfix = 55
+            ret_pfix = 39
     elif _dataset in ['dynamics', 'chords7', 'chords']:
         if embedding in ['mg_small_h', 'mg_med_h', 'mg_large_h', 'jukebox']:
-            ret_pfix = 55
+            ret_pfix = 39
         else:
-            ret_pfix = 33
+            ret_pfix = 39
     return ret_pfix
 
         

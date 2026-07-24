@@ -97,29 +97,19 @@ def train_loop(model, opt_fn, loss_fn, train_ds, batch_size = 64, shuffle = True
     if scaler != None:
         scaler.eval()
     for data_idx, data in enumerate(train_dl):
+        opt_fn.zero_grad()
         loss = None
-        if is_classification == True:
-            _ipt, ground_truth = data
-            ipt = None
-            if scaler != None:
-                scaler.partial_fit(_ipt)
-                ipt = scaler.transform(_ipt)
-            else:
-                ipt = _ipt
-            pred = model(ipt)
-            loss = loss_fn(pred, ground_truth)
+        _ipt, ground_truth = data
+        ipt = None
+        if scaler != None:
+            scaler.partial_fit(_ipt)
+            ipt = scaler.transform(_ipt)
         else:
-            #_ipt, ground_truth, ground_label = data
-            _ipt, ground_truth = data
-            ipt = None
-            if scaler != None:
-                scaler.partial_fit(_ipt)
-                ipt = scaler.transform(_ipt)
-            else:
-                ipt = _ipt
-            pred = model(ipt)
-            loss = loss_fn(pred.flatten(), ground_truth.flatten())
-     
+            ipt = _ipt
+        pred = model(ipt)
+        #print(pred.shape, ground_truth.shape)
+        loss = loss_fn(pred, ground_truth)
+             
         loss.backward()
         opt_fn.step()
         cur_loss = loss.item()
@@ -142,9 +132,9 @@ def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_
     # accumulate regression "classification" ground truths and predictions
     truth_labels = None
     pred_labels = None
-    for data_idx, data in enumerate(eval_dl):
-        loss = None
-        if is_classification == True:
+    with torch.no_grad():
+        for data_idx, data in enumerate(eval_dl):
+            loss = None
             _ipt, ground_truth = data
             ipt = None
             if scaler != None:
@@ -173,49 +163,11 @@ def valid_test_loop(model, eval_ds, loss_fn = None, dataset = 'polyrhythms', is_
                     preds = np.hstack((preds, cur_preds))
                 else:
                     preds = np.hstack((preds, copy.deepcopy(cur_preds)))
-        else:
-            #_ipt, ground_truth, ground_label = data
-            _ipt, ground_truth = data
-            ipt = None
-            if scaler != None:
-                ipt = scaler.transform(_ipt)
-            else:
-                ipt = _ipt
-            pred = model(ipt)
-            if loss_fn != None:
-                loss = loss_fn(pred.flatten(), ground_truth.flatten())
-            # stuff for regression "classification"  
-            pred_np = pred.detach().cpu().numpy().flatten()
-            #if do_regression_classification == True:
-            #cur_pred_labels, cur_pred_label_idx = regression_classification(dataset, pred_np, thresh=thresh)
-            if data_idx == 0:
-                #preds = copy.deepcopy(copy.deepcopy(pred_np))
-                preds = pred_np
-                #truths = copy.deepcopy(ground_truth.detach().cpu().numpy().flatten())
-                truths = ground_truth.detach.cpu().numpy().flatten()
-                #if do_regression_classification == True:
-                #truth_labels = copy.deepcopy(ground_label.detach().cpu().numpy().flatten())
-                #pred_labels = copy.deepcopy(cur_pred_label_idx)
-            else:
-                if preds.base is None:
-                    preds = np.hstack((preds, pred_np))
-                else:
-                    preds = np.hstack((preds, copy.deepcopy(pred_np)))
-                if truths.base is None:
-                    truths = np.hstack((truths, ground_truth.detach().cpu().numpy().flatten()))
-                else:
-                    truths = np.hstack((truths, copy.deepcopy(ground_truth.detach().cpu().numpy().flatten())))
-                #if do_regression_classification == True:
-                #truth_labels = np.hstack((truth_labels, copy.deepcopy(ground_label.detach().cpu().numpy().flatten())))
-                #pred_labels = np.hstack((pred_labels, copy.deepcopy(cur_pred_label_idx)))
-
-            #print('truth', data_idx, truth_labels.shape)
-            #print('pred', data_idx, pred_labels.shape)
-        # loss bookkeeping
+                    # loss bookkeeping
         if loss_fn != None:
-            cur_loss = loss.item()
-            total_loss += cur_loss
-            iters += 1
+                cur_loss = loss.item()
+                total_loss += cur_loss
+                iters += 1
     # metrics calculating
     metrics = None
     if is_classification == True:
@@ -275,7 +227,8 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     if data_norm == True:
         scaler = TST(with_mean = True, with_std = True, dim=model_layer_dim, use_64bit = True, use_constant_feature_mask = True, device = device)
 
-    held_out_classes = has_held_out_classes(dataset, is_classification)     
+    #held_out_classes = has_held_out_classes(dataset, is_classification)     
+    held_out_classes = False 
     if no_hidden == False:
         model = LinearProbe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
     else:
@@ -290,13 +243,10 @@ def _objective(trial, dataset = 'polyrhythms', embedding_type = 'mg_small_h', is
     else:
         opt_fn = torch.optim.Adam(model.parameters(), lr=lr)
     loss_fn = None
-    if is_classification == True:
-        if is_bal == True:
-            loss_fn = nn.CrossEntropyLoss(reduction='mean')
-        else:
-            loss_fn = nn.CrossEntropyLoss(reduction='mean', weight = torch.from_numpy(weights_arr).to(device=device, dtype=torch.float32))
+    if is_bal == True:
+        loss_fn = nn.CrossEntropyLoss(reduction='mean')
     else:
-        loss_fn = nn.MSELoss(reduction='mean')
+        loss_fn = nn.CrossEntropyLoss(reduction='mean', weight = torch.from_numpy(weights_arr).to(device=device, dtype=torch.float32))
 
     # polyrhythm and tempi regression has held out classes for "classification"
     #held_out_classes = (dataset in ["polyrhythms", "tempos"]) and is_classification == False
@@ -430,7 +380,7 @@ if __name__ == "__main__":
     parser.add_argument("-cls", "--is_classification", type=strtobool, default=True, help="is classification")
     parser.add_argument("-tom", "--train_on_middle", type=strtobool, default=False, help="train on middle")
     parser.add_argument("-rc", "--do_regression_classification", type=strtobool, default=False, help="do regression classification")
-    parser.add_argument("-nep", "--to_nep", type=strtobool, default=True, help="log on neptune")
+    parser.add_argument("-nep", "--to_nep", type=strtobool, default=False, help="log on neptune")
     parser.add_argument("-cbs", "--classify_by_subcategory", type=strtobool, default=False, help="classify by subcategory for dynamics, by progression for chord progression datasets")
     parser.add_argument("-pf", "--prefix", type=int, default=-1, help="specify a prefix > 0 for save files (db, etc.) for potential reloading (if file exists)")
     parser.add_argument("-tf", "--toml_file", type=str, default="", help="toml file in toml directory with exclude category listing vals to exclude by col, amongst other settings")
@@ -438,7 +388,7 @@ if __name__ == "__main__":
     parser.add_argument("-rt", "--eval_retrain", type=strtobool, default=False, help="retrain for eval")
     parser.add_argument("-db", "--debug", type=strtobool, default=False, help="hacky way of syntax debugging")
     parser.add_argument("-epc", "--num_epochs", type=int, default=100, help="number of epochs")
-    parser.add_argument("-esb", "--early_stopping_boredom", type=int, default=5, help="epoch intervals for early stopping threshold")
+    parser.add_argument("-esb", "--early_stopping_boredom", type=int, default=10, help="epoch intervals for early stopping threshold")
     parser.add_argument("-esci", "--early_stopping_check_interval", type=int, default=1, help="check every epochs for early stopping (<= 0 turns off)")
     parser.add_argument("-spd", "--split_debug", type=strtobool, default=False, help="debug split by recording indices")
     parser.add_argument("-uf", "--use_folds", type=strtobool, default=True, help="use predefined folds for dataset splitting")
@@ -487,16 +437,16 @@ if __name__ == "__main__":
     cur_ds = None
     label_arr = None
     cur_dsname = arg_dict['dataset']
-    train_on_middle = cur_dsname in UM.tom_datasets
+    train_on_middle = False
     user_specify_layer_idx = arg_dict['layer_idx'] >= 0 
     tomlfile_str = arg_dict['toml_file'] 
     
-    _classify_by_subcategory = arg_dict['classify_by_subcategory'] 
+    _classify_by_subcategory = False 
     force_full_search = arg_dict['full_search']
     reduced_search = arg_dict['reduced_search']
     
 
-    datadict  = UD.load_data_dict(cur_dsname, classify_by_subcategory = _classify_by_subcategory, tomlfile_str = tomlfile_str, inversion = arg_dict['inversion'], use_folds = arg_dict['use_folds'])
+    datadict  = UD.load_data_dict(cur_dsname, classify_by_subcategory = _classify_by_subcategory, tomlfile_str = tomlfile_str, inversion = arg_dict['inversion'], use_folds = True)
     out_dim = datadict['num_classes']
     cur_df = datadict['df']
     label_arr = datadict['label_arr']
@@ -504,7 +454,7 @@ if __name__ == "__main__":
     using_toml = datadict['using_toml']
     toml_dict = datadict['toml_dict']
     pl_classdict = datadict['pl_classdict']
-    is_classification = datadict['is_classification']
+    is_classification = True
     is_bal = datadict['is_bal']
     weights_arr = datadict['weights_arr']
     arg_dict.update({'is_bal': is_bal,'weights_arr': weights_arr, 'thresh': _thresh, 'model_type': model_type, 'model_layer_dim': model_layer_dim, 'out_dim': out_dim})
@@ -513,11 +463,11 @@ if __name__ == "__main__":
     #### load dataset(s)
     if cur_dsname == "polyrhythms":
 
-        cur_ds = PolyrhythmsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, classification = is_classification, classdict = pl_classdict, norm_labels = True, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit, is_memmap = is_memmap, other_projdir = _other_projdir)
+        cur_ds = PolyrhythmsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, classification = True, classdict = pl_classdict, norm_labels = True, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit, is_memmap = is_memmap, other_projdir = _other_projdir)
     elif cur_dsname == 'tempos':
         cur_ds = STHFTempiData(cur_df, embedding_type= arg_dict['embedding_type'], device=device, norm_labels = True, layer_idx= arg_dict['layer_idx'], class_binsize = TEMPOS_CLASS_BINSIZE, num_classes = TP.num_classes, bpm_class_mapper = TP.bpm_class_mapper, is_64bit = is_64bit, is_memmap = is_memmap, other_projdir = _other_projdir)
     elif cur_dsname == 'dynamics':
-        cur_ds = DynamicsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, is_memmap = is_memmap, other_projdir = _other_projdir)
+        cur_ds = DynamicsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = False, is_64bit = is_64bit, is_memmap = is_memmap, other_projdir = _other_projdir)
     elif cur_dsname == 'chords7':
         cur_ds = Chords7Data(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, other_projdir = _other_projdir)
     elif cur_dsname == 'chords':
@@ -532,12 +482,12 @@ if __name__ == "__main__":
     elif cur_dsname == 'time_signatures':
         cur_ds = STHFTimeSignaturesData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], is_64bit = is_64bit,is_memmap = is_memmap, other_projdir = _other_projdir)
     elif cur_dsname == 'simple_progressions':
-        cur_ds = STHFSimpleProgressionsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, is_memmap = is_memmap, other_projdir = _other_projdir)
+        cur_ds = STHFSimpleProgressionsData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = False, is_64bit = is_64bit, is_memmap = is_memmap, other_projdir = _other_projdir)
         
     elif cur_dsname == 'modemix_chordprog':
-        cur_ds = ModemixChordprogData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, is_memmap = is_memmap, other_projdir = _other_projdir)
+        cur_ds = ModemixChordprogData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = False, is_64bit = is_64bit, is_memmap = is_memmap, other_projdir = _other_projdir)
     elif cur_dsname == 'secondary_dominant':
-        cur_ds = SecondaryDominantData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = arg_dict['classify_by_subcategory'], is_64bit = is_64bit, is_memmap = is_memmap, other_projdir = _other_projdir)
+        cur_ds = SecondaryDominantData(cur_df, embedding_type = arg_dict['embedding_type'], device=device, layer_idx=arg_dict['layer_idx'], classify_by_subcategory = False, is_64bit = is_64bit, is_memmap = is_memmap, other_projdir = _other_projdir)
         
 
 
@@ -551,7 +501,7 @@ if __name__ == "__main__":
         else:
             split_annotation = 'eval'
         split_debug_name = f'{_pf}-{cur_dsname}-{split_annotation}'
-    cur_subsets = UP.torch_get_train_test_subsets(cur_ds, cur_df, label_arr, train_on_middle = train_on_middle, train_pct = train_pct, test_subpct = test_subpct,seed = seed, debug=is_split_debug, debug_name=split_debug_name, use_folds = arg_dict['use_folds'])
+    cur_subsets = UP.torch_get_train_test_subsets(cur_ds, cur_df, label_arr, train_on_middle = False, train_pct = train_pct, test_subpct = test_subpct,seed = seed, debug=is_split_debug, debug_name=split_debug_name, use_folds = True)
     train_ds = cur_subsets['train']
     valid_ds = cur_subsets['valid']
     test_ds = cur_subsets['test']
@@ -571,16 +521,14 @@ if __name__ == "__main__":
 
         #### running the optuna study
         study_dict = None
-        if arg_dict['grid_search'] == True:
+        if True == True:
      
             search_space = None
             #if param_search == True:
             if is_single_layer == True or force_full_search == True:
                 search_space = {'learning_rate_exp': [-5, -4, -3], 'dropout': [0.25, 0.5, 0.75], 'batch_size': [64,256], 'l2_weight_decay_exp': [-4, -3, -2], 'data_norm': [False, True]}
-            elif reduced_search == True:
-                search_space = {'learning_rate_exp': [-3], 'dropout': [0.25, 0.5, 0.75], 'batch_size': [64], 'l2_weight_decay_exp': [-2], 'data_norm': [True]}
             else:
-                search_space = {'learning_rate_exp': [-3], 'dropout': [0.5], 'batch_size': [64], 'l2_weight_decay_exp': [-2], 'data_norm': [True]}
+                search_space = {'learning_rate_exp': [-3], 'dropout': [0.25, 0.5, 0.75], 'batch_size': [64], 'l2_weight_decay_exp': [-2], 'data_norm': [True]}
                 
             #else:
             #search_space = {'learning_rate_exp': [-5], 'dropout': [0.25], 'l2_weight_decay_exp': [-3]}
@@ -657,7 +605,8 @@ if __name__ == "__main__":
             model = LinearProbe(in_dim=model_layer_dim, hidden_layers = [512],out_dim=out_dim, dropout = dropout, initial_dropout = True)
         else:
             model = LinearProbe(in_dim=model_layer_dim, hidden_layers = [],out_dim=out_dim, dropout = dropout, initial_dropout = True)
-        held_out_classes = has_held_out_classes(cur_dsname, is_classification)
+        #held_out_classes = has_held_out_classes(cur_dsname, is_classification)
+        held_out_classes = False
         
         scaler = None
         if data_norm == True:
@@ -668,7 +617,7 @@ if __name__ == "__main__":
 
         if arg_dict['eval_retrain'] == True:
 
-            valid_score = eval_train(model, scaler = scaler, dataset = cur_dsname, embedding_type = arg_dict['embedding_type'], lr_exp = learning_rate_exp, weight_decay_exp = l2_weight_decay_exp, batch_size = bs, is_classification = is_classification, thresh=_thresh, layer_idx = layer_idx, train_ds = train_ds, valid_ds = valid_ds,  train_on_middle = train_on_middle, classify_by_subcategory = arg_dict['classify_by_subcategory'], model_type=model_type, model_layer_dim=model_layer_dim, out_dim = out_dim, num_epochs=num_dict, prefix = arg_dict['prefix'], early_stopping_check_interval = arg_dict['early_stopping_check_interval'], early_stopping_boredom = arg_dict['early_stopping_boredom'])
+            valid_score = eval_train(model, scaler = scaler, dataset = cur_dsname, embedding_type = arg_dict['embedding_type'], lr_exp = learning_rate_exp, weight_decay_exp = l2_weight_decay_exp, batch_size = bs, is_classification = True, thresh=_thresh, layer_idx = layer_idx, train_ds = train_ds, valid_ds = valid_ds,  train_on_middle = False, classify_by_subcategory = False, model_type=model_type, model_layer_dim=model_layer_dim, out_dim = out_dim, num_epochs=num_dict, prefix = arg_dict['prefix'], early_stopping_check_interval = arg_dict['early_stopping_check_interval'], early_stopping_boredom = arg_dict['early_stopping_boredom'])
             print(f'eval valid score: {valid_score}')
         else:
             trial_number = best_trial_dict['trial_number']
@@ -679,7 +628,7 @@ if __name__ == "__main__":
                 UP.load_scaler(scaler, model_shorthand = emb_type, dataset = cur_dsname, prefix=arg_dict['prefix'], trial_number = trial_number, is_64bit = True, device = device)
         test_ds.dataset.set_layer_idx(layer_idx)
 
-        test_loss, test_metrics = valid_test_loop(model,test_ds, loss_fn = None, dataset = cur_dsname, is_classification = is_classification, held_out_classes = held_out_classes, is_testing = True, thresh = _thresh, batch_size = bs, classify_by_subcategory = arg_dict['classify_by_subcategory'], scaler = scaler, file_basename = study_name)
+        test_loss, test_metrics = valid_test_loop(model,test_ds, loss_fn = None, dataset = cur_dsname, is_classification = True, held_out_classes = held_out_classes, is_testing = True, thresh = _thresh, batch_size = bs, classify_by_subcategory = False, scaler = scaler, file_basename = study_name)
         UP.print_metrics(test_metrics, study_name)
         #UP.save_results_to_study(study, test_metrics)
  
