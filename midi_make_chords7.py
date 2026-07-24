@@ -17,10 +17,10 @@ subdiv = 1
 
 on_dur, off_dur = UM.notedur_to_ticks(dur, subdiv = subdiv, ticks_per_beat = ticks_per_beat, sustain = sustain)
 #print(on_dur, off_dur)
-csvpath = os.path.join(UM.by_projpath('csv'), 'chords7.csv')
-outf = open(csvpath, 'w')
-csvw = csv.DictWriter(outf,fieldnames=chords7.fieldnames)
-csvw.writeheader()
+#csvpath = os.path.join(UM.by_projpath('csv'), 'chords7.csv')
+#outf = open(csvpath, 'w')
+#csvw = csv.DictWriter(outf,fieldnames=chords7.fieldnames)
+#csvw.writeheader()
 
 
 #exit()
@@ -44,7 +44,7 @@ for cur_inst in UM.pitched_inst_to_use:
                 outname = chords7.get_outname(chord_quality, inv_idx, short_inst, cur_root, ext = "mid")
                 name = chords7.get_outname(chord_quality, inv_idx, short_inst, cur_root, ext = "")
                 cur_row = {'name': name, 'root': cur_root, 'pitch': pitch, 'octave': octave, 'quality': chord_quality, 'inversion': inv_idx, 'inst': short_inst, 'quality_idx': chords7.quality_to_idx[chord_quality], 'bpm': cur_bpm}
-                csvw.writerow(cur_row)
+                #csvw.writerow(cur_row)
                 mid = mido.MidiFile(type=1, ticks_per_beat=ticks_per_beat)
                 mid.tracks.append(mido.MidiTrack())
                 mid.tracks[0].append(mido.MetaMessage('set_tempo', tempo = tempo_microsec))
@@ -68,5 +68,5 @@ for cur_inst in UM.pitched_inst_to_use:
 
                 UM.save_midi(mid, outname, dataset="chords7")
 
-outf.close()
+#outf.close()
 

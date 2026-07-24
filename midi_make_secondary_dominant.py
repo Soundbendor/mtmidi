@@ -5,12 +5,12 @@ import chord7prog as CSP
 import mido
 import musicnoteconv as mnc
 
-ticks_per_beat = 2000
+ticks_per_beat = 1000
 cur_bpm = 60
 velocity = 100
-padding = 30
+padding = 10
 tempo_microsec = mido.bpm2tempo(cur_bpm)
-sustain = 0.95
+sustain = 0.90
 dur = 4
 subdiv = 1
 
@@ -18,10 +18,10 @@ subdiv = 1
 
 on_dur, off_dur = UM.notedur_to_ticks(dur, subdiv = subdiv, ticks_per_beat = ticks_per_beat, sustain = sustain)
 #print(on_dur, off_dur)
-csvpath = os.path.join(UM.by_projpath('csv'), 'secondary_dominant.csv')
-outf = open(csvpath, 'w')
-csvw = csv.DictWriter(outf,fieldnames=CSP.second_fieldnames)
-csvw.writeheader()
+#csvpath = os.path.join(UM.by_projpath('csv'), 'secondary_dominant.csv')
+#outf = open(csvpath, 'w')
+#csvw = csv.DictWriter(outf,fieldnames=CSP.second_fieldnames)
+#csvw.writeheader()
 
 
 #exit()
@@ -43,7 +43,7 @@ for cur_inst in UM.pitched_inst_to_use:
                     outname = CSP.second_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "mid")
                     name = CSP.second_get_outname(cur_progstr, inv_idx, short_inst, key_center,  ext = "")
                     cur_row = {'name': name, 'inst': short_inst, 'key_center': key_center, 'scale_type': cur_scaletype, 'sub_type': cur_sub_type, 'base_prog': base_progstr, 'sub_prog': cur_progstr, 'bpm': cur_bpm, 'inv': inv_idx}
-                    csvw.writerow(cur_row)
+                    #csvw.writerow(cur_row)
                     mid = mido.MidiFile(type=1, ticks_per_beat=ticks_per_beat)
                     mid.tracks.append(mido.MidiTrack())
                     mid.tracks[0].append(mido.MetaMessage('set_tempo', tempo = tempo_microsec))
@@ -78,5 +78,5 @@ for cur_inst in UM.pitched_inst_to_use:
 
                     UM.save_midi(mid, outname, dataset="secondary_dominant")
 
-outf.close()
+#outf.close()
 
