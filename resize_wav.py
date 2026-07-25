@@ -71,7 +71,7 @@ for ds in dses:
                 new_dat = cur_dat[:cur_no_samp]
                 #print(cur_dat.shape, new_dat.shape, cur_dat.dtype, cur_samp, cur_no_samp)
                 print(f'writing {cur_name} cutting down to {cur_no_samp} from {cur_samp}')
-                sf.write(out_path, new_dat, cur_sr, 'PCM_32')
+                sf.write(out_path, new_dat, cur_sr, 'FLOAT')
     """
 for row in pldf.iter_rows(named=True):
     cur_name = row['name']
