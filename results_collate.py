@@ -228,7 +228,7 @@ for fi,f in enumerate(os.listdir('res_csv')):
                 if cur_emb in models_li:
                     cur_idx = mli_idx[cur_emb]
                     if res_li[cur_ds][cur_idx] < 0:
-                        res_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx']) + 1
+                        res_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx'])
             elif cur_prefix in pfix_1l:
                 if res_1l[cur_ds][cur_idx] < 0.0:
                     res_1l[cur_ds][cur_idx] = float(row['accuracy_score'])
@@ -244,7 +244,7 @@ for fi,f in enumerate(os.listdir('res_csv')):
                 if cur_emb in models_li:
                     cur_idx = mli_idx[cur_emb]
                     if res_1l_li[cur_ds][cur_idx] < 0:
-                        res_1l_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx']) + 1
+                        res_1l_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx'])
             if cur_prefix in pfix_dyn_unbal_2l:
                 if res_dyn_unbal_2l[cur_ds][cur_idx] < 0.0:
                     res_dyn_unbal_2l[cur_ds][cur_idx] = float(row['accuracy_score'])
@@ -258,7 +258,7 @@ for fi,f in enumerate(os.listdir('res_csv')):
                 if cur_emb in models_li:
                     cur_idx = mli_idx[cur_emb]
                     if res_dyn_unbal_2l_li[cur_ds][cur_idx] < 0:
-                        res_dyn_unbal_2l_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx']) + 1
+                        res_dyn_unbal_2l_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx'])
             elif cur_prefix in pfix_dyn_unbal_1l:
                 if res_dyn_unbal_1l[cur_ds][cur_idx] < 0.0:
                     res_dyn_unbal_1l[cur_ds][cur_idx] = float(row['accuracy_score'])
@@ -275,7 +275,7 @@ for fi,f in enumerate(os.listdir('res_csv')):
                 if cur_emb in models_li:
                     cur_idx = mli_idx[cur_emb]
                     if res_dyn_unbal_1l_li[cur_ds][cur_idx] < 0:
-                        res_dyn_unbal_1l_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx']) + 1
+                        res_dyn_unbal_1l_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx'])
 
             elif cur_prefix in pfix_inv:
                 cur_inv = cur_prefix % 10
@@ -288,7 +288,7 @@ for fi,f in enumerate(os.listdir('res_csv')):
                 if cur_emb in models_li:
                     cur_idx = mli_idx[cur_emb]
                     if res_inv_li[cur_inv_str][cur_idx] < 0:
-                        res_inv_li[cur_inv_str][cur_idx] = int(row['best_trial_layer_idx']) + 1
+                        res_inv_li[cur_inv_str][cur_idx] = int(row['best_trial_layer_idx'])
                     
         else:
             if res2[cur_ds][cur_idx] < 0.0:
@@ -299,7 +299,7 @@ for fi,f in enumerate(os.listdir('res_csv')):
             if cur_emb in models_li:
                 cur_idx = mli_idx[cur_emb]
                 if res2_li[cur_ds][cur_idx] < 0:
-                    res2_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx']) + 1
+                    res2_li[cur_ds][cur_idx] = int(row['best_trial_layer_idx'])
     iptf.close()
 
 print(res)
