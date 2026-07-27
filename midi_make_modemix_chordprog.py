@@ -50,7 +50,7 @@ for cur_inst in UM.pitched_inst_to_use:
                     #mid.tracks[0].append(mido.Message('control_change', control=91, value=rvb_val, time =0, channel=0))
                     mid.tracks[0].append(mido.Message('program_change', program=ch_num, channel=0))
 
-                    for chordtup in cur_prog:
+                    for ct_idx, chordtup in enumerate(cur_prog):
                         cur_root = chordtup[0]
                         cur_qual = chordtup[1]
                         cur_mnotes = [mnc.note_to_midi(x) for x in CH.chord_notes[cur_qual]]
@@ -60,20 +60,16 @@ for cur_inst in UM.pitched_inst_to_use:
                         offset_mnotes = CH.offset_notes(inv_mnotes, offset_val)
                         tpose_mnotes, tposed_down = CH.transpose_to_range(offset_mnotes)
 
-                        for i in range(1):
-                            cur_start = off_dur
-                            cur_end = on_dur
-                            if i == 0:
-                                cur_start = 0
-                            for midx, _mn in enumerate(tpose_mnotes):
-                                note_start = cur_start if midx == 0 else 0 
-                                mid.tracks[0].append(mido.Message('note_on', note=_mn, velocity=velocity, time=note_start, channel=0))
-                            for midx, _mn in enumerate(tpose_mnotes):
-                                note_end = cur_end if midx == 0 else 0 
-                                mid.tracks[0].append(mido.Message('note_off', note=_mn, velocity=velocity, time=note_end, channel=0))
-                            if i == CH.num_notes - 1:
-                                mid.tracks[0].append(mido.Message('note_on', note=cur_mnotes[0], velocity = 0, time = off_dur, channel =0))
-                                mid.tracks[0].append(mido.Message('note_off', note=cur_mnotes[0], velocity = 0, time = padding, channel=0))
+                        cur_end = on_dur
+                        for midx, _mn in enumerate(tpose_mnotes):
+                            note_start = off_dur if midx == 0 else 0 
+                            mid.tracks[0].append(mido.Message('note_on', note=_mn, velocity=velocity, time=note_start, channel=0))
+                        for midx, _mn in enumerate(tpose_mnotes):
+                            note_end = cur_end if midx == 0 else 0 
+                            mid.tracks[0].append(mido.Message('note_off', note=_mn, velocity=velocity, time=note_end, channel=0))
+                        if ct_idx == 3:
+                            mid.tracks[0].append(mido.Message('note_on', note=cur_mnotes[0], velocity = 0, time = off_dur, channel =0))
+                            mid.tracks[0].append(mido.Message('note_off', note=cur_mnotes[0], velocity = 0, time = padding, channel=0))
                     mid.tracks[0].append(mido.MetaMessage('end_of_track', time=0))
 
                     UM.save_midi(mid, outname, dataset="modemix_chordprog")
