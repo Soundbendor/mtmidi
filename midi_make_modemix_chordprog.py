@@ -40,6 +40,8 @@ for cur_inst in UM.pitched_inst_to_use:
             # key_offset is offseting the key center from c4:
             for key_offset, key_center in CH.offsets.items():
                 for inv_idx in range(CH.num_inversions):
+                    if inv_idx > 0:
+                        break
                     outname = CDP.modemix_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "mid")
                     name = CDP.modemix_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "")
                     cur_row = {'name': name, 'inst': short_inst, 'key_center': key_center, 'scale_type': cur_scaletype, 'is_modemix': is_modemix, 'orig_prog': orig_progstr, 'sub_prog': cur_progstr, 'inv': inv_idx, 'bpm': cur_bpm}
