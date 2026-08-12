@@ -18,10 +18,10 @@ subdiv = 1
 
 on_dur, off_dur = UM.notedur_to_ticks(dur, subdiv = subdiv, ticks_per_beat = ticks_per_beat, sustain = sustain)
 #print(on_dur, off_dur)
-csvpath = os.path.join(UM.by_projpath('csv'), 'modemix_chordprog.csv')
-outf = open(csvpath, 'w')
-csvw = csv.DictWriter(outf,fieldnames=CDP.modemix_fieldnames)
-csvw.writeheader()
+#csvpath = os.path.join(UM.by_projpath('csv'), 'modemix_chordprog.csv')
+#outf = open(csvpath, 'w')
+#csvw = csv.DictWriter(outf,fieldnames=CDP.modemix_fieldnames)
+#csvw.writeheader()
 
 
 #exit()
@@ -45,7 +45,7 @@ for cur_inst in UM.pitched_inst_to_use:
                     outname = CDP.modemix_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "mid")
                     name = CDP.modemix_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "")
                     cur_row = {'name': name, 'inst': short_inst, 'key_center': key_center, 'scale_type': cur_scaletype, 'is_modemix': is_modemix, 'orig_prog': orig_progstr, 'sub_prog': cur_progstr, 'inv': inv_idx, 'bpm': cur_bpm}
-                    csvw.writerow(cur_row)
+                    #csvw.writerow(cur_row)
                     mid = mido.MidiFile(type=1, ticks_per_beat=ticks_per_beat)
                     mid.tracks.append(mido.MidiTrack())
                     mid.tracks[0].append(mido.MetaMessage('set_tempo', tempo = tempo_microsec))
@@ -76,5 +76,5 @@ for cur_inst in UM.pitched_inst_to_use:
 
                     UM.save_midi(mid, outname, dataset="modemix_chordprog")
 
-outf.close()
+#outf.close()
 
