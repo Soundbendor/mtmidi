@@ -63,8 +63,9 @@ for cur_inst in UM.pitched_inst_to_use:
                         tpose_mnotes, tposed_down = CHS.transpose_to_range(offset_mnotes)
 
                         cur_end = on_dur
+                        cur_start = 0 if ct_idx == 0 else off_dur
                         for midx, _mn in enumerate(tpose_mnotes):
-                            note_start = off_dur if midx == 0 else 0 
+                            note_start = cur_start if midx == 0 else 0
                             mid.tracks[0].append(mido.Message('note_on', note=_mn, velocity=velocity, time=note_start, channel=0))
                         for midx, _mn in enumerate(tpose_mnotes):
                             note_end = cur_end if midx == 0 else 0 

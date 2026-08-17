@@ -10,7 +10,7 @@ cur_bpm = 60
 velocity = 100
 padding = 30
 tempo_microsec = mido.bpm2tempo(cur_bpm)
-sustain = 0.95
+sustain = 0.90
 dur = 4
 subdiv = 1
 
@@ -18,10 +18,10 @@ subdiv = 1
 
 on_dur, off_dur = UM.notedur_to_ticks(dur, subdiv = subdiv, ticks_per_beat = ticks_per_beat, sustain = sustain)
 #print(on_dur, off_dur)
-csvpath = os.path.join(UM.by_projpath('csv'), 'modemix_chordprog.csv')
-outf = open(csvpath, 'w')
-csvw = csv.DictWriter(outf,fieldnames=CDP.modemix_fieldnames)
-csvw.writeheader()
+#csvpath = os.path.join(UM.by_projpath('csv'), 'modemix_chordprog.csv')
+#outf = open(csvpath, 'w')
+#csvw = csv.DictWriter(outf,fieldnames=CDP.modemix_fieldnames)
+#csvw.writeheader()
 
 
 #exit()
@@ -45,7 +45,7 @@ for cur_inst in UM.pitched_inst_to_use:
                     outname = CDP.modemix_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "mid")
                     name = CDP.modemix_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "")
                     cur_row = {'name': name, 'inst': short_inst, 'key_center': key_center, 'scale_type': cur_scaletype, 'is_modemix': is_modemix, 'orig_prog': orig_progstr, 'sub_prog': cur_progstr, 'inv': inv_idx, 'bpm': cur_bpm}
-                    csvw.writerow(cur_row)
+                    #csvw.writerow(cur_row)
                     mid = mido.MidiFile(type=1, ticks_per_beat=ticks_per_beat)
                     mid.tracks.append(mido.MidiTrack())
                     mid.tracks[0].append(mido.MetaMessage('set_tempo', tempo = tempo_microsec))
@@ -63,8 +63,9 @@ for cur_inst in UM.pitched_inst_to_use:
                         tpose_mnotes, tposed_down = CH.transpose_to_range(offset_mnotes)
 
                         cur_end = on_dur
+                        cur_start = 0 if ct_idx == 0 else off_dur
                         for midx, _mn in enumerate(tpose_mnotes):
-                            note_start = off_dur if midx == 0 else 0 
+                            note_start = cur_start if midx == 0 else 0
                             mid.tracks[0].append(mido.Message('note_on', note=_mn, velocity=velocity, time=note_start, channel=0))
                         for midx, _mn in enumerate(tpose_mnotes):
                             note_end = cur_end if midx == 0 else 0 
@@ -76,5 +77,5 @@ for cur_inst in UM.pitched_inst_to_use:
 
                     UM.save_midi(mid, outname, dataset="modemix_chordprog")
 
-outf.close()
+#outf.close()
 
