@@ -33,14 +33,17 @@ for cur_inst in UM.pitched_inst_to_use:
             for inv_idx in range(chords7.num_inversions):
                 inv_mnotes = chords7.make_inversion(cur_mnotes, inv_idx)
                 offset_mnotes = chords7.offset_notes(inv_mnotes, offset_val)
-                tpose_mnotes, tposed_down = chords7.transpose_to_range(offset_mnotes)
+                tpose_mnotes, tposed_down, cur_root = chords7.transpose_to_range(offset_mnotes, inv_idx)
                 pitch = root_notename[:-1]
-                octave = 4
-                cur_root = root_notename
+                #cur_root = root_notename
                 # since we are transposing up from c4
+                """
                 if tposed_down == True:
                     octave = 3
                     cur_root = pitch + '3'
+                """
+                octave = int(cur_root[-1] )
+                pitch = cur_root[:-1]
                 outname = chords7.get_outname(chord_quality, inv_idx, short_inst, cur_root, ext = "mid")
                 name = chords7.get_outname(chord_quality, inv_idx, short_inst, cur_root, ext = "")
                 cur_row = {'name': name, 'root': cur_root, 'pitch': pitch, 'octave': octave, 'quality': chord_quality, 'inversion': inv_idx, 'inst': short_inst, 'quality_idx': chords7.quality_to_idx[chord_quality], 'bpm': cur_bpm}

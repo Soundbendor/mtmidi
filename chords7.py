@@ -48,13 +48,16 @@ def offset_notes(cur_midinotes, offset):
     else:
         return [x + offset for x in cur_midinotes]
 
-def transpose_to_range(cur_midinotes):
+def transpose_to_range(cur_midinotes, inv_idx):
     transposed_down = False
+    cur_root_idx = (4 - inv_idx) % 4
+    cur_root = mnc.midi_to_note(cur_midinotes[cur_root_idx], sharp = True)
     if cur_midinotes[0] >= midi_upper_limit:
         transposed_down = True
-        return offset_notes(cur_midinotes, -12), transposed_down
-    else:
-        return cur_midinotes, transposed_down
+        while cur_midinotes[0] >= midi_upper_limit:
+            cur_midinotes = offset_notes(cur_midinotes, -12)
+        cur_root = mnc.midi_to_note(cur_midinotes[cur_root_idx], sharp = True)
+    return cur_midinotes, transposed_down, cur_root
 
 def get_outname(chord_type, inv_idx, short_inst, cur_root, ext = ""):
     ret = None
