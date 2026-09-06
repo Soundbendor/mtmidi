@@ -5,7 +5,11 @@ import chordprog as CDP
 import mido
 import musicnoteconv as mnc
 
-ticks_per_beat = 2000
+roots = (['gs3', 'e4', 'fs3', 'b3', 'g3', 'cs4', 'f4', 'ds4', 'as3', 'a3', 'd4', 'c4'])
+
+fixed_roots = {x[:-1]: int(x[-1]) for x in roots}
+
+ticks_per_beat = 1000
 cur_bpm = 60
 velocity = 100
 padding = 30
@@ -42,8 +46,15 @@ for cur_inst in UM.pitched_inst_to_use:
                 for inv_idx in range(CH.num_inversions):
                     if inv_idx > 0:
                         break
-                    outname = CDP.modemix_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "mid")
-                    name = CDP.modemix_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "")
+                    real_octave = fixed_roots[key_center[:-1]]
+                    real_root = key_center[:-1] + str(real_octave)
+
+                    outname = CDP.modemix_get_outname(cur_progstr, inv_idx, short_inst, real_root, ext = "mid")
+                    name = CDP.modemix_get_outname(cur_progstr, inv_idx, short_inst, real_root, ext = "")
+                    if real_root != key_center:
+                        oldname = CDP.modemix_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "mid")
+                        print(f'{oldname},{outname}')
+
                     cur_row = {'name': name, 'inst': short_inst, 'key_center': key_center, 'scale_type': cur_scaletype, 'is_modemix': is_modemix, 'orig_prog': orig_progstr, 'sub_prog': cur_progstr, 'inv': inv_idx, 'bpm': cur_bpm}
                     #csvw.writerow(cur_row)
                     mid = mido.MidiFile(type=1, ticks_per_beat=ticks_per_beat)
@@ -60,7 +71,7 @@ for cur_inst in UM.pitched_inst_to_use:
                         offset_val = key_offset + prog_offset
                         inv_mnotes = CH.make_inversion(cur_mnotes, inv_idx)
                         offset_mnotes = CH.offset_notes(inv_mnotes, offset_val)
-                        tpose_mnotes, tposed_down = CH.transpose_to_range(offset_mnotes)
+                        tpose_mnotes, tposed_down, cur_root = CH.transpose_to_range(offset_mnotes, 0)
 
                         cur_end = on_dur
                         cur_start = 0 if ct_idx == 0 else off_dur

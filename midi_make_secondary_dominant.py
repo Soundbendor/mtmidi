@@ -5,6 +5,10 @@ import chord7prog as CSP
 import mido
 import musicnoteconv as mnc
 
+roots = (['gs3', 'e4', 'fs3', 'b3', 'g3', 'cs4', 'f4', 'ds4', 'as3', 'a3', 'd4', 'c4'])
+
+fixed_roots = {x[:-1]: int(x[-1]) for x in roots}
+
 ticks_per_beat = 1000
 cur_bpm = 60
 velocity = 100
@@ -13,7 +17,6 @@ tempo_microsec = mido.bpm2tempo(cur_bpm)
 sustain = 0.9
 dur = 4
 subdiv = 1
-
 
 
 on_dur, off_dur = UM.notedur_to_ticks(dur, subdiv = subdiv, ticks_per_beat = ticks_per_beat, sustain = sustain)
@@ -42,9 +45,13 @@ for cur_inst in UM.pitched_inst_to_use:
                 for inv_idx in range(CHS.num_inversions):
                     if inv_idx > 0:
                         break
-                    print(key_center)
-                    outname = CSP.second_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "mid")
-                    name = CSP.second_get_outname(cur_progstr, inv_idx, short_inst, key_center,  ext = "")
+                    real_octave = fixed_roots[key_center[:-1]]
+                    real_root = key_center[:-1] + str(real_octave)
+                    outname = CSP.second_get_outname(cur_progstr, inv_idx, short_inst, real_root, ext = "mid")
+                    name = CSP.second_get_outname(cur_progstr, inv_idx, short_inst, real_root,  ext = "")
+                    if real_root != key_center:
+                        oldname = CSP.second_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "mid")
+                        print(f'{oldname},{outname}')
                     cur_row = {'name': name, 'inst': short_inst, 'key_center': key_center, 'scale_type': cur_scaletype, 'sub_type': cur_sub_type, 'base_prog': base_progstr, 'sub_prog': cur_progstr, 'bpm': cur_bpm, 'inv': inv_idx}
                     #csvw.writerow(cur_row)
                     mid = mido.MidiFile(type=1, ticks_per_beat=ticks_per_beat)
