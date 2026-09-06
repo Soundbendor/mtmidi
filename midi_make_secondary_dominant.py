@@ -42,6 +42,7 @@ for cur_inst in UM.pitched_inst_to_use:
                 for inv_idx in range(CHS.num_inversions):
                     if inv_idx > 0:
                         break
+                    print(key_center)
                     outname = CSP.second_get_outname(cur_progstr, inv_idx, short_inst, key_center, ext = "mid")
                     name = CSP.second_get_outname(cur_progstr, inv_idx, short_inst, key_center,  ext = "")
                     cur_row = {'name': name, 'inst': short_inst, 'key_center': key_center, 'scale_type': cur_scaletype, 'sub_type': cur_sub_type, 'base_prog': base_progstr, 'sub_prog': cur_progstr, 'bpm': cur_bpm, 'inv': inv_idx}
@@ -60,7 +61,7 @@ for cur_inst in UM.pitched_inst_to_use:
                         offset_val = key_offset + prog_offset
                         inv_mnotes = CHS.make_inversion(cur_mnotes, inv_idx)
                         offset_mnotes = CHS.offset_notes(inv_mnotes, offset_val)
-                        tpose_mnotes, tposed_down = CHS.transpose_to_range(offset_mnotes)
+                        tpose_mnotes, tposed_down, cur_root  = CHS.transpose_to_range(offset_mnotes, 0)
 
                         cur_end = on_dur
                         cur_start = 0 if ct_idx == 0 else off_dur
